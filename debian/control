@@ -1,0 +1,21 @@
+Source: pygeofilter
+Section: python
+Priority: optional
+Maintainer: Fabian Schindler <fabian.schindler@gmail.com>
+Uploaders: Angelos Tzotsos <gcpp.kalxas@gmail.com>
+Build-Depends: debhelper (>= 9),
+               dh-python,
+               python3-all,
+               python3-setuptools
+Standards-Version: 4.3.0
+Vcs-Git: https://github.com/geopython/pygeofilter.git
+Homepage: https://geopython.github.io/pygeofilter
+
+Package: python3-pygeofilter
+Architecture: all
+Depends: ${python3:Depends},
+         python3-dateparser,
+         python3-ply,
+         ${misc:Depends}
+Description: CQL parser for Python
+ pygeofilter is a pure Python parser implementation of the OGC CQL standard.

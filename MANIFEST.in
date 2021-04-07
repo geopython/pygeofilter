@@ -1,0 +1,4 @@
+recursive-include pygeofilter *.py
+include README.md
+include LICENSE
+include requirements.txt

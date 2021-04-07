@@ -1,0 +1,47 @@
+name: build ⚙️
+
+on: [ push, pull_request ]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      name: Setup Python ${{ matrix.python-version }}
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install requirements 📦
+      run: |
+        sudo apt-get install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite spatialite-bin
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+        pip install -r requirements-dev.txt
+        pip install .
+    - name: Run unit tests ⚙️
+      run: |
+        pytest
+        cd tests/django_test
+        python manage.py test testapp
+  publish:
+    runs-on: ubuntu-20.04
+    needs: test
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      name: Setup Python
+      with:
+        python-version: "3.x"
+    - name: Install build dependency
+      run: pip install wheel
+    - name: Build package 🏗️
+      run: python setup.py sdist bdist_wheel --universal
+    - name: Publish package
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
