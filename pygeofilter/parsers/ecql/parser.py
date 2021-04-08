@@ -1,10 +1,10 @@
 from sly import Parser
 
 from ... import ast
-from .lexer import CQLLexer
+from .lexer import ECQLLexer
 
 
-class CQLParser(Parser):
+class ECQLParser(Parser):
     tokens = CQLLexer.tokens
 
     precedence = (

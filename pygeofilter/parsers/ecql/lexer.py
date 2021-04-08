@@ -59,7 +59,7 @@ duration_pattern = (
 quoted_string_pattern = r'(\"[^"]*\")|(\'[^\']*\')'
 
 
-class CQLLexer(Lexer):
+class ECQLLexer(Lexer):
     tokens = {
         NOT, AND, OR, BETWEEN, LIKE, ILIKE, IN, IS, NULL,
         BEFORE, AFTER, DURING, INTERSECTS, DISJOINT, CONTAINS,

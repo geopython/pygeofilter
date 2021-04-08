@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
-from pygeofilter.parsers.cql import parse
+from pygeofilter.parsers.ecql import parse
 from pygeofilter.ast import get_repr
 from pygeofilter import ast
 
