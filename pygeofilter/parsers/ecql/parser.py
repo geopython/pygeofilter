@@ -5,7 +5,7 @@ from .lexer import ECQLLexer
 
 
 class ECQLParser(Parser):
-    tokens = CQLLexer.tokens
+    tokens = ECQLLexer.tokens
 
     precedence = (
         ('left', EQ, NE),               # noqa: F821
@@ -185,8 +185,8 @@ class ECQLParser(Parser):
 
 
 def parse(cql):
-    lexer = CQLLexer()
-    parser = CQLParser()
+    lexer = ECQLLexer()
+    parser = ECQLParser()
 
 
     try:
