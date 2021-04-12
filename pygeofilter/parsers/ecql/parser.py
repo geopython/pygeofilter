@@ -32,7 +32,11 @@ class ECQLParser(Parser):
     @_('condition AND condition',
        'condition OR condition')
     def condition(self, p):
-        return ast.CombinationConditionNode(p[0], p[2], p[1])
+        return ast.CombinationConditionNode(
+            p[0],
+            p[2],
+            ast.CombinationOp(p[1])
+        )
 
     @_('NOT condition')
     def condition(self, p):
@@ -50,7 +54,7 @@ class ECQLParser(Parser):
        'expression GT expression',
        'expression GE expression')
     def predicate(self, p):
-        return ast.ComparisonPredicateNode(p[0], p[2], p[1])
+        return ast.ComparisonPredicateNode(p[0], p[2], ast.ComparisonOp(p[1]))
 
     @_('expression NOT BETWEEN expression AND expression',
        'expression BETWEEN expression AND expression')
@@ -63,16 +67,26 @@ class ECQLParser(Parser):
        'expression LIKE QUOTED')
     def predicate(self, p):
         return ast.LikePredicateNode(
-            p.expression, ast.LiteralExpression(p[-1]),
-            True, p[1] == 'NOT'
+            p.expression,
+            ast.LiteralExpression(p[-1]),
+            nocase=False,
+            wildcard='%',
+            singlechar='.',
+            escapechar=None,
+            not_=p[1] == 'NOT',
         )
 
     @_('expression NOT ILIKE QUOTED',
        'expression ILIKE QUOTED')
     def predicate(self, p):
         return ast.LikePredicateNode(
-            p.expression, ast.LiteralExpression(p[-1]),
-            False, p[1] == 'NOT'
+            p.expression,
+            ast.LiteralExpression(p[-1]),
+            nocase=True,
+            wildcard='%',
+            singlechar='.',
+            escapechar=None,
+            not_=p[1] == 'NOT',
         )
 
     @_('expression NOT IN LPAREN expression_list RPAREN',
@@ -97,9 +111,9 @@ class ECQLParser(Parser):
        'expression AFTER DATETIME')
     def temporal_predicate(self, p):
         if len(p) == 3:
-            op = p[1]
+            op = ast.TemporalComparisonOp(p[1])
         else:
-            op = f'{p[1]} {p[2]} {p[3]}'
+            op = ast.TemporalComparisonOp(f'{p[1]} {p[2]} {p[3]}')
         return ast.TemporalPredicateNode(p.expression, p[-1], op)
 
     @_('DATETIME DIVIDE DATETIME',
@@ -117,17 +131,25 @@ class ECQLParser(Parser):
        'OVERLAPS LPAREN expression COMMA expression RPAREN',
        'EQUALS LPAREN expression COMMA expression RPAREN')
     def spatial_predicate(self, p):
-        return ast.SpatialPredicateNode(p[2], p[4], p[0])
+        return ast.SpatialOperationPredicateNode(
+            p[2],
+            p[4],
+            ast.SpatialComparisonOp(p[0])
+        )
 
     @_('RELATE LPAREN expression COMMA expression COMMA QUOTED RPAREN')
     def spatial_predicate(self, p):
-        return ast.SpatialPredicateNode(p[2], p[4], p[0], pattern=p[6])
+        return ast.SpatialPatternPredicateNode(p[2], p[4], pattern=p[6])
 
     @_('DWITHIN LPAREN expression COMMA expression COMMA number COMMA UNITS RPAREN',
        'BEYOND LPAREN expression COMMA expression COMMA number COMMA UNITS RPAREN')
     def spatial_predicate(self, p):
-        return ast.SpatialPredicateNode(
-            p[2], p[4], p[0], distance=p[6].value, units=p[8]
+        return ast.SpatialDistancePredicateNode(
+            p[2],
+            p[4],
+            ast.SpatialDistanceOp(p[0]),
+            distance=p[6].value,
+            units=p[8],
         )
 
     @_('BBOX LPAREN expression COMMA number COMMA number COMMA number COMMA number RPAREN')
@@ -140,7 +162,6 @@ class ECQLParser(Parser):
 
     @_('expression_list COMMA expression')
     def expression_list(self, p):
-        print("HERE")
         p.expression_list.append(p.expression)
         return p.expression_list
 
@@ -153,12 +174,24 @@ class ECQLParser(Parser):
        'expression TIMES expression',
        'expression DIVIDE expression')
     def expression(self, p):
-        return ast.ArithmeticExpressionNode(p[0], p[2], p[1])
+        return ast.ArithmeticExpressionNode(
+            p[0],
+            p[2],
+            ast.ArithmeticOp(p[1]),
+        )
 
     @_('LPAREN expression RPAREN',
        'LBRACKET expression RBRACKET')
     def expression(self, p):
         return p[1]
+
+    @_('IDENTIFIER LPAREN RPAREN')
+    def expression(self, p):
+        return ast.FunctionExpressionNode(p[0], [])
+
+    @_('IDENTIFIER LPAREN expression_list RPAREN')
+    def expression(self, p):
+        return ast.FunctionExpressionNode(p[0], p.expression_list)
 
     @_('GEOMETRY',
        'ENVELOPE',
@@ -176,7 +209,7 @@ class ECQLParser(Parser):
     def number(self, p):
         return ast.LiteralExpression(p[0])
 
-    @_('ATTRIBUTE')
+    @_('IDENTIFIER')
     def attribute(self, p):
         return ast.AttributeExpression(p[0])
 

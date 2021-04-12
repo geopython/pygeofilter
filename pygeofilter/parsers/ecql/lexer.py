@@ -69,7 +69,7 @@ class ECQLLexer(Lexer):
         LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA,
         GEOMETRY, ENVELOPE, UNITS,
         QUOTED, DATETIME, DURATION, FLOAT, INTEGER,
-        ATTRIBUTE,
+        IDENTIFIER,
     }
     PLUS = r'\+'
     MINUS = r'-'
@@ -99,7 +99,7 @@ class ECQLLexer(Lexer):
 
     @_(envelope_pattern)
     def ENVELOPE(self, t):
-        t.value = Envelope([
+        t.value = values.Envelope([
             float(number) for number in
             t.value.partition('(')[2].partition(')')[0].split()
         ])
@@ -134,39 +134,33 @@ class ECQLLexer(Lexer):
         t.value = t.value[1:-1]
         return t
 
-    ATTRIBUTE = identifier_pattern
+    IDENTIFIER = identifier_pattern
 
-    # remap some tokens to be confused with attributes
-    ATTRIBUTE['NOT'] = NOT
-    ATTRIBUTE['AND'] = AND
-    ATTRIBUTE['OR'] = OR
-    ATTRIBUTE['BETWEEN'] = BETWEEN
-    ATTRIBUTE['LIKE'] = LIKE
-    ATTRIBUTE['ILIKE'] = ILIKE
-    ATTRIBUTE['IN'] = IN
-    ATTRIBUTE['IS'] = IS
-    ATTRIBUTE['NULL'] = NULL
-    ATTRIBUTE['BEFORE'] = BEFORE
-    ATTRIBUTE['AFTER'] = AFTER
-    ATTRIBUTE['DURING'] = DURING
-    ATTRIBUTE['INTERSECTS'] = INTERSECTS
-    ATTRIBUTE['DISJOINT'] = DISJOINT
-    ATTRIBUTE['CONTAINS'] = CONTAINS
-    ATTRIBUTE['WITHIN'] = WITHIN
-    ATTRIBUTE['TOUCHES'] = TOUCHES
-    ATTRIBUTE['CROSSES'] = CROSSES
-    ATTRIBUTE['OVERLAPS'] = OVERLAPS
-    ATTRIBUTE['EQUALS'] = EQUALS
-    ATTRIBUTE['RELATE'] = RELATE
-    ATTRIBUTE['DWITHIN'] = DWITHIN
-    ATTRIBUTE['BEYOND'] = BEYOND
-    ATTRIBUTE['BBOX'] = BBOX
-
-    # @_(identifier_pattern)
-    # def ATTRIBUTE(self, t):
-    #     # TODO
-    #     # t.type = self.keyword_map.get(t.value, "ATTRIBUTE")
-    #     return t
+    # remap some tokens to be confused with identifiers
+    IDENTIFIER['NOT'] = NOT
+    IDENTIFIER['AND'] = AND
+    IDENTIFIER['OR'] = OR
+    IDENTIFIER['BETWEEN'] = BETWEEN
+    IDENTIFIER['LIKE'] = LIKE
+    IDENTIFIER['ILIKE'] = ILIKE
+    IDENTIFIER['IN'] = IN
+    IDENTIFIER['IS'] = IS
+    IDENTIFIER['NULL'] = NULL
+    IDENTIFIER['BEFORE'] = BEFORE
+    IDENTIFIER['AFTER'] = AFTER
+    IDENTIFIER['DURING'] = DURING
+    IDENTIFIER['INTERSECTS'] = INTERSECTS
+    IDENTIFIER['DISJOINT'] = DISJOINT
+    IDENTIFIER['CONTAINS'] = CONTAINS
+    IDENTIFIER['WITHIN'] = WITHIN
+    IDENTIFIER['TOUCHES'] = TOUCHES
+    IDENTIFIER['CROSSES'] = CROSSES
+    IDENTIFIER['OVERLAPS'] = OVERLAPS
+    IDENTIFIER['EQUALS'] = EQUALS
+    IDENTIFIER['RELATE'] = RELATE
+    IDENTIFIER['DWITHIN'] = DWITHIN
+    IDENTIFIER['BEYOND'] = BEYOND
+    IDENTIFIER['BBOX'] = BBOX
 
     ignore = ' \t'
 

@@ -40,7 +40,7 @@ def test_attribute_eq_literal():
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression('A'),
-        '='
+        ast.ComparisonOp('='),
     )
 
 
@@ -49,7 +49,7 @@ def test_attribute_lt_literal():
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression(5.0),
-        '<'
+        ast.ComparisonOp('<'),
     )
 
 
@@ -58,7 +58,7 @@ def test_attribute_lte_literal():
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression(5.0),
-        '<='
+        ast.ComparisonOp('<='),
     )
 
 
@@ -67,7 +67,7 @@ def test_attribute_gt_literal():
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression(5.0),
-        '>'
+        ast.ComparisonOp('>'),
     )
 
 
@@ -76,7 +76,7 @@ def test_attribute_gte_literal():
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression(5.0),
-        '>='
+        ast.ComparisonOp('>='),
     )
 
 
@@ -85,7 +85,7 @@ def test_attribute_ne_literal():
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression(5),
-        '<>'
+        ast.ComparisonOp('<>'),
     )
 
 
@@ -114,8 +114,11 @@ def test_string_like():
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression('some%'),
-        True,
-        False,
+        nocase=False,
+        not_=False,
+        wildcard='%',
+        singlechar='.',
+        escapechar=None,
     )
 
 
@@ -124,8 +127,11 @@ def test_string_ilike():
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression('some%'),
-        False,
-        False,
+        nocase=True,
+        not_=False,
+        wildcard='%',
+        singlechar='.',
+        escapechar=None,
     )
 
 
@@ -134,8 +140,11 @@ def test_string_not_like():
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression('some%'),
-        True,
-        True,
+        nocase=False,
+        not_=True,
+        wildcard='%',
+        singlechar='.',
+        escapechar=None,
     )
 
 
@@ -144,8 +153,11 @@ def test_string_not_ilike():
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         ast.LiteralExpression('some%'),
-        False,
-        True,
+        nocase=True,
+        not_=True,
+        wildcard='%',
+        singlechar='.',
+        escapechar=None,
     )
 
 
@@ -193,14 +205,13 @@ def test_attribute_is_not_null():
 
 def test_attribute_before():
     result = parse('attr BEFORE 2000-01-01T00:00:01Z')
-    print(get_repr(result))
     assert result == ast.TemporalPredicateNode(
         ast.AttributeExpression('attr'),
         datetime(
             2000, 1, 1, 0, 0, 1,
             tzinfo=StaticTzInfo('Z', timedelta(0))
         ),
-        'BEFORE',
+        ast.TemporalComparisonOp('BEFORE'),
     )
 
 
@@ -221,7 +232,7 @@ def test_attribute_before_or_during_dt_dt():
                 tzinfo=StaticTzInfo('Z', timedelta(0))
             ),
         ),
-        'BEFORE OR DURING',
+        ast.TemporalComparisonOp('BEFORE OR DURING'),
     )
 
 
@@ -236,7 +247,7 @@ def test_attribute_before_or_during_dt_dr():
             ),
             timedelta(seconds=4),
         ),
-        'BEFORE OR DURING',
+        ast.TemporalComparisonOp('BEFORE OR DURING'),
     )
 
 
@@ -251,7 +262,7 @@ def test_attribute_before_or_during_dr_dt():
                 tzinfo=StaticTzInfo('Z', timedelta(0))
             ),
         ),
-        'BEFORE OR DURING',
+        ast.TemporalComparisonOp('BEFORE OR DURING'),
     )
 
 # Spatial predicate
@@ -259,49 +270,49 @@ def test_attribute_before_or_during_dr_dt():
 
 def test_intersects_attr_point():
     result = parse('INTERSECTS(geometry, POINT(1 1))')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(geometry.Point(1, 1)),
-        'INTERSECTS'
+        ast.SpatialComparisonOp('INTERSECTS'),
     )
 
 
 def test_disjoint_linestring_attr():
     result = parse('DISJOINT(LINESTRING(1 1,2 2), geometry)')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialOperationPredicateNode(
         ast.LiteralExpression(geometry.LineString([(1, 1), (2, 2)])),
         ast.AttributeExpression('geometry'),
-        'DISJOINT'
+        ast.SpatialComparisonOp('DISJOINT'),
     )
 
 
 def test_contains_attr_polygon():
     result = parse('CONTAINS(geometry, POLYGON((1 1,2 2,0 3,1 1)))')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(
             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
         ),
-        'CONTAINS'
+        ast.SpatialComparisonOp('CONTAINS'),
     )
 
 
 def test_within_multipolygon_attr():
     result = parse('WITHIN(MULTIPOLYGON(((1 1,2 2,0 3,1 1))), geometry)')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialOperationPredicateNode(
         ast.LiteralExpression(
             geometry.MultiPolygon([
                 geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
             ])
         ),
         ast.AttributeExpression('geometry'),
-        'WITHIN'
+        ast.SpatialComparisonOp('WITHIN'),
     )
 
 
 def test_touches_attr_multilinestring():
     result = parse('TOUCHES(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(
             geometry.MultiLineString([
@@ -309,13 +320,13 @@ def test_touches_attr_multilinestring():
                 geometry.LineString([(0, 3), (1, 1)]),
             ])
         ),
-        'TOUCHES'
+        ast.SpatialComparisonOp('TOUCHES'),
     )
 
 
 def test_crosses_attr_multilinestring():
     result = parse('CROSSES(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(
             geometry.MultiLineString([
@@ -323,13 +334,13 @@ def test_crosses_attr_multilinestring():
                 geometry.LineString([(0, 3), (1, 1)]),
             ])
         ),
-        'CROSSES'
+        ast.SpatialComparisonOp('CROSSES'),
     )
 
 
 def test_overlaps_attr_multilinestring():
     result = parse('OVERLAPS(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(
             geometry.MultiLineString([
@@ -337,7 +348,7 @@ def test_overlaps_attr_multilinestring():
                 geometry.LineString([(0, 3), (1, 1)]),
             ])
         ),
-        'OVERLAPS'
+        ast.SpatialComparisonOp('OVERLAPS'),
     )
 
 
@@ -365,12 +376,11 @@ def test_overlaps_attr_multilinestring():
 
 def test_relate_attr_polygon():
     result = parse('RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)), "1*T***T**")')
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialPatternPredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(
             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
         ),
-        'RELATE',
         pattern='1*T***T**',
     )
 
@@ -380,12 +390,12 @@ def test_relate_attr_polygon():
 def test_dwithin_attr_polygon():
     result = parse('DWITHIN(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, feet)')
     print(get_repr(result))
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(
             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
         ),
-        'DWITHIN',
+        ast.SpatialDistanceOp('DWITHIN'),
         distance=5,
         units='feet',
     )
@@ -396,12 +406,12 @@ def test_beyond_attr_polygon():
         'BEYOND(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, nautical miles)'
     )
     print(get_repr(result))
-    assert result == ast.SpatialPredicateNode(
+    assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
         ast.LiteralExpression(
             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
         ),
-        'BEYOND',
+        ast.SpatialDistanceOp('BEYOND'),
         distance=5,
         units='nautical miles',
     )
@@ -440,9 +450,9 @@ def test_attribute_arithmetic_add():
         ast.ArithmeticExpressionNode(
             ast.LiteralExpression(5),
             ast.LiteralExpression(2),
-            '+',
+            ast.ArithmeticOp('+'),
         ),
-        '=',
+        ast.ComparisonOp('='),
     )
 
 
@@ -453,9 +463,9 @@ def test_attribute_arithmetic_sub():
         ast.ArithmeticExpressionNode(
             ast.LiteralExpression(5),
             ast.LiteralExpression(2),
-            '-',
+            ast.ArithmeticOp('-'),
         ),
-        '=',
+        ast.ComparisonOp('='),
     )
 
 
@@ -466,9 +476,9 @@ def test_attribute_arithmetic_mul():
         ast.ArithmeticExpressionNode(
             ast.LiteralExpression(5),
             ast.LiteralExpression(2),
-            '*',
+            ast.ArithmeticOp('*'),
         ),
-        '=',
+        ast.ComparisonOp('='),
     )
 
 
@@ -479,9 +489,9 @@ def test_attribute_arithmetic_div():
         ast.ArithmeticExpressionNode(
             ast.LiteralExpression(5),
             ast.LiteralExpression(2),
-            '/',
+            ast.ArithmeticOp('/'),
         ),
-        '=',
+        ast.ComparisonOp('='),
     )
 
 
@@ -494,11 +504,11 @@ def test_attribute_arithmetic_add_mul():
             ast.ArithmeticExpressionNode(
                 ast.LiteralExpression(5),
                 ast.LiteralExpression(2),
-                '*',
+                ast.ArithmeticOp('*'),
             ),
-            '+',
+            ast.ArithmeticOp('+'),
         ),
-        '=',
+        ast.ComparisonOp('='),
     )
 
 
@@ -510,12 +520,12 @@ def test_attribute_arithmetic_div_sub():
             ast.ArithmeticExpressionNode(
                 ast.LiteralExpression(3),
                 ast.LiteralExpression(5),
-                '/',
+                ast.ArithmeticOp('/'),
             ),
             ast.LiteralExpression(2),
-            '-',
+            ast.ArithmeticOp('-'),
         ),
-        '=',
+        ast.ComparisonOp('='),
     )
 
 
@@ -528,9 +538,50 @@ def test_attribute_arithmetic_div_sub_bracketted():
             ast.ArithmeticExpressionNode(
                 ast.LiteralExpression(5),
                 ast.LiteralExpression(2),
-                '-',
+                ast.ArithmeticOp('-'),
             ),
-            '/',
+            ast.ArithmeticOp('/'),
         ),
-        '=',
+        ast.ComparisonOp('='),
+    )
+
+# test function expression parsing
+
+
+def test_function_no_arg():
+    result = parse('attr = myfunc()')
+    assert result == ast.ComparisonPredicateNode(
+        ast.AttributeExpression('attr'),
+        ast.FunctionExpressionNode(
+            'myfunc', [
+            ]
+        ),
+        ast.ComparisonOp('='),
+    )
+
+
+def test_function_single_arg():
+    result = parse('attr = myfunc(1)')
+    assert result == ast.ComparisonPredicateNode(
+        ast.AttributeExpression('attr'),
+        ast.FunctionExpressionNode(
+            'myfunc', [
+                ast.LiteralExpression(1),
+            ]
+        ),
+        ast.ComparisonOp('='),
+    )
+
+
+def test_function_attr_string_arg():
+    result = parse('attr = myfunc(other_attr, "abc")')
+    assert result == ast.ComparisonPredicateNode(
+        ast.AttributeExpression('attr'),
+        ast.FunctionExpressionNode(
+            'myfunc', [
+                ast.AttributeExpression('other_attr'),
+                ast.LiteralExpression("abc"),
+            ]
+        ),
+        ast.ComparisonOp('='),
     )
