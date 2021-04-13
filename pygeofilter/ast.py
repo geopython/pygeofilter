@@ -137,14 +137,6 @@ class ComparisonOp(Enum):
 class ComparisonPredicateNode(PredicateNode):
     """ Node class to represent a comparison predicate: to compare two
         expressions using a comparison operation.
-
-        :ivar lhs: the left hand side node of this comparison
-        :type lhs: Node
-        :ivar rhs: the right hand side node of this comparison
-        :type rhs: Node
-        :ivar op: the comparison type. One of ``"="``, ``"<>"``, ``"<"``,
-                  ``">"``, ``"<="``, ``">="``
-        :type op: str
     """
 
     lhs: Node
@@ -236,14 +228,37 @@ class NullPredicateNode(PredicateNode):
 # class ExistsPredicateNode(PredicateNode):
 #     pass
 
-class TemporalComparisonOp(Enum):
-    BEFORE = 'BEFORE'
-    BEFORE_OR_DURING = 'BEFORE OR DURING'
-    DURING = 'DURING'
-    DURING_OR_AFTER = 'DURING OR AFTER'
-    AFTER = 'AFTER'
+# http://docs.opengeospatial.org/DRAFTS/19-079.html#enhanced-temporal-operators
 
-    # TODO
+# BEFORE                <======>     <----->    AFTER
+# MEETS                         <---------->    METBY
+# TOVERLAPS                 <-------------->    OVERLAPPEDBY
+# BEGINS                <------------------>    BEGUNBY
+# DURING            <---------------------->    TCONTAINS
+# TENDS             <---------->                ENDEDBY
+# TEQUALS               <------>                TEQUALS
+
+# https://github.com/geotools/geotools/blob/main/modules/library/cql/ECQL.md#temporal-predicate
+# BEFORE_OR_DURING  <----->
+# DURING_OR_AFTER           <----->
+
+class TemporalComparisonOp(Enum):
+    AFTER = 'AFTER'
+    BEFORE = 'BEFORE'
+    BEGINS = 'BEGINS'
+    BEGUNBY = 'BEGUNBY'
+    TCONTAINS = 'TCONTAINS'
+    DURING = 'DURING'
+    ENDEDBY = 'ENDEDBY'
+    ENDS = 'ENDS'
+    TEQUALS = 'TEQUALS'
+    MEETS = 'MEETS'
+    METBY = 'METBY'
+    TOVERLAPS = 'TOVERLAPS'
+    OVERLAPPEDBY = 'OVERLAPPEDBY'
+
+    BEFORE_OR_DURING = 'BEFORE OR DURING'
+    DURING_OR_AFTER = 'DURING OR AFTER'
 
 
 @dataclass
@@ -429,21 +444,15 @@ class FunctionExpressionNode(ExpressionNode):
         return f"{self.name} ({', '.join(['{}'] * len(self.arguments))})"
 
 
-def indent(text, amount, ch=' '):
+def indent(text: str, amount: int, ch: str = ' ') -> str:
     padding = amount * ch
     return ''.join(padding+line for line in text.splitlines(True))
 
 
-def get_repr(node, indent_amount=0, indent_incr=4):
+def get_repr(node: Node, indent_amount: int = 0, indent_incr: int = 4) -> str:
     """ Get a debug representation of the given AST node. ``indent_amount``
         and ``indent_incr`` are for the recursive call and don't need to be
         passed.
-
-        :param Node node: the node to get the representation for
-        :param int indent_amount: the current indentation level
-        :param int indent_incr: the indentation incrementation per level
-        :return: the represenation of the node
-        :rtype: str
     """
     sub_nodes = node.get_sub_nodes()
     template = node.get_template()
