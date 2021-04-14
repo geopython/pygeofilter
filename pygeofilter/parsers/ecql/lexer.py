@@ -1,3 +1,35 @@
+# ------------------------------------------------------------------------------
+#
+# Project: pygeofilter <https://github.com/geopython/pygeofilter>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>
+#
+# ------------------------------------------------------------------------------
+# Copyright (C) 2021 EOX IT Services GmbH
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# ------------------------------------------------------------------------------
+
+
+# pylint: disable=undefined-variable,function-redefined,used-before-assignment
+# pylint: disable=unsupported-assignment-operation
+# flake8: noqa
+
 from sly import Lexer
 from pygeoif import from_wkt
 from dateparser import parse as parse_datetime
@@ -71,6 +103,9 @@ class ECQLLexer(Lexer):
         QUOTED, DATETIME, DURATION, FLOAT, INTEGER,
         IDENTIFIER,
     }
+
+    literals = {'(', ')', '[', ']', ','}
+
     PLUS = r'\+'
     MINUS = r'-'
     TIMES = r'\*'
@@ -84,13 +119,6 @@ class ECQLLexer(Lexer):
     GT = r'>'
     EQ = r'='
 
-    LPAREN = r'\('
-    RPAREN = r'\)'
-    LBRACKET = r'\['
-    RBRACKET = r'\]'
-    COMMA = r','
-
-
     # for geometry parsing
     @_(geometry_pattern)
     def GEOMETRY(self, t):
@@ -99,7 +127,7 @@ class ECQLLexer(Lexer):
 
     @_(envelope_pattern)
     def ENVELOPE(self, t):
-        t.value = values.Envelope([
+        t.value = values.Envelope(*[
             float(number) for number in
             t.value.partition('(')[2].partition(')')[0].split()
         ])
