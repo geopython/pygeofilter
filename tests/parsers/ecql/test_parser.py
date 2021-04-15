@@ -113,7 +113,7 @@ def test_string_like():
     result = parse('attr LIKE "some%"')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
-        ast.LiteralExpression('some%'),
+        'some%',
         nocase=False,
         not_=False,
         wildcard='%',
@@ -126,7 +126,7 @@ def test_string_ilike():
     result = parse('attr ILIKE "some%"')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
-        ast.LiteralExpression('some%'),
+        'some%',
         nocase=True,
         not_=False,
         wildcard='%',
@@ -139,7 +139,7 @@ def test_string_not_like():
     result = parse('attr NOT LIKE "some%"')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
-        ast.LiteralExpression('some%'),
+        'some%',
         nocase=False,
         not_=True,
         wildcard='%',
@@ -152,7 +152,7 @@ def test_string_not_ilike():
     result = parse('attr NOT ILIKE "some%"')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
-        ast.LiteralExpression('some%'),
+        'some%',
         nocase=True,
         not_=True,
         wildcard='%',
