@@ -43,6 +43,7 @@ class ECQLParser(Parser):
         ('left', GT, GE, LT, LE),
         ('left', PLUS, MINUS),
         ('left', TIMES, DIVIDE),
+        ('right', UMINUS),
     )
 
     start = 'condition_or_empty'
@@ -99,7 +100,7 @@ class ECQLParser(Parser):
     def predicate(self, p):
         return ast.LikePredicateNode(
             p.expression,
-            ast.LiteralExpression(p[-1]),
+            p[-1],
             nocase=False,
             wildcard='%',
             singlechar='.',
@@ -112,7 +113,7 @@ class ECQLParser(Parser):
     def predicate(self, p):
         return ast.LikePredicateNode(
             p.expression,
-            ast.LiteralExpression(p[-1]),
+            p[-1],
             nocase=True,
             wildcard='%',
             singlechar='.',
@@ -199,6 +200,10 @@ class ECQLParser(Parser):
     @_('expression')
     def expression_list(self, p):
         return [p.expression]
+
+    @_('MINUS expression %prec UMINUS')
+    def expression(self, p):
+        return ast.LiteralExpression(-p.expression.value)
 
     @_('expression PLUS expression',
        'expression MINUS expression',
