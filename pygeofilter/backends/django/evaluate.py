@@ -13,8 +13,8 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies of this Software or works derived from this Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -25,16 +25,13 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
+import json
+
+from django.contrib.gis.geos import GEOSGeometry, Polygon
 
 from . import filters
-from ...parser import parse
-from ...ast import (
-    NotConditionNode, CombinationConditionNode, ComparisonPredicateNode,
-    BetweenPredicateNode, BetweenPredicateNode, LikePredicateNode,
-    InPredicateNode, NullPredicateNode, TemporalPredicateNode,
-    SpatialPredicateNode, BBoxPredicateNode, AttributeExpression,
-    LiteralExpression, ArithmeticExpressionNode,
-)
+from ... import ast
+from ...values import Envelope
 
 
 class FilterEvaluator:
@@ -44,78 +41,115 @@ class FilterEvaluator:
 
     def to_filter(self, node):
         to_filter = self.to_filter
-        if isinstance(node, NotConditionNode):
+        if isinstance(node, ast.NotConditionNode):
             return filters.negate(to_filter(node.sub_node))
-        elif isinstance(node, CombinationConditionNode):
+        elif isinstance(node, ast.CombinationConditionNode):
             return filters.combine(
-                (to_filter(node.lhs), to_filter(node.rhs)), node.op
+                (to_filter(node.lhs), to_filter(node.rhs)),
+                node.op.value,
             )
-        elif isinstance(node, ComparisonPredicateNode):
+        elif isinstance(node, ast.ComparisonPredicateNode):
             return filters.compare(
-                to_filter(node.lhs), to_filter(node.rhs), node.op,
+                to_filter(node.lhs),
+                to_filter(node.rhs),
+                node.op.value,
                 self.mapping_choices
             )
-        elif isinstance(node, BetweenPredicateNode):
+        elif isinstance(node, ast.BetweenPredicateNode):
             return filters.between(
-                to_filter(node.lhs), to_filter(node.low), to_filter(node.high),
+                to_filter(node.lhs),
+                to_filter(node.low),
+                to_filter(node.high),
                 node.not_
             )
-        elif isinstance(node, BetweenPredicateNode):
-            return filters.between(
-                to_filter(node.lhs), to_filter(node.low), to_filter(node.high),
-                node.not_
-            )
-        elif isinstance(node, LikePredicateNode):
+        elif isinstance(node, ast.LikePredicateNode):
             return filters.like(
-                to_filter(node.lhs), to_filter(node.rhs), node.case, node.not_,
+                to_filter(node.lhs),
+                node.pattern,
+                node.nocase,
+                node.not_,
                 self.mapping_choices
-
             )
-        elif isinstance(node, InPredicateNode):
+        elif isinstance(node, ast.InPredicateNode):
             return filters.contains(
                 to_filter(node.lhs), [
                     to_filter(sub_node) for sub_node in node.sub_nodes
                 ], node.not_, self.mapping_choices
             )
-        elif isinstance(node, NullPredicateNode):
+        elif isinstance(node, ast.NullPredicateNode):
             return filters.null(
-                to_filter(node.lhs), node.not_
+                to_filter(node.lhs),
+                node.not_
             )
-        elif isinstance(node, TemporalPredicateNode):
+        elif isinstance(node, ast.TemporalPredicateNode):
             return filters.temporal(
-                to_filter(node.lhs), node.rhs, node.op
+                to_filter(node.lhs),
+                node.rhs,
+                node.op.value,
             )
-        elif isinstance(node, SpatialPredicateNode):
+        elif isinstance(node, ast.SpatialOperationPredicateNode):
             return filters.spatial(
-                to_filter(node.lhs), to_filter(node.rhs), node.op,
-                to_filter(node.pattern),
-                to_filter(node.distance),
-                to_filter(node.units)
+                to_filter(node.lhs),
+                to_filter(node.rhs),
+                node.op.name,
             )
-        elif isinstance(node, BBoxPredicateNode):
+        elif isinstance(node, ast.SpatialPatternPredicateNode):
+            return filters.spatial(
+                to_filter(node.lhs),
+                to_filter(node.rhs),
+                'RELATE',
+                pattern=node.pattern,
+            )
+        elif isinstance(node, ast.SpatialDistancePredicateNode):
+            return filters.spatial(
+                to_filter(node.lhs),
+                to_filter(node.rhs),
+                node.op.value,
+                distance=node.distance,
+                units=node.units,
+            )
+        elif isinstance(node, ast.BBoxPredicateNode):
             return filters.bbox(
                 to_filter(node.lhs),
-                to_filter(node.minx),
-                to_filter(node.miny),
-                to_filter(node.maxx),
-                to_filter(node.maxy),
-                to_filter(node.crs)
+                node.minx,
+                node.miny,
+                node.maxx,
+                node.maxy,
+                node.crs
             )
-        elif isinstance(node, AttributeExpression):
+        elif isinstance(node, ast.AttributeExpression):
             return filters.attribute(node.name, self.field_mapping)
 
-        elif isinstance(node, LiteralExpression):
+        elif isinstance(node, ast.LiteralExpression):
+            value = node.value
+            print(value)
+            if hasattr(value, '__geo_interface__'):
+                return GEOSGeometry(
+                    json.dumps(value.__geo_interface__)
+                )
+            elif isinstance(value, Envelope):
+                return Polygon.from_bbox(
+                    (value.x1, value.y1, value.x2, value.y2)
+                )
             return node.value
 
-        elif isinstance(node, ArithmeticExpressionNode):
+        elif isinstance(node, ast.ArithmeticExpressionNode):
             return filters.arithmetic(
-                to_filter(node.lhs), to_filter(node.rhs), node.op
+                to_filter(node.lhs),
+                to_filter(node.rhs),
+                node.op.value
             )
 
-        return node
+        elif hasattr(node, '__geo_interface__'):
+            return GEOSGeometry(json.dumps(node.__geo_interface__))
 
 
-def to_filter(ast, field_mapping=None, mapping_choices=None):
+
+        else:
+            raise Exception(f'Unsupported AST node type {type(node)}')
+
+
+def to_filter(root, field_mapping=None, mapping_choices=None):
     """ Helper function to translate ECQL AST to Django Query expressions.
 
         :param ast: the abstract syntax tree
@@ -126,4 +160,4 @@ def to_filter(ast, field_mapping=None, mapping_choices=None):
         :returns: a Django query object
         :rtype: :class:`django.db.models.Q`
     """
-    return FilterEvaluator(field_mapping, mapping_choices).to_filter(ast)
+    return FilterEvaluator(field_mapping, mapping_choices).to_filter(root)
