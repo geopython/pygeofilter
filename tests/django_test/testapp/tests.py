@@ -30,11 +30,11 @@ from django.db.models import ForeignKey
 from django.contrib.gis.geos import Polygon, MultiPolygon, GEOSGeometry
 from django.utils.dateparse import parse_datetime
 
-from pygeofilter import parse
-from pygeofilter.util import parse_duration
-from pygeofilter.integrations.django.evaluate import to_filter
+from pygeofilter.parsers.ecql import parse
+from pygeofilter.backends.django.evaluate import to_filter
 
 from . import models
+
 
 class CQLTestCase(TransactionTestCase):
     def setUp(self):
@@ -98,10 +98,7 @@ class CQLTestCase(TransactionTestCase):
         mapping = models.FIELD_MAPPING
         mapping_choices = models.MAPPING_CHOICES
 
-        ast = parse(
-            cql_expr, GEOSGeometry, Polygon.from_bbox, parse_datetime,
-            parse_duration
-        )
+        ast = parse(cql_expr)
         filters = to_filter(ast, mapping, mapping_choices)
 
         qs = model_type.objects.filter(filters)
@@ -407,7 +404,7 @@ class CQLTestCase(TransactionTestCase):
 
     def test_intersects_envelope(self):
         self.evaluate(
-            'INTERSECTS(geometry, ENVELOPE(0 0 1.0 1.0))',
+            'INTERSECTS(geometry, ENVELOPE(0 1.0 0 1.0))',
             ('A',)
         )
 
