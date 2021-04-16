@@ -87,7 +87,8 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
 
     # check if we are dealing with a geometry
     if 'type' in node and 'coordinates' in node:
-        return pygeoif.as_shape(node)
+        # TODO: test if node is actually valid
+        return node
 
     elif 'bbox' in node:
         return Envelope(*node['bbox'])
