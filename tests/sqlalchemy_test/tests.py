@@ -1,5 +1,5 @@
 import unittest
-import ctypes
+import ctypes.util
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,13 +13,12 @@ import dateparser
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 
-ctypes.util.find_library('mod_spatialite')
-
 
 def load_spatialite(dbapi_conn, connection_record):
     dbapi_conn.enable_load_extension(True)
     dbapi_conn.load_extension(
         ctypes.util.find_library('mod_spatialite')
+        or "/usr/lib/x86_64-linux-gnu/mod_spatialite.so"
     )
 
 
