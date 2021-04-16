@@ -48,14 +48,6 @@ with open(os.path.join(os.path.dirname(__file__), 'pygeofilter/__init__.py')) as
 with open('README.md') as f:
     readme = f.read()
 
-
-def parse_requirements(file):
-    return sorted(set(
-        line.partition('#')[0].strip()
-        for line in open(os.path.join(os.path.dirname(__file__), file))
-    ) - set(''))
-
-
 setup(
     name='pygeofilter',
     version=version,
@@ -68,7 +60,12 @@ setup(
     license='MIT',
     packages=find_packages(),
     package_dir={'static': 'static'},
-    install_requires=parse_requirements('requirements.txt') if not on_rtd else [],
+    install_requires=[
+        "dateparser",
+        "sly",
+        "pygeoif",
+        "dataclasses;python_version<'3.7'",
+    ] if not on_rtd else [],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

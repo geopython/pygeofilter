@@ -17,7 +17,6 @@ jobs:
     - name: Install requirements 📦
       run: |
         sudo apt-get install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite spatialite-bin
-        pip install -r requirements.txt
         pip install -r requirements-test.txt
         pip install -r requirements-dev.txt
         pip install .
