@@ -201,10 +201,6 @@ class ECQLParser(Parser):
     def expression_list(self, p):
         return [p.expression]
 
-    @_('MINUS expression %prec UMINUS')
-    def expression(self, p):
-        return ast.LiteralExpression(-p.expression.value)
-
     @_('expression PLUS expression',
        'expression MINUS expression',
        'expression TIMES expression',
@@ -233,12 +229,15 @@ class ECQLParser(Parser):
        'ENVELOPE',
        'attribute',
        'QUOTED',
-       'INTEGER',
-       'FLOAT')
+       'number')
     def expression(self, p):
         if isinstance(p[0], ast.Node):
             return p[0]
         return ast.LiteralExpression(p[0])
+
+    @_('MINUS number %prec UMINUS')
+    def number(self, p):
+        return ast.LiteralExpression(-p.number.value)
 
     @_('INTEGER',
        'FLOAT')

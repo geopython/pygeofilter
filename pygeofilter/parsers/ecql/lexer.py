@@ -79,8 +79,8 @@ envelope_pattern = r'ENVELOPE\s*\((\s*%s\s*){4}\)' % number_pattern
 
 identifier_pattern = r'[a-zA-Z_$][0-9a-zA-Z_$]*'
 
-int_pattern = r'-?[0-9]+'
-float_pattern = r'-?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
+int_pattern = r'[0-9]+'
+float_pattern = r'[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
 
 datetime_pattern = r"\d{4}-\d{2}-\d{2}T[0-2][0-9]:[0-5][0-9]:[0-5][0-9]Z"
 duration_pattern = (
