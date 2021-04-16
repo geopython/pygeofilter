@@ -369,6 +369,9 @@ class BBoxPredicateNode(PredicateNode):
         )
 
 
+# TODO: Array predicates
+
+
 class ExpressionNode(Node):
     """ The base class for all nodes representing expressions
     """
