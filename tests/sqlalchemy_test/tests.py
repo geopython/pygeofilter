@@ -1,7 +1,5 @@
 import unittest
-
-from pygeofilter.integrations.sqlalchemy.parser import parse
-from pygeofilter.integrations.sqlalchemy.evaluate import to_filter
+import ctypes
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -10,13 +8,19 @@ from sqlalchemy.sql import select, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from geoalchemy2 import Geometry
-
 import dateparser
+
+from pygeofilter.parsers.ecql import parse
+from pygeofilter.backends.sqlalchemy.evaluate import to_filter
+
+ctypes.util.find_library('mod_spatialite')
 
 
 def load_spatialite(dbapi_conn, connection_record):
     dbapi_conn.enable_load_extension(True)
-    dbapi_conn.load_extension("/usr/lib/x86_64-linux-gnu/mod_spatialite.so")
+    dbapi_conn.load_extension(
+        ctypes.util.find_library('mod_spatialite')
+    )
 
 
 engine = create_engine("sqlite://", echo=True)
@@ -302,7 +306,7 @@ class CQLTestCase(unittest.TestCase):
         )
 
     def test_intersects_envelope(self):
-        self.evaluate("INTERSECTS(geometry, ENVELOPE(0 0 1.0 1.0))", ("A",))
+        self.evaluate("INTERSECTS(geometry, ENVELOPE(0 1.0 0 1.0))", ("A",))
 
     # Commented out as not supported in spatialite for testing
     # def test_dwithin(self):

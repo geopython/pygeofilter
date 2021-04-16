@@ -1,8 +1,27 @@
+import re
 from datetime import timedelta
 from functools import reduce
 from inspect import signature
+
 from sqlalchemy import and_, func, not_, or_
-from .parser import parse_bbox
+from pygeoif.geometry import as_shape
+
+
+def parse_bbox(box, srid: int = 4326):
+    minx, miny, maxx, maxy = box
+    return func.ST_GeomFromEWKT(
+        f"SRID={srid};POLYGON(("
+        f"{minx} {miny}, {minx} {maxy}, "
+        f"{maxx} {maxy}, {maxx} {miny}, "
+        f"{minx} {miny}))"
+    )
+
+
+def parse_geometry(geom):
+    wkt = as_shape(geom).to_wkt()
+    search = re.search(r"SRID=(\d+);", wkt)
+    sridtxt = "" if search else "SRID=4326;"
+    return func.ST_GeomFromEWKT(f"{sridtxt}{wkt}")
 
 
 # ------------------------------------------------------------------------------
