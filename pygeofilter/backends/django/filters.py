@@ -13,8 +13,8 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies of this Software or works derived from this Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -30,12 +30,7 @@ from operator import and_, or_, add, sub, mul, truediv
 from datetime import datetime, timedelta
 from functools import reduce
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from django.utils.datastructures import SortedDict as OrderedDict
-
-from django.db.models import Q, F, ForeignKey, Value
+from django.db.models import Q, F, Value
 from django.db.models.expressions import Expression
 
 from django.contrib.gis.gdal import SpatialReference
@@ -98,8 +93,8 @@ def compare(lhs, rhs, op, mapping_choices=None):
         :param op: a string denoting the operation. one of ``"<"``, ``"<="``,
                    ``">"``, ``">="``, ``"<>"``, ``"="``
         :type op: str
-        :param mapping_choices: a dict to lookup potential choices for a certain
-                                field.
+        :param mapping_choices: a dict to lookup potential choices for a
+                                certain field.
         :type mapping_choices: dict[str, str]
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
@@ -164,8 +159,8 @@ def like(lhs, pattern, nocase=False, not_=False, mapping_choices=None):
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :param mapping_choices: a dict to lookup potential choices for a certain
-                                field.
+        :param mapping_choices: a dict to lookup potential choices for a
+                                certain field.
         :type mapping_choices: dict[str, str]
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
@@ -246,8 +241,8 @@ def contains(lhs, items, not_=False, mapping_choices=None):
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :param mapping_choices: a dict to lookup potential choices for a certain
-                                field.
+        :param mapping_choices: a dict to lookup potential choices for a
+                                certain field.
         :type mapping_choices: dict[str, str]
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
@@ -503,15 +498,16 @@ OP_TO_FUNC = {
 def arithmetic(lhs, rhs, op):
     """ Create an arithmetic filter
 
-        :param lhs: left hand side of the arithmetic expression. either a scalar
-                    or a field lookup or another type of expression
+        :param lhs: left hand side of the arithmetic expression. either a
+                    scalar or a field lookup or another type of expression
         :param rhs: same as `lhs`
-        :param op: the arithmetic operation. one of ``"+"``, ``"-"``, ``"*"``, ``"/"``
+        :param op: the arithmetic operation. one of ``"+"``, ``"-"``, ``"*"``,
+                   ``"/"``
         :rtype: :class:`django.db.models.F`
     """
 
-    assert isinstance(lhs, ARITHMETIC_TYPES), '%r is not a compatible type' % lhs
-    assert isinstance(rhs, ARITHMETIC_TYPES), '%r is not a compatible type' % rhs
+    assert isinstance(lhs, ARITHMETIC_TYPES), f'{lhs} is not a compatible type'
+    assert isinstance(rhs, ARITHMETIC_TYPES), f'{rhs} is not a compatible type'
     assert op in OP_TO_FUNC
     func = OP_TO_FUNC[op]
     return func(lhs, rhs)

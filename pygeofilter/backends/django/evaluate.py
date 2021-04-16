@@ -26,12 +26,22 @@
 # ------------------------------------------------------------------------------
 
 import json
+from datetime import date, time, datetime, timedelta
 
 from django.contrib.gis.geos import GEOSGeometry, Polygon
 
 from . import filters
 from ... import ast
 from ...values import Envelope
+
+
+LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
+
+
+def is_geometry(node):
+    return (
+        isinstance(node, dict) and 'type' in node and 'coordinates' in node
+    )
 
 
 class FilterEvaluator:
@@ -120,19 +130,6 @@ class FilterEvaluator:
         elif isinstance(node, ast.AttributeExpression):
             return filters.attribute(node.name, self.field_mapping)
 
-        elif isinstance(node, ast.LiteralExpression):
-            value = node.value
-            print(value)
-            if hasattr(value, '__geo_interface__'):
-                return GEOSGeometry(
-                    json.dumps(value.__geo_interface__)
-                )
-            elif isinstance(value, Envelope):
-                return Polygon.from_bbox(
-                    (value.x1, value.y1, value.x2, value.y2)
-                )
-            return node.value
-
         elif isinstance(node, ast.ArithmeticExpressionNode):
             return filters.arithmetic(
                 to_filter(node.lhs),
@@ -140,10 +137,16 @@ class FilterEvaluator:
                 node.op.value
             )
 
-        elif hasattr(node, '__geo_interface__'):
-            return GEOSGeometry(json.dumps(node.__geo_interface__))
+        elif isinstance(node, Envelope):
+            return Polygon.from_bbox(
+                (node.x1, node.y1, node.x2, node.y2)
+            )
 
+        elif is_geometry(node):
+            return GEOSGeometry(json.dumps(node))
 
+        elif isinstance(node, LITERALS):
+            return filters.literal(node)
 
         else:
             raise Exception(f'Unsupported AST node type {type(node)}')
