@@ -393,21 +393,6 @@ class AttributeExpression(ExpressionNode):
         return f"ATTRIBUTE {self.name}"
 
 
-class LiteralExpression(ExpressionNode):
-    """ Node class to represent literal value expressions
-
-        :ivar value: the value of the literal
-        :type value: str, float, int, datetime, timedelta
-    """
-    inline = True
-
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        return f"LITERAL {repr(self.value)}"
-
-
 class ArithmeticOp(Enum):
     ADD = '+'
     SUB = '-'

@@ -136,23 +136,28 @@ class ECQLParser(Parser):
     def predicate(self, p):
         return p[0]
 
-    @_('expression BEFORE DATETIME',
+    @_('expression BEFORE datetime',
        'expression BEFORE OR DURING time_period',
        'expression DURING time_period',
        'expression DURING OR AFTER time_period',
-       'expression AFTER DATETIME')
+       'expression AFTER datetime')
     def temporal_predicate(self, p):
         if len(p) == 3:
             op = ast.TemporalComparisonOp(p[1])
         else:
             op = ast.TemporalComparisonOp(f'{p[1]} {p[2]} {p[3]}')
-        return ast.TemporalPredicateNode(p.expression, p[-1], op)
 
-    @_('DATETIME DIVIDE DATETIME',
-       'DATETIME DIVIDE DURATION',
-       'DURATION DIVIDE DATETIME')
+        return ast.TemporalPredicateNode(
+            p.expression,
+            p[-1],
+            op,
+        )
+
+    @_('datetime DIVIDE datetime',
+       'datetime DIVIDE duration',
+       'duration DIVIDE datetime')
     def time_period(self, p):
-        return (p[0], p[2])
+        return [p[0], p[2]]
 
     @_('INTERSECTS "(" expression "," expression ")"',
        'DISJOINT "(" expression "," expression ")"',
@@ -180,7 +185,7 @@ class ECQLParser(Parser):
             p[2],
             p[4],
             ast.SpatialDistanceOp(p[0]),
-            distance=p[6].value,
+            distance=p[6],
             units=p[8],
         )
 
@@ -233,16 +238,24 @@ class ECQLParser(Parser):
     def expression(self, p):
         if isinstance(p[0], ast.Node):
             return p[0]
-        return ast.LiteralExpression(p[0])
+        return p[0]
 
     @_('MINUS number %prec UMINUS')
     def number(self, p):
-        return ast.LiteralExpression(-p.number.value)
+        return -p.number
 
     @_('INTEGER',
        'FLOAT')
     def number(self, p):
-        return ast.LiteralExpression(p[0])
+        return p[0]
+
+    @_('DATETIME')
+    def datetime(self, p):
+        return p[0]
+
+    @_('DURATION')
+    def duration(self, p):
+        return p[0]
 
     @_('IDENTIFIER')
     def attribute(self, p):
@@ -252,10 +265,9 @@ class ECQLParser(Parser):
         raise Exception(f"{repr(tok)}")
 
 
-def parse(cql):
+def parse(cql: str) -> ast.Node:
     lexer = ECQLLexer()
     parser = ECQLParser()
-
 
     try:
         result = parser.parse(lexer.tokenize(cql))

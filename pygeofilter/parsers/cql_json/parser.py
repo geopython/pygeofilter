@@ -65,17 +65,17 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
             return None
 
         try:
-            return ast.LiteralExpression(parse_duration(node))
+            return parse_duration(node)
         except ValueError:
             value = parse_datetime(node)
 
         if value is None:
             raise ValueError(f'Failed to parse temporal value from {node}')
 
-        return ast.LiteralExpression(value)
+        return value
 
     if isinstance(node, (str, float, int, bool)):
-        return ast.LiteralExpression(node)
+        return node
 
     if isinstance(node, list):
         return [
