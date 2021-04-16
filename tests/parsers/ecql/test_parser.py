@@ -109,6 +109,16 @@ def test_attribute_not_between():
     )
 
 
+def test_attribute_between_negative_positive():
+    result = parse('attr BETWEEN -1 AND 1')
+    assert result == ast.BetweenPredicateNode(
+        ast.AttributeExpression('attr'),
+        ast.LiteralExpression(-1),
+        ast.LiteralExpression(1),
+        False,
+    )
+
+
 def test_string_like():
     result = parse('attr LIKE "some%"')
     assert result == ast.LikePredicateNode(
