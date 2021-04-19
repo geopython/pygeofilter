@@ -65,3 +65,56 @@ def parse_duration(value: str) -> timedelta:
     fsec += float(match['hours'] or 0) * 3600
 
     return sign * timedelta(days, fsec)
+
+
+def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):
+    x_wildcard = re.escape(wildcard)
+    x_single_char = re.escape(single_char)
+
+    dx_wildcard = re.escape(x_wildcard)
+    dx_single_char = re.escape(x_single_char)
+
+    # special handling if escape char clashes with re escape char
+    if escape_char == '\\':
+        x_escape_char = '\\\\\\\\'
+    else:
+        x_escape_char = re.escape(escape_char)
+
+    pattern = re.escape(like)
+    pattern = re.sub(
+        f'(?<!{x_escape_char}){dx_wildcard}',
+        '.*',
+        pattern,
+    )
+    pattern = re.sub(
+        f'(?<!{x_escape_char}){dx_single_char}',
+        '.',
+        pattern,
+    )
+
+    # handle escaped wildcard, single chars and escape chars
+    pattern = re.sub(
+        f'{x_escape_char}{dx_wildcard}',
+        x_wildcard,
+        pattern,
+    )
+    pattern = re.sub(
+        f'{x_escape_char}{dx_single_char}',
+        x_single_char,
+        pattern,
+    )
+    pattern = re.sub(
+        f'{x_escape_char}{x_escape_char}',
+        x_escape_char,
+        pattern,
+    )
+
+    return f'^{pattern}$'
+
+
+def like_pattern_to_re(like, nocase, wildcard, single_char, escape_char):
+    flags = re.I if nocase else 0
+    return re.compile(
+        like_pattern_to_re_pattern(like, wildcard, single_char, escape_char),
+        flags=flags
+    )
