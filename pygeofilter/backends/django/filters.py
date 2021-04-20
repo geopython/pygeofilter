@@ -13,8 +13,8 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies of this Software or works derived from this Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -30,12 +30,7 @@ from operator import and_, or_, add, sub, mul, truediv
 from datetime import datetime, timedelta
 from functools import reduce
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from django.utils.datastructures import SortedDict as OrderedDict
-
-from django.db.models import Q, F, ForeignKey, Value
+from django.db.models import Q, F, Value
 from django.db.models.expressions import Expression
 
 from django.contrib.gis.gdal import SpatialReference
@@ -77,6 +72,7 @@ def negate(sub_filter):
     assert isinstance(sub_filter, Q)
     return ~sub_filter
 
+
 OP_TO_COMP = {
     "<": "lt",
     "<=": "lte",
@@ -97,8 +93,8 @@ def compare(lhs, rhs, op, mapping_choices=None):
         :param op: a string denoting the operation. one of ``"<"``, ``"<="``,
                    ``">"``, ``">="``, ``"<>"``, ``"="``
         :type op: str
-        :param mapping_choices: a dict to lookup potential choices for a certain
-                                field.
+        :param mapping_choices: a dict to lookup potential choices for a
+                                certain field.
         :type mapping_choices: dict[str, str]
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
@@ -149,7 +145,7 @@ def between(lhs, low, high, not_=False):
     return ~q if not_ else q
 
 
-def like(lhs, rhs, case=False, not_=False, mapping_choices=None):
+def like(lhs, pattern, nocase=False, not_=False, mapping_choices=None):
     """ Create a filter to filter elements according to a string attribute using
         wildcard expressions.
 
@@ -163,20 +159,14 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :param mapping_choices: a dict to lookup potential choices for a certain
-                                field.
+        :param mapping_choices: a dict to lookup potential choices for a
+                                certain field.
         :type mapping_choices: dict[str, str]
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
     assert isinstance(lhs, F)
-
-    if isinstance(rhs, str):
-        pattern = rhs
-    elif hasattr(rhs, 'value'):
-        pattern = rhs.value
-    else:
-        raise AssertionError('Invalid pattern specified')
+    assert isinstance(pattern, str)
 
     parts = pattern.split("%")
     length = len(parts)
@@ -185,7 +175,7 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):
         # special case when choices are given for the field:
         # compare statically and use 'in' operator to check if contained
         cmp_av = [
-            (a, a if case else a.lower())
+            (a, a.lower() if nocase else a)
             for a in mapping_choices[lhs.name].keys()
         ]
 
@@ -193,7 +183,7 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):
             if not part:
                 continue
 
-            cmp_p = part if case else part.lower()
+            cmp_p = part.lower() if nocase else part
 
             if idx == 0 and length > 1:  # startswith
                 cmp_av = [a for a in cmp_av if a[1].startswith(cmp_p)]
@@ -212,7 +202,7 @@ def like(lhs, rhs, case=False, not_=False, mapping_choices=None):
         })
 
     else:
-        i = "" if case else "i"
+        i = "i" if nocase else ""
         q = None
 
         for idx, part in enumerate(parts):
@@ -251,8 +241,8 @@ def contains(lhs, items, not_=False, mapping_choices=None):
         :param not_: whether the range shall be inclusive (the default) or
                      exclusive
         :type not_: bool
-        :param mapping_choices: a dict to lookup potential choices for a certain
-                                field.
+        :param mapping_choices: a dict to lookup potential choices for a
+                                certain field.
         :type mapping_choices: dict[str, str]
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
@@ -508,15 +498,16 @@ OP_TO_FUNC = {
 def arithmetic(lhs, rhs, op):
     """ Create an arithmetic filter
 
-        :param lhs: left hand side of the arithmetic expression. either a scalar
-                    or a field lookup or another type of expression
+        :param lhs: left hand side of the arithmetic expression. either a
+                    scalar or a field lookup or another type of expression
         :param rhs: same as `lhs`
-        :param op: the arithmetic operation. one of ``"+"``, ``"-"``, ``"*"``, ``"/"``
+        :param op: the arithmetic operation. one of ``"+"``, ``"-"``, ``"*"``,
+                   ``"/"``
         :rtype: :class:`django.db.models.F`
     """
 
-    assert isinstance(lhs, ARITHMETIC_TYPES), '%r is not a compatible type' % lhs
-    assert isinstance(rhs, ARITHMETIC_TYPES), '%r is not a compatible type' % rhs
+    assert isinstance(lhs, ARITHMETIC_TYPES), f'{lhs} is not a compatible type'
+    assert isinstance(rhs, ARITHMETIC_TYPES), f'{rhs} is not a compatible type'
     assert op in OP_TO_FUNC
     func = OP_TO_FUNC[op]
     return func(lhs, rhs)

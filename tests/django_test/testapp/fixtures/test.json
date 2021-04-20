@@ -1,0 +1,52 @@
+[
+{
+    "model": "testapp.record",
+    "pk": 1,
+    "fields": {
+        "identifier": "A",
+        "geometry": "SRID=4326;MULTIPOLYGON (((0 0, 0 5, 5 5, 5 0, 0 0)))",
+        "float_attribute": 0.0,
+        "int_attribute": 10,
+        "str_attribute": "AAA",
+        "datetime_attribute": "2000-01-01T00:00:00Z",
+        "choice_attribute": 1
+    }
+},
+{
+    "model": "testapp.record",
+    "pk": 2,
+    "fields": {
+        "identifier": "B",
+        "geometry": "SRID=4326;MULTIPOLYGON (((5 5, 5 10, 10 10, 10 5, 5 5)))",
+        "float_attribute": 30.0,
+        "int_attribute": null,
+        "str_attribute": "BBB",
+        "datetime_attribute": "2000-01-01T00:00:05Z",
+        "choice_attribute": 2
+    }
+},
+{
+    "model": "testapp.recordmeta",
+    "pk": 1,
+    "fields": {
+        "record": 1,
+        "float_meta_attribute": 10.0,
+        "int_meta_attribute": 20,
+        "str_meta_attribute": "AparentA",
+        "datetime_meta_attribute": "2000-01-01T00:00:05Z",
+        "choice_meta_attribute": 1
+    }
+},
+{
+    "model": "testapp.recordmeta",
+    "pk": 2,
+    "fields": {
+        "record": 2,
+        "float_meta_attribute": 20.0,
+        "int_meta_attribute": 30,
+        "str_meta_attribute": "BparentB",
+        "datetime_meta_attribute": "2000-01-01T00:00:10Z",
+        "choice_meta_attribute": 2
+    }
+}
+]

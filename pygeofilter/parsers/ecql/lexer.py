@@ -1,3 +1,35 @@
+# ------------------------------------------------------------------------------
+#
+# Project: pygeofilter <https://github.com/geopython/pygeofilter>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>
+#
+# ------------------------------------------------------------------------------
+# Copyright (C) 2021 EOX IT Services GmbH
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# ------------------------------------------------------------------------------
+
+
+# pylint: disable=undefined-variable,function-redefined,used-before-assignment
+# pylint: disable=unsupported-assignment-operation
+# flake8: noqa
+
 from sly import Lexer
 from pygeoif import from_wkt
 from dateparser import parse as parse_datetime
@@ -47,7 +79,7 @@ envelope_pattern = r'ENVELOPE\s*\((\s*%s\s*){4}\)' % number_pattern
 
 identifier_pattern = r'[a-zA-Z_$][0-9a-zA-Z_$]*'
 
-int_pattern = r'-?[0-9]+'
+int_pattern = r'[0-9]+'
 float_pattern = r'[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
 
 datetime_pattern = r"\d{4}-\d{2}-\d{2}T[0-2][0-9]:[0-5][0-9]:[0-5][0-9]Z"
@@ -66,11 +98,13 @@ class ECQLLexer(Lexer):
         WITHIN, TOUCHES, CROSSES, OVERLAPS, EQUALS, RELATE,
         DWITHIN, BEYOND, BBOX,
         PLUS, MINUS, TIMES, DIVIDE, OR, AND, LT, GT, LE, GE, EQ, NE,
-        LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA,
         GEOMETRY, ENVELOPE, UNITS,
         QUOTED, DATETIME, DURATION, FLOAT, INTEGER,
-        ATTRIBUTE,
+        IDENTIFIER,
     }
+
+    literals = {'(', ')', '[', ']', ','}
+
     PLUS = r'\+'
     MINUS = r'-'
     TIMES = r'\*'
@@ -84,22 +118,15 @@ class ECQLLexer(Lexer):
     GT = r'>'
     EQ = r'='
 
-    LPAREN = r'\('
-    RPAREN = r'\)'
-    LBRACKET = r'\['
-    RBRACKET = r'\]'
-    COMMA = r','
-
-
     # for geometry parsing
     @_(geometry_pattern)
     def GEOMETRY(self, t):
-        t.value = from_wkt(t.value)
+        t.value = from_wkt(t.value).__geo_interface__
         return t
 
     @_(envelope_pattern)
     def ENVELOPE(self, t):
-        t.value = Envelope([
+        t.value = values.Envelope(*[
             float(number) for number in
             t.value.partition('(')[2].partition(')')[0].split()
         ])
@@ -134,39 +161,33 @@ class ECQLLexer(Lexer):
         t.value = t.value[1:-1]
         return t
 
-    ATTRIBUTE = identifier_pattern
+    IDENTIFIER = identifier_pattern
 
-    # remap some tokens to be confused with attributes
-    ATTRIBUTE['NOT'] = NOT
-    ATTRIBUTE['AND'] = AND
-    ATTRIBUTE['OR'] = OR
-    ATTRIBUTE['BETWEEN'] = BETWEEN
-    ATTRIBUTE['LIKE'] = LIKE
-    ATTRIBUTE['ILIKE'] = ILIKE
-    ATTRIBUTE['IN'] = IN
-    ATTRIBUTE['IS'] = IS
-    ATTRIBUTE['NULL'] = NULL
-    ATTRIBUTE['BEFORE'] = BEFORE
-    ATTRIBUTE['AFTER'] = AFTER
-    ATTRIBUTE['DURING'] = DURING
-    ATTRIBUTE['INTERSECTS'] = INTERSECTS
-    ATTRIBUTE['DISJOINT'] = DISJOINT
-    ATTRIBUTE['CONTAINS'] = CONTAINS
-    ATTRIBUTE['WITHIN'] = WITHIN
-    ATTRIBUTE['TOUCHES'] = TOUCHES
-    ATTRIBUTE['CROSSES'] = CROSSES
-    ATTRIBUTE['OVERLAPS'] = OVERLAPS
-    ATTRIBUTE['EQUALS'] = EQUALS
-    ATTRIBUTE['RELATE'] = RELATE
-    ATTRIBUTE['DWITHIN'] = DWITHIN
-    ATTRIBUTE['BEYOND'] = BEYOND
-    ATTRIBUTE['BBOX'] = BBOX
-
-    # @_(identifier_pattern)
-    # def ATTRIBUTE(self, t):
-    #     # TODO
-    #     # t.type = self.keyword_map.get(t.value, "ATTRIBUTE")
-    #     return t
+    # remap some tokens to be confused with identifiers
+    IDENTIFIER['NOT'] = NOT
+    IDENTIFIER['AND'] = AND
+    IDENTIFIER['OR'] = OR
+    IDENTIFIER['BETWEEN'] = BETWEEN
+    IDENTIFIER['LIKE'] = LIKE
+    IDENTIFIER['ILIKE'] = ILIKE
+    IDENTIFIER['IN'] = IN
+    IDENTIFIER['IS'] = IS
+    IDENTIFIER['NULL'] = NULL
+    IDENTIFIER['BEFORE'] = BEFORE
+    IDENTIFIER['AFTER'] = AFTER
+    IDENTIFIER['DURING'] = DURING
+    IDENTIFIER['INTERSECTS'] = INTERSECTS
+    IDENTIFIER['DISJOINT'] = DISJOINT
+    IDENTIFIER['CONTAINS'] = CONTAINS
+    IDENTIFIER['WITHIN'] = WITHIN
+    IDENTIFIER['TOUCHES'] = TOUCHES
+    IDENTIFIER['CROSSES'] = CROSSES
+    IDENTIFIER['OVERLAPS'] = OVERLAPS
+    IDENTIFIER['EQUALS'] = EQUALS
+    IDENTIFIER['RELATE'] = RELATE
+    IDENTIFIER['DWITHIN'] = DWITHIN
+    IDENTIFIER['BEYOND'] = BEYOND
+    IDENTIFIER['BBOX'] = BBOX
 
     ignore = ' \t'
 

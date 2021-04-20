@@ -1,3 +1,34 @@
+# ------------------------------------------------------------------------------
+#
+# Project: pygeofilter <https://github.com/geopython/pygeofilter>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>
+#
+# ------------------------------------------------------------------------------
+# Copyright (C) 2021 EOX IT Services GmbH
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# ------------------------------------------------------------------------------
+
+
+# pylint: disable=undefined-variable,function-redefined
+# flake8: noqa
+
 from sly import Parser
 
 from ... import ast
@@ -8,10 +39,11 @@ class ECQLParser(Parser):
     tokens = ECQLLexer.tokens
 
     precedence = (
-        ('left', EQ, NE),               # noqa: F821
-        ('left', GT, GE, LT, LE),       # noqa: F821
-        ('left', PLUS, MINUS),          # noqa: F821
-        ('left', TIMES, DIVIDE),        # noqa: F821
+        ('left', EQ, NE),
+        ('left', GT, GE, LT, LE),
+        ('left', PLUS, MINUS),
+        ('left', TIMES, DIVIDE),
+        ('right', UMINUS),
     )
 
     start = 'condition_or_empty'
@@ -32,14 +64,18 @@ class ECQLParser(Parser):
     @_('condition AND condition',
        'condition OR condition')
     def condition(self, p):
-        return ast.CombinationConditionNode(p[0], p[2], p[1])
+        return ast.CombinationConditionNode(
+            p[0],
+            p[2],
+            ast.CombinationOp(p[1])
+        )
 
     @_('NOT condition')
     def condition(self, p):
         return ast.NotConditionNode(p.condition)
 
-    @_('LPAREN condition RPAREN',
-       'LBRACKET condition RBRACKET')
+    @_('"(" condition ")"',
+       '"[" condition "]"')
     def condition(self, p):
         return p.condition
 
@@ -50,7 +86,7 @@ class ECQLParser(Parser):
        'expression GT expression',
        'expression GE expression')
     def predicate(self, p):
-        return ast.ComparisonPredicateNode(p[0], p[2], p[1])
+        return ast.ComparisonPredicateNode(p[0], p[2], ast.ComparisonOp(p[1]))
 
     @_('expression NOT BETWEEN expression AND expression',
        'expression BETWEEN expression AND expression')
@@ -63,20 +99,30 @@ class ECQLParser(Parser):
        'expression LIKE QUOTED')
     def predicate(self, p):
         return ast.LikePredicateNode(
-            p.expression, ast.LiteralExpression(p[-1]),
-            True, p[1] == 'NOT'
+            p.expression,
+            p[-1],
+            nocase=False,
+            wildcard='%',
+            singlechar='.',
+            escapechar=None,
+            not_=p[1] == 'NOT',
         )
 
     @_('expression NOT ILIKE QUOTED',
        'expression ILIKE QUOTED')
     def predicate(self, p):
         return ast.LikePredicateNode(
-            p.expression, ast.LiteralExpression(p[-1]),
-            False, p[1] == 'NOT'
+            p.expression,
+            p[-1],
+            nocase=True,
+            wildcard='%',
+            singlechar='.',
+            escapechar=None,
+            not_=p[1] == 'NOT',
         )
 
-    @_('expression NOT IN LPAREN expression_list RPAREN',
-       'expression IN LPAREN expression_list RPAREN')
+    @_('expression NOT IN "(" expression_list ")"',
+       'expression IN "(" expression_list ")"')
     def predicate(self, p):
         return ast.InPredicateNode(p[0], p[-2], p[1] == 'NOT')
 
@@ -90,57 +136,69 @@ class ECQLParser(Parser):
     def predicate(self, p):
         return p[0]
 
-    @_('expression BEFORE DATETIME',
+    @_('expression BEFORE datetime',
        'expression BEFORE OR DURING time_period',
        'expression DURING time_period',
        'expression DURING OR AFTER time_period',
-       'expression AFTER DATETIME')
+       'expression AFTER datetime')
     def temporal_predicate(self, p):
         if len(p) == 3:
-            op = p[1]
+            op = ast.TemporalComparisonOp(p[1])
         else:
-            op = f'{p[1]} {p[2]} {p[3]}'
-        return ast.TemporalPredicateNode(p.expression, p[-1], op)
+            op = ast.TemporalComparisonOp(f'{p[1]} {p[2]} {p[3]}')
 
-    @_('DATETIME DIVIDE DATETIME',
-       'DATETIME DIVIDE DURATION',
-       'DURATION DIVIDE DATETIME')
-    def time_period(self, p):
-        return (p[0], p[2])
-
-    @_('INTERSECTS LPAREN expression COMMA expression RPAREN',
-       'DISJOINT LPAREN expression COMMA expression RPAREN',
-       'CONTAINS LPAREN expression COMMA expression RPAREN',
-       'WITHIN LPAREN expression COMMA expression RPAREN',
-       'TOUCHES LPAREN expression COMMA expression RPAREN',
-       'CROSSES LPAREN expression COMMA expression RPAREN',
-       'OVERLAPS LPAREN expression COMMA expression RPAREN',
-       'EQUALS LPAREN expression COMMA expression RPAREN')
-    def spatial_predicate(self, p):
-        return ast.SpatialPredicateNode(p[2], p[4], p[0])
-
-    @_('RELATE LPAREN expression COMMA expression COMMA QUOTED RPAREN')
-    def spatial_predicate(self, p):
-        return ast.SpatialPredicateNode(p[2], p[4], p[0], pattern=p[6])
-
-    @_('DWITHIN LPAREN expression COMMA expression COMMA number COMMA UNITS RPAREN',
-       'BEYOND LPAREN expression COMMA expression COMMA number COMMA UNITS RPAREN')
-    def spatial_predicate(self, p):
-        return ast.SpatialPredicateNode(
-            p[2], p[4], p[0], distance=p[6].value, units=p[8]
+        return ast.TemporalPredicateNode(
+            p.expression,
+            p[-1],
+            op,
         )
 
-    @_('BBOX LPAREN expression COMMA number COMMA number COMMA number COMMA number RPAREN')
+    @_('datetime DIVIDE datetime',
+       'datetime DIVIDE duration',
+       'duration DIVIDE datetime')
+    def time_period(self, p):
+        return [p[0], p[2]]
+
+    @_('INTERSECTS "(" expression "," expression ")"',
+       'DISJOINT "(" expression "," expression ")"',
+       'CONTAINS "(" expression "," expression ")"',
+       'WITHIN "(" expression "," expression ")"',
+       'TOUCHES "(" expression "," expression ")"',
+       'CROSSES "(" expression "," expression ")"',
+       'OVERLAPS "(" expression "," expression ")"',
+       'EQUALS "(" expression "," expression ")"')
+    def spatial_predicate(self, p):
+        return ast.SpatialOperationPredicateNode(
+            p[2],
+            p[4],
+            ast.SpatialComparisonOp(p[0])
+        )
+
+    @_('RELATE "(" expression "," expression "," QUOTED ")"')
+    def spatial_predicate(self, p):
+        return ast.SpatialPatternPredicateNode(p[2], p[4], pattern=p[6])
+
+    @_('DWITHIN "(" expression "," expression "," number "," UNITS ")"',
+       'BEYOND "(" expression "," expression "," number "," UNITS ")"')
+    def spatial_predicate(self, p):
+        return ast.SpatialDistancePredicateNode(
+            p[2],
+            p[4],
+            ast.SpatialDistanceOp(p[0]),
+            distance=p[6],
+            units=p[8],
+        )
+
+    @_('BBOX "(" expression "," number "," number "," number "," number ")"')
     def spatial_predicate(self, p):
         return ast.BBoxPredicateNode(p[2], p[4], p[6], p[8], p[10])
 
-    @_('BBOX LPAREN expression COMMA number COMMA number COMMA number COMMA number COMMA QUOTED RPAREN')
+    @_('BBOX "(" expression "," number "," number "," number "," number "," QUOTED ")"')
     def spatial_predicate(self, p):
         return ast.BBoxPredicateNode(p[2], p[4], p[6], p[8], p[10], p[12])
 
-    @_('expression_list COMMA expression')
+    @_('expression_list "," expression')
     def expression_list(self, p):
-        print("HERE")
         p.expression_list.append(p.expression)
         return p.expression_list
 
@@ -153,30 +211,53 @@ class ECQLParser(Parser):
        'expression TIMES expression',
        'expression DIVIDE expression')
     def expression(self, p):
-        return ast.ArithmeticExpressionNode(p[0], p[2], p[1])
+        return ast.ArithmeticExpressionNode(
+            p[0],
+            p[2],
+            ast.ArithmeticOp(p[1]),
+        )
 
-    @_('LPAREN expression RPAREN',
-       'LBRACKET expression RBRACKET')
+    @_('"(" expression ")"',
+       '"[" expression "]"')
     def expression(self, p):
         return p[1]
+
+    @_('IDENTIFIER "(" ")"')
+    def expression(self, p):
+        return ast.FunctionExpressionNode(p[0], [])
+
+    @_('IDENTIFIER "(" expression_list ")"')
+    def expression(self, p):
+        return ast.FunctionExpressionNode(p[0], p.expression_list)
 
     @_('GEOMETRY',
        'ENVELOPE',
        'attribute',
        'QUOTED',
-       'INTEGER',
-       'FLOAT')
+       'number')
     def expression(self, p):
         if isinstance(p[0], ast.Node):
             return p[0]
-        return ast.LiteralExpression(p[0])
+        return p[0]
+
+    @_('MINUS number %prec UMINUS')
+    def number(self, p):
+        return -p.number
 
     @_('INTEGER',
        'FLOAT')
     def number(self, p):
-        return ast.LiteralExpression(p[0])
+        return p[0]
 
-    @_('ATTRIBUTE')
+    @_('DATETIME')
+    def datetime(self, p):
+        return p[0]
+
+    @_('DURATION')
+    def duration(self, p):
+        return p[0]
+
+    @_('IDENTIFIER')
     def attribute(self, p):
         return ast.AttributeExpression(p[0])
 
@@ -184,10 +265,9 @@ class ECQLParser(Parser):
         raise Exception(f"{repr(tok)}")
 
 
-def parse(cql):
+def parse(cql: str) -> ast.Node:
     lexer = ECQLLexer()
     parser = ECQLParser()
-
 
     try:
         result = parser.parse(lexer.tokenize(cql))

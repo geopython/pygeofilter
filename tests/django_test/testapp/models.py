@@ -31,6 +31,7 @@ from django.contrib.gis.db import models
 
 optional = dict(null=True, blank=True)
 
+
 class Record(models.Model):
     identifier = models.CharField(max_length=256, unique=True, null=False)
     geometry = models.GeometryField()

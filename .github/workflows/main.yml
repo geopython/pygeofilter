@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.6, 3.7, 3.8, 3.9]
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -17,7 +17,6 @@ jobs:
     - name: Install requirements 📦
       run: |
         sudo apt-get install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite spatialite-bin
-        pip install -r requirements.txt
         pip install -r requirements-test.txt
         pip install -r requirements-dev.txt
         pip install .
@@ -26,6 +25,8 @@ jobs:
         pytest
         cd tests/django_test
         python manage.py test testapp
+        cd ../sqlalchemy_test/
+        python3 -m unittest
   publish:
     runs-on: ubuntu-20.04
     needs: test

@@ -28,13 +28,17 @@
 """
 """
 
+from enum import Enum
+from dataclasses import dataclass
+from typing import List, Optional
+
 
 class Node:
     """ The base class for all other nodes to display the AST of CQL.
     """
     inline = False
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List['Node']:
         """ Get a list of sub-node of this node.
 
             :return: a list of all sub-nodes
@@ -42,8 +46,8 @@ class Node:
         """
         raise NotImplementedError
 
-    def get_template(self):
-        """ Get a template string (using the ``%`` operator)
+    def get_template(self) -> str:
+        """ Get a template string (using the ``.format`` method)
             to represent the current node and sub-nodes. The template string
             must provide a template replacement for each sub-node reported by
             :func:`~pygeofilter.ast.Node.get_sub_nodes`.
@@ -52,7 +56,7 @@ class Node:
         """
         raise NotImplementedError
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if type(self) != type(other):
             return False
 
@@ -84,35 +88,34 @@ class NotConditionNode(ConditionNode):
     def __init__(self, sub_node):
         self.sub_node = sub_node
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[Node]:
         """ Returns the sub-node for the negated condition. """
         return [self.sub_node]
 
     def get_template(self):
-        return "NOT %s"
+        return "NOT {}"
 
 
+class CombinationOp(Enum):
+    AND = "AND"
+    OR = "OR"
+
+
+@dataclass
 class CombinationConditionNode(ConditionNode):
     """ Node class to represent a condition to combine two other conditions
         using either AND or OR.
-
-        :ivar lhs: the left hand side node of this combination
-        :type lhs: Node
-        :ivar rhs: the right hand side node of this combination
-        :type rhs: Node
-        :ivar op: the combination type. Either ``"AND"`` or ``"OR"``
-        :type op: str
     """
-    def __init__(self, lhs, rhs, op):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.op = op
+
+    lhs: Node
+    rhs: Node
+    op: CombinationOp
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
 
     def get_template(self):
-        return "%%s %s %%s" % self.op
+        return f"{{}} {self.op.name} {{}}"
 
 
 class PredicateNode(Node):
@@ -121,230 +124,252 @@ class PredicateNode(Node):
     pass
 
 
+class ComparisonOp(Enum):
+    EQ = '='
+    NE = '<>'
+    LT = '<'
+    LE = '<='
+    GT = '>'
+    GE = '>='
+
+
+@dataclass
 class ComparisonPredicateNode(PredicateNode):
     """ Node class to represent a comparison predicate: to compare two
         expressions using a comparison operation.
-
-        :ivar lhs: the left hand side node of this comparison
-        :type lhs: Node
-        :ivar rhs: the right hand side node of this comparison
-        :type rhs: Node
-        :ivar op: the comparison type. One of ``"="``, ``"<>"``, ``"<"``,
-                  ``">"``, ``"<="``, ``">="``
-        :type op: str
     """
-    def __init__(self, lhs, rhs, op):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.op = op
+
+    lhs: Node
+    rhs: Node
+    op: ComparisonOp
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
 
     def get_template(self):
-        return "%%s %s %%s" % self.op
+        return f"{{}} {self.op} {{}}"
 
 
+@dataclass
 class BetweenPredicateNode(PredicateNode):
     """ Node class to represent a BETWEEN predicate: to check whether an
         expression value within a range.
-
-        :ivar lhs: the left hand side node of this comparison
-        :type lhs: Node
-        :ivar low: the lower bound of the clause
-        :type low: Node
-        :ivar high: the upper bound of the clause
-        :type high: Node
-        :ivar not_: whether the predicate shall be negated
-        :type not_: bool
     """
-    def __init__(self, lhs, low, high, not_):
-        self.lhs = lhs
-        self.low = low
-        self.high = high
-        self.not_ = not_
+
+    lhs: Node
+    low: Node
+    high: Node
+    not_: bool
 
     def get_sub_nodes(self):
         return [self.lhs, self.low, self.high]
 
     def get_template(self):
-        return "%%s %sBETWEEN %%s AND %%s" % ("NOT " if self.not_ else "")
+        return f"%s {'NOT ' if self.not_ else ''}BETWEEN {{}} AND {{}}"
 
 
+@dataclass
 class LikePredicateNode(PredicateNode):
     """ Node class to represent a wildcard sting matching predicate.
-
-        :ivar lhs: the left hand side node of this predicate
-        :type lhs: Node
-        :ivar rhs: the right hand side node of this predicate
-        :type rhs: Node
-        :ivar case: whether the comparison shall be case sensitive
-        :type case: bool
-        :ivar not_: whether the predicate shall be negated
-        :type not_: bool
     """
-    def __init__(self, lhs, rhs, case, not_):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.case = case
-        self.not_ = not_
+
+    lhs: Node
+    pattern: str
+    nocase: bool
+    wildcard: str
+    singlechar: str
+    escapechar: str
+    not_: bool
 
     def get_sub_nodes(self):
-        return [self.lhs, self.rhs]
+        return [self.lhs]
 
     def get_template(self):
-        return "%%s %s%sLIKE %%s" % (
-            "NOT " if self.not_ else "",
-            "I" if self.case else ""
+        return (
+            f"%{{}} {'NOT ' if self.not_ else ''}"
+            f"{'I' if self.nocase else ''}LIKE '{self.pattern}'"
+            # TODO wildcard, singlechar, escapechar
         )
 
 
+@dataclass
 class InPredicateNode(PredicateNode):
     """ Node class to represent list checking predicate.
-
-        :ivar lhs: the left hand side node of this predicate
-        :type lhs: Node
-        :ivar sub_nodes: the list of sub nodes to check the inclusion
-                         against
-        :type sub_nodes: list[Node]
-        :ivar not_: whether the predicate shall be negated
-        :type not_: bool
     """
-    def __init__(self, lhs, sub_nodes, not_):
-        self.lhs = lhs
-        self.sub_nodes = sub_nodes
-        self.not_ = not_
+    lhs: Node
+    sub_nodes: List[Node]
+    not_: bool
 
     def get_sub_nodes(self):
         return [self.lhs] + list(self.sub_nodes)
 
     def get_template(self):
-        return "%%s %sIN (%s)" % (
-            "NOT " if self.not_ else "",
-            ", ".join(["%s"] * len(self.sub_nodes))
+        return (
+            f"{{}} {'NOT ' if self.not_ else ''}IN "
+            f"{', '.join(['{}'] * len(self.sub_nodes))}"
         )
 
 
+@dataclass
 class NullPredicateNode(PredicateNode):
     """ Node class to represent null check predicate.
-
-        :ivar lhs: the left hand side node of this predicate
-        :type lhs: Node
-        :ivar not_: whether the predicate shall be negated
-        :type not_: bool
     """
-    def __init__(self, lhs, not_):
-        self.lhs = lhs
-        self.not_ = not_
+
+    lhs: Node
+    not_: bool
 
     def get_sub_nodes(self):
         return [self.lhs]
 
     def get_template(self):
-        return "%%s IS %sNULL" % ("NOT " if self.not_ else "")
+        return f"{{}} IS {('NOT ' if self.not_ else '')}NULL"
 
 
 # class ExistsPredicateNode(PredicateNode):
 #     pass
 
+# http://docs.opengeospatial.org/DRAFTS/19-079.html#enhanced-temporal-operators
 
+# BEFORE                <======>     <----->    AFTER
+# MEETS                         <---------->    METBY
+# TOVERLAPS                 <-------------->    OVERLAPPEDBY
+# BEGINS                <------------------>    BEGUNBY
+# DURING            <---------------------->    TCONTAINS
+# TENDS             <---------->                ENDEDBY
+# TEQUALS               <------>                TEQUALS
+
+# https://github.com/geotools/geotools/blob/main/modules/library/cql/ECQL.md#temporal-predicate
+# BEFORE_OR_DURING  <----->
+# DURING_OR_AFTER           <----->
+
+class TemporalComparisonOp(Enum):
+    AFTER = 'AFTER'
+    BEFORE = 'BEFORE'
+    BEGINS = 'BEGINS'
+    BEGUNBY = 'BEGUNBY'
+    TCONTAINS = 'TCONTAINS'
+    DURING = 'DURING'
+    ENDEDBY = 'ENDEDBY'
+    ENDS = 'ENDS'
+    TEQUALS = 'TEQUALS'
+    MEETS = 'MEETS'
+    METBY = 'METBY'
+    TOVERLAPS = 'TOVERLAPS'
+    OVERLAPPEDBY = 'OVERLAPPEDBY'
+
+    BEFORE_OR_DURING = 'BEFORE OR DURING'
+    DURING_OR_AFTER = 'DURING OR AFTER'
+
+
+@dataclass
 class TemporalPredicateNode(PredicateNode):
     """ Node class to represent temporal predicate.
-
-        :ivar lhs: the left hand side node of this comparison
-        :type lhs: Node
-        :ivar rhs: the right hand side node of this comparison
-        :type rhs: Node
-        :ivar op: the comparison type. One of ``"BEFORE"``,
-                  ``"BEFORE OR DURING"``, ``"DURING"``,
-                  ``"DURING OR AFTER"``, ``"AFTER"``
-        :type op: str
     """
-    def __init__(self, lhs, rhs, op):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.op = op
+
+    lhs: Node
+    rhs: Node
+    op: TemporalComparisonOp
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
 
     def get_template(self):
-        return "%%s %s %%s" % self.op
+        return f"{{}} {self.op} {{}}"
 
 
-class SpatialPredicateNode(PredicateNode):
+class SpatialdPredicateNode(PredicateNode):
+    pass
+
+
+class SpatialComparisonOp(Enum):
+    INTERSECTS = 'INTERSECTS'
+    DISJOINT = 'DISJOINT'
+    CONTAINS = 'CONTAINS'
+    WITHIN = 'WITHIN'
+    TOUCHES = 'TOUCHES'
+    CROSSES = 'CROSSES'
+    OVERLAPS = 'OVERLAPS'
+    EQUALS = 'EQUALS'
+
+
+@dataclass
+class SpatialOperationPredicateNode(PredicateNode):
     """ Node class to represent spatial relation predicate.
-
-        :ivar lhs: the left hand side node of this comparison
-        :type lhs: Node
-        :ivar rhs: the right hand side node of this comparison
-        :type rhs: Node
-        :ivar op: the comparison type. One of ``"INTERSECTS"``,
-                  ``"DISJOINT"``, ``"CONTAINS"``, ``"WITHIN"``,
-                  ``"TOUCHES"``, ``"CROSSES"``, ``"OVERLAPS"``,
-                  ``"EQUALS"``, ``"RELATE"``, ``"DWITHIN"``, ``"BEYOND"``
-        :type op: str
-        :ivar pattern: the relationship patter for the ``"RELATE"`` operation
-        :type pattern: str or None
-        :ivar distance: the distance for distance related operations
-        :type distance: Node or None
-        :ivar units: the units for distance related operations
-        :type units: str or None
     """
-    def __init__(self, lhs, rhs, op, pattern=None, distance=None, units=None):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.op = op
-        self.pattern = pattern
-        self.distance = distance
-        self.units = units
+
+    lhs: Node
+    rhs: Node
+    op: SpatialComparisonOp
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
 
     def get_template(self):
-        if self.pattern:
-            return "%s(%%s, %%s, %r)" % (self.op, self.pattern)
-        elif self.distance or self.units:
-            return "%s(%%s, %%s, %r, %r)" % (
-                self.op, self.distance, self.units
-            )
-        else:
-            return "%s(%%s, %%s)" % (self.op)
+        return f"{self.op.name}({{}}, {{}})"
 
 
+@dataclass
+class SpatialPatternPredicateNode(PredicateNode):
+    """ Node class to represent spatial relation predicate.
+    """
+
+    lhs: Node
+    rhs: Node
+    pattern: str
+
+    def get_sub_nodes(self):
+        return [self.lhs, self.rhs]
+
+    def get_template(self):
+        return f"RELATE({{}}, {{}}, '{self.pattern}')"
+
+
+class SpatialDistanceOp(Enum):
+    DWITHIN = 'DWITHIN'
+    BEYOND = 'BEYOND'
+
+
+@dataclass
+class SpatialDistancePredicateNode(PredicateNode):
+    """ Node class to represent spatial relation predicate.
+    """
+
+    lhs: Node
+    rhs: Node
+    op: SpatialDistanceOp
+    distance: float
+    units: str
+
+    def get_sub_nodes(self):
+        return [self.lhs, self.rhs]
+
+    def get_template(self):
+        return f"{self.op.name}({{}}, {{}}, {self.distance}, '{self.units}')"
+
+
+@dataclass
 class BBoxPredicateNode(PredicateNode):
     """ Node class to represent a bounding box predicate.
-
-        :ivar lhs: the left hand side node of this predicate
-        :type lhs: Node
-        :ivar minx: the minimum X value of the bounding box
-        :type minx: float
-        :ivar miny: the minimum Y value of the bounding box
-        :type miny: float
-        :ivar maxx: the maximum X value of the bounding box
-        :type maxx: float
-        :ivar maxx: the maximum Y value of the bounding box
-        :type maxx: float
-        :ivar crs: the coordinate reference system identifier
-                   for the CRS the BBox is expressed in
-        :type crs: str
     """
-    def __init__(self, lhs, minx, miny, maxx, maxy, crs=None):
-        self.lhs = lhs
-        self.minx = minx
-        self.miny = miny
-        self.maxx = maxx
-        self.maxy = maxy
-        self.crs = crs
+
+    lhs: Node
+    minx: float
+    miny: float
+    maxx: float
+    maxy: float
+    crs: Optional[str] = None
 
     def get_sub_nodes(self):
         return [self.lhs]
 
     def get_template(self):
-        return "BBOX(%%s, %r, %r, %r, %r, %r)" % (
-            self.minx, self.miny, self.maxx, self.maxy, self.crs
+        return (
+            f"BBOX({{}}, {self.minx}, {self.miny}, {self.maxx}, "
+            f"{self.maxy}, {repr(self.crs)})"
         )
+
+
+# TODO: Array predicates
 
 
 class ExpressionNode(Node):
@@ -365,63 +390,57 @@ class AttributeExpression(ExpressionNode):
         self.name = name
 
     def __repr__(self):
-        return "ATTRIBUTE %s" % self.name
+        return f"ATTRIBUTE {self.name}"
 
 
-class LiteralExpression(ExpressionNode):
-    """ Node class to represent literal value expressions
-
-        :ivar value: the value of the literal
-        :type value: str, float, int, datetime, timedelta
-    """
-    inline = True
-
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        return "LITERAL %r" % self.value
+class ArithmeticOp(Enum):
+    ADD = '+'
+    SUB = '-'
+    MUL = '*'
+    DIV = '/'
 
 
+@dataclass
 class ArithmeticExpressionNode(ExpressionNode):
     """ Node class to represent arithmetic operation expressions with two
         sub-expressions and an operator.
-
-        :ivar lhs: the left hand side node of this arithmetic expression
-        :type lhs: Node
-        :ivar rhs: the right hand side node of this arithmetic expression
-        :type rhs: Node
-        :ivar op: the comparison type. One of ``"+"``, ``"-"``,
-                  ``"*"``, ``"/"``
-        :type op: str
     """
-    def __init__(self, lhs, rhs, op):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.op = op
+
+    lhs: Node
+    rhs: Node
+    op: ArithmeticOp
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
 
     def get_template(self):
-        return "%%s %s %%s" % self.op
+        return f"{{}} {self.op.value} {{}}"
 
 
-def indent(text, amount, ch=' '):
+@dataclass
+class FunctionExpressionNode(ExpressionNode):
+    """ Node class to represent function invocations.
+    """
+
+    name: str
+    arguments: List[Node]
+
+    def get_sub_nodes(self):
+        return self.arguments
+
+    def get_template(self):
+        return f"{self.name} ({', '.join(['{}'] * len(self.arguments))})"
+
+
+def indent(text: str, amount: int, ch: str = ' ') -> str:
     padding = amount * ch
     return ''.join(padding+line for line in text.splitlines(True))
 
 
-def get_repr(node, indent_amount=0, indent_incr=4):
+def get_repr(node: Node, indent_amount: int = 0, indent_incr: int = 4) -> str:
     """ Get a debug representation of the given AST node. ``indent_amount``
         and ``indent_incr`` are for the recursive call and don't need to be
         passed.
-
-        :param Node node: the node to get the representation for
-        :param int indent_amount: the current indentation level
-        :param int indent_incr: the indentation incrementation per level
-        :return: the represenation of the node
-        :rtype: str
     """
     sub_nodes = node.get_sub_nodes()
     template = node.get_template()
@@ -430,17 +449,18 @@ def get_repr(node, indent_amount=0, indent_incr=4):
     for sub_node in sub_nodes:
         if isinstance(sub_node, Node) and not sub_node.inline:
             args.append(
-                "(\n%s\n)" %
-                indent(
-                    get_repr(
-                        sub_node,
-                        indent_amount + indent_incr,
-                        indent_incr
-                    ),
-                    indent_amount + indent_incr
+                "(\n{}\n)".format(
+                    indent(
+                        get_repr(
+                            sub_node,
+                            indent_amount + indent_incr,
+                            indent_incr
+                        ),
+                        indent_amount + indent_incr
+                    )
                 )
             )
         else:
             args.append(repr(sub_node))
 
-    return template % tuple(args)
+    return template.format(*args)

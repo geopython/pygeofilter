@@ -105,7 +105,7 @@ WSGI_APPLICATION = 'django_test.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.spatialite',
-        'NAME': ':memory:', # os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': 'db.sqlite',
         'TEST': {
             'NAME': ':memory:',
         }

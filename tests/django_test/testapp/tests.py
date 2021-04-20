@@ -30,78 +30,21 @@ from django.db.models import ForeignKey
 from django.contrib.gis.geos import Polygon, MultiPolygon, GEOSGeometry
 from django.utils.dateparse import parse_datetime
 
-from pygeofilter import parse
-from pygeofilter.util import parse_duration
-from pygeofilter.integrations.django.evaluate import to_filter
+from pygeofilter.parsers.ecql import parse
+from pygeofilter.backends.django.evaluate import to_filter
 
 from . import models
 
+
 class CQLTestCase(TransactionTestCase):
-    def setUp(self):
-        self.create(dict(
-            identifier="A",
-            geometry=MultiPolygon(Polygon.from_bbox((0, 0, 5, 5))),
-            float_attribute=0.0,
-            int_attribute=10,
-            str_attribute='AAA',
-            datetime_attribute=parse_datetime("2000-01-01T00:00:00Z"),
-            choice_attribute="ASCENDING",
-        ), dict(
-            float_meta_attribute=10.0,
-            int_meta_attribute=20,
-            str_meta_attribute="AparentA",
-            datetime_meta_attribute=parse_datetime("2000-01-01T00:00:05Z"),
-            choice_meta_attribute="X",
-        ))
-
-        self.create(dict(
-            identifier="B",
-            geometry=MultiPolygon(Polygon.from_bbox((5, 5, 10, 10))),
-            float_attribute=30.0,
-            int_attribute=None,
-            str_attribute='BBB',
-            datetime_attribute=parse_datetime("2000-01-01T00:00:05Z"),
-            choice_attribute="DESCENDING",
-        ), dict(
-            float_meta_attribute=20.0,
-            int_meta_attribute=30,
-            str_meta_attribute="BparentB",
-            datetime_meta_attribute=parse_datetime("2000-01-01T00:00:10Z"),
-            choice_meta_attribute="Y",
-        ))
-
-    def convert(self, name, value, model_class):
-        field = model_class._meta.get_field(name)
-        if field.choices:
-            return dict((v, k) for k, v in field.choices)[value]
-        return value
-
-    def create_meta(self, record, metadata):
-        record_meta = models.RecordMeta(**dict(
-            (name, self.convert(name, value, models.RecordMeta))
-            for name, value in metadata.items()
-        ))
-        record_meta.record = record
-        record_meta.full_clean()
-        record_meta.save()
-
-    def create(self, record_params, metadata_params):
-        record = models.Record.objects.create(**dict(
-            (name, self.convert(name, value, models.Record))
-            for name, value in record_params.items()
-        ))
-        self.create_meta(record, metadata_params)
-        return record
+    fixtures = ['test.json']
 
     def evaluate(self, cql_expr, expected_ids, model_type=None):
         model_type = model_type or models.Record
         mapping = models.FIELD_MAPPING
         mapping_choices = models.MAPPING_CHOICES
 
-        ast = parse(
-            cql_expr, GEOSGeometry, Polygon.from_bbox, parse_datetime,
-            parse_duration
-        )
+        ast = parse(cql_expr)
         filters = to_filter(ast, mapping, mapping_choices)
 
         qs = model_type.objects.filter(filters)
@@ -407,7 +350,7 @@ class CQLTestCase(TransactionTestCase):
 
     def test_intersects_envelope(self):
         self.evaluate(
-            'INTERSECTS(geometry, ENVELOPE(0 0 1.0 1.0))',
+            'INTERSECTS(geometry, ENVELOPE(0 1.0 0 1.0))',
             ('A',)
         )
 
