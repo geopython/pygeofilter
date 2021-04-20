@@ -44,7 +44,7 @@ class Node:
             :return: a list of all sub-nodes
             :rtype: list[Node]
         """
-        raise NotImplementedError
+        return []
 
     def get_template(self) -> str:
         """ Get a template string (using the ``.format`` method)
