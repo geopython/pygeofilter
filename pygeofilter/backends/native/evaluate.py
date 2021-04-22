@@ -29,9 +29,12 @@
 import operator
 from datetime import date, time, datetime, timedelta
 
-# import shapely
+# from dateparser.timezones import
+
+import shapely
 
 from ... import ast
+from ... import values
 from ...util import like_pattern_to_re
 
 from ..evaluator import Evaluator, handle
@@ -99,24 +102,31 @@ class NativeEvaluator(Evaluator):
 
     @handle(ast.TemporalPredicateNode)
     def temporal(self, node, lhs, rhs):
-        raise NotImplementedError
+        lhs = to_interval(lhs)
+        rhs = to_interval(rhs)
 
-    # @handle(ast.SpatialOperationPredicateNode)
-    # def handle_spatial_operation(self, node, lhs, rhs):
-    #     op = operator.and_ if node.op == 'AND' else operator.or_
-    #     return op(lhs, rhs)
+        return node.op.value == relate_intervals(lhs, rhs)
 
-    # @handle(ast.SpatialPatternPredicateNode)
-    # def handle_spatial_pattern(self, node, lhs, rhs):
-    #     pass
+    @handle(ast.SpatialOperationPredicateNode)
+    def spatial_operation(self, node, lhs, rhs):
+        op = getattr(lhs, node.op.value.lower())
+        return op(rhs)
+
+    @handle(ast.SpatialPatternPredicateNode)
+    def spatial_pattern(self, node, lhs, rhs):
+        return lhs.relate_pattern(rhs, node.pattern)
 
     # @handle(ast.SpatialDistancePredicateNode)
     # def handle__(self, node, lhs, rhs):
     #     pass
 
-    # @handle(ast.BBoxPredicateNode)
-    # def handle__(self, node, lhs, rhs):
-    #     pass
+    @handle(ast.BBoxPredicateNode)
+    def bbox(self, node, lhs):
+        return lhs.intersects(
+            shapely.geometry.Polygon.from_bounds(
+                node.minx, node.miny, node.maxx, node.maxy
+            )
+        )
 
     @handle(ast.AttributeExpression)
     def attribute(self, node):
@@ -130,103 +140,82 @@ class NativeEvaluator(Evaluator):
         op = ARITHMETIC_MAP[node.op.value]
         return op(lhs, rhs)
 
-    @handle(str, float, int, bool, datetime, date, time, timedelta)
+    @handle(list, str, float, int, bool, datetime, date, time, timedelta)
     def literal(self, node):
         return node
 
-    # @handle(ast.Envelope)
-    # def handle__(self, node, lhs, rhs):
-    #     pass
+    @handle(values.Envelope)
+    def envelope(self, node):
+        return shapely.geometry.Polygon.from_bounds(
+            node.x1, node.y1, node.x2, node.y2
+        )
+
+    def adopt(self, node, *sub_args):
+        if isinstance(node, dict) or hasattr(node, '__geo_interface__'):
+            return shapely.geometry.shape(node)
+
+        return super().adopt(node, *sub_args)
 
 
+def to_interval(value):
+    # TODO:
+    zulu = None
+    if isinstance(value, (list, tuple)):
+        low, high = value
+        if isinstance(low, date):
+            low = datetime.combine(low, time.min, zulu)
+        if isinstance(high, date):
+            high = datetime.combine(high, time.max, zulu)
+
+        if isinstance(low, timedelta):
+            low = high - timedelta
+        elif isinstance(high, timedelta):
+            high = low + timedelta
+
+        return (low, high)
+
+    elif isinstance(value, date):
+        return (
+            datetime.combine(value, time.min, zulu),
+            datetime.combine(value, time.max, zulu),
+        )
+
+    elif isinstance(value, datetime):
+        return (value, value)
+
+    raise ValueError(f'Invalid type {type(value)}')
 
 
+def relate_intervals(lhs, rhs):
+    ll, lh = lhs
+    rl, rh = rhs
+    if lh < rl:
+        return 'BEFORE'
+    elif ll > rh:
+        return 'AFTER'
+    elif lh == rl:
+        return 'MEETS'
+    elif ll == rh:
+        return 'METBY'
+    elif ll < rl and rl < lh < rh:
+        return 'TOVERLAPS'
+    elif rl < ll < rh and lh > rh:
+        return 'OVERLAPPEDBY'
+    elif ll == rl and lh < rh:
+        return 'BEGINS'
+    elif ll == rl and lh > rh:
+        return 'BEGUNBY'
+    elif ll > rl and lh < rh:
+        return 'DURING'
+    elif ll < rl and lh > rh:
+        return 'TCONTAINS'
+    elif ll > rl and lh == rh:
+        return 'TENDS'
+    elif ll < rl and lh == rh:
+        return 'ENDEDBY'
+    elif ll == rl and lh == rh:
+        return 'TEQUALS'
 
-
-# class FilterEvaluator:
-#     def __init__(self, functions=None):
-#         self.functions = functions or {}
-
-#     def to_filter(self, node):
-#         to_filter = self.to_filter
-#         if isinstance(node, ast.NotConditionNode):
-#             return operator.not_(to_filter(node.sub_node))
-#         elif isinstance(node, ast.CombinationConditionNode):
-#             op = operator.and_ if node.op == 'AND' else operator.or_
-#             return op(to_filter(node.lhs), to_filter(node.rhs))
-#         elif isinstance(node, ast.ComparisonPredicateNode):
-#             op = COMPARISON_MAP[node.op]
-#             return op(to_filter(node.lhs), to_filter(node.rhs))
-#         elif isinstance(node, ast.BetweenPredicateNode):
-#             value = (
-#                 to_filter(node.low) <= to_filter(node.lhs) <= to_filter(node.high)
-#             )
-#             return not value if node.not_ else value
-#         elif isinstance(node, ast.LikePredicateNode):
-#             escape_char = r'\%' if sys.version_info < (3, 7) else '%'
-#             pattern = f"^{re.escape(node.pattern).replace(escape_char, '.*')}$"
-#             flags = 0
-#             if not node.case:
-#                 flags = re.I
-#             return re.match(pattern, to_filter(node.rhs), flags=flags) is not None
-#         elif isinstance(node, ast.InPredicateNode):
-#             value = to_filter(node.lhs) in [
-#                 to_filter(sub_node)
-#                 for sub_node in node.sub_nodes
-#             ]
-#             return not value if node.not_ else value
-#         elif isinstance(node, ast.NullPredicateNode):
-#             if node.not_:
-#                 return to_filter(node.lhs) is not None
-#             return to_filter(node.lhs) is None
-#         elif isinstance(node, ast.TemporalPredicateNode):
-#             # TODO: implement
-#             pass
-#         elif isinstance(node, ast.SpatialPredicateNode):
-#             return filters.spatial(
-#                 to_filter(node.lhs), to_filter(node.rhs), node.op,
-#                 to_filter(node.pattern),
-#                 to_filter(node.distance),
-#                 to_filter(node.units)
-#             )
-#         elif isinstance(node, ast.BBoxPredicateNode):
-#             return filters.bbox(
-#                 to_filter(node.lhs),
-#                 to_filter(node.minx),
-#                 to_filter(node.miny),
-#                 to_filter(node.maxx),
-#                 to_filter(node.maxy),
-#                 to_filter(node.crs)
-#             )
-#         elif isinstance(node, ast.AttributeExpression):
-#             return filters.attribute(node.name, self.field_mapping)
-
-#         elif isinstance(node, (str, float, int, datetime, date, time, timedelta)):
-#             return node.value
-
-#         elif isinstance(node, ast.ArithmeticExpressionNode):
-#             op = ARITHMETIC_MAP[node.op]
-#             return op(to_filter(node.lhs), to_filter(node.rhs))
-
-#         elif isinstance(node, ast.FunctionExpressionNode):
-#             function = self.functions[node.name]
-#             return function(*[
-#                 to_filter(sub_node)
-#                 for sub_node in node.get_sub_nodes()
-#             ])
-
-#         return node
-
-
-# def to_filter(ast, field_mapping=None, mapping_choices=None):
-#     """ Helper function to translate ECQL AST to Django Query expressions.
-
-#         :param ast: the abstract syntax tree
-#         :param field_mapping: a dict mapping from the filter name to the Django
-#                               field lookup.
-#         :param mapping_choices: a dict mapping field lookups to choices.
-#         :type ast: :class:`Node`
-#         :returns: a Django query object
-#         :rtype: :class:`django.db.models.Q`
-#     """
-#     return FilterEvaluator(field_mapping, mapping_choices).to_filter(ast)
+    raise ValueError(
+        f'Error relating intervals [{ll}, {lh}] and ({rl}, {rh})'
+    )

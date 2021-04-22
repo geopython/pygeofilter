@@ -32,7 +32,12 @@ class Evaluator(metaclass=EvaluatorMeta):
         else:
             sub_args = []
 
-        result = self.handler_map[type(node)](self, node, *sub_args)
+        node_type = type(node)
+        if node_type in self.handler_map:
+            return self.handler_map[node_type](self, node, *sub_args)
+        return self.adopt(node, *sub_args)
 
-        print(node, result)
-        return result
+    def adopt(self, node, *sub_args):
+        raise NotImplementedError(
+            f'Failed to evaluate node of type {type(node)}'
+        )
