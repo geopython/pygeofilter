@@ -1,16 +1,12 @@
-
-
-
+from datetime import date, time, datetime, timedelta
 from dataclasses import dataclass
 
-from datetime import date, time, datetime, timedelta
+from shapely.geometry import Point
 
 import pytest
 
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.native.evaluate import NativeEvaluator
-
-
 
 
 @dataclass
@@ -20,6 +16,7 @@ class Record:
     float_attr: float
     date_attr: date
     datetime_attr: datetime
+    point_attr: Point
     # TODO: geometry
 
 
