@@ -66,6 +66,11 @@ setup(
         "pygeoif",
         "dataclasses;python_version<'3.7'",
     ] if not on_rtd else [],
+    extras_require={
+        'backend-django': ['django'],
+        'backend-sqlalchemy': ['geoalchemy2', 'sqlalchemy'],
+        'backend-native': ['shapely'],
+    },
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
