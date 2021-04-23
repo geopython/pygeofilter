@@ -58,8 +58,9 @@ ARITHMETIC_MAP = {
 
 
 class NativeEvaluator(Evaluator):
-    def __init__(self, obj, use_getattr=True):
+    def __init__(self, obj, function_map=None, use_getattr=True):
         self.obj = obj
+        self.function_map = function_map if function_map is not None else {}
         self.use_getattr = use_getattr
 
     @handle(ast.NotConditionNode)
@@ -79,7 +80,10 @@ class NativeEvaluator(Evaluator):
 
     @handle(ast.BetweenPredicateNode)
     def between(self, node, lhs, low, high):
-        return low <= lhs <= high
+        result = low <= lhs <= high
+        if node.not_:
+            result = not result
+        return result
 
     @handle(ast.LikePredicateNode)
     def like(self, node, lhs):
@@ -87,18 +91,38 @@ class NativeEvaluator(Evaluator):
             node.pattern,
             node.nocase,
             node.wildcard,
-            node.single_char,
-            node.escape_char
+            node.singlechar,
+            node.escapechar
         )
-        return regex.match(node) is not None
+        result = regex.match(lhs) is not None
+        if node.not_:
+            result = not result
+        return result
 
     @handle(ast.InPredicateNode)
-    def in_(self, node, lhs, options):
-        return lhs in options
+    def in_(self, node, lhs, *options):
+        result = lhs in options
+        if node.not_:
+            result = not result
+        return result
 
     @handle(ast.NullPredicateNode)
     def null(self, node, lhs):
-        return lhs is None
+        result = lhs is None
+        if node.not_:
+            result = not result
+        return result
+
+    @handle(ast.ExistsPredicateNode)
+    def exists(self, node, lhs):
+        if self.use_getattr:
+            result = hasattr(self.obj, node.lhs.name)
+        else:
+            result = lhs in self.obj
+
+        if node.not_:
+            result = not result
+        return result
 
     @handle(ast.TemporalPredicateNode)
     def temporal(self, node, lhs, rhs):
@@ -131,14 +155,18 @@ class NativeEvaluator(Evaluator):
     @handle(ast.AttributeExpression)
     def attribute(self, node):
         if self.use_getattr:
-            return getattr(self.obj, node.name)
+            return getattr(self.obj, node.name, None)
         else:
-            return self.obj[node.name]
+            return self.obj.get(node.name)
 
     @handle(ast.ArithmeticExpressionNode)
     def arithmetic(self, node, lhs, rhs):
         op = ARITHMETIC_MAP[node.op.value]
         return op(lhs, rhs)
+
+    @handle(ast.FunctionExpressionNode)
+    def function(self, node, *arguments):
+        return self.function_map[node.name](*arguments)
 
     @handle(list, str, float, int, bool, datetime, date, time, timedelta)
     def literal(self, node):
