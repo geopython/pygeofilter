@@ -225,8 +225,25 @@ class NullPredicateNode(PredicateNode):
         return f"{{}} IS {('NOT ' if self.not_ else '')}NULL"
 
 
-# class ExistsPredicateNode(PredicateNode):
-#     pass
+@dataclass
+class ExistsPredicateNode(PredicateNode):
+    lhs: Node
+    not_: bool
+
+    def get_sub_nodes(self):
+        return [self.lhs]
+
+    def get_template(self):
+        return f"{{}} {('DOES-NOT-EXIST' if self.not_ else 'EXISTS')}"
+
+
+@dataclass
+class IncludePredicateNode(PredicateNode):
+    not_: bool
+
+    def get_template(self):
+        return 'EXCLUDE' if self.not_ else 'INCLUDE'
+
 
 # http://docs.opengeospatial.org/DRAFTS/19-079.html#enhanced-temporal-operators
 

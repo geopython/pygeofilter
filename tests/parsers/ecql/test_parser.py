@@ -36,7 +36,7 @@ from pygeofilter import ast
 
 
 def test_attribute_eq_literal():
-    result = parse('attr = "A"')
+    result = parse('attr = \'A\'')
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         'A',
@@ -120,7 +120,7 @@ def test_attribute_between_negative_positive():
 
 
 def test_string_like():
-    result = parse('attr LIKE "some%"')
+    result = parse('attr LIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -128,12 +128,12 @@ def test_string_like():
         not_=False,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
 def test_string_ilike():
-    result = parse('attr ILIKE "some%"')
+    result = parse('attr ILIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -141,12 +141,12 @@ def test_string_ilike():
         not_=False,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
 def test_string_not_like():
-    result = parse('attr NOT LIKE "some%"')
+    result = parse('attr NOT LIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -154,12 +154,12 @@ def test_string_not_like():
         not_=True,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
 def test_string_not_ilike():
-    result = parse('attr NOT ILIKE "some%"')
+    result = parse('attr NOT ILIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -167,7 +167,7 @@ def test_string_not_ilike():
         not_=True,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
@@ -185,7 +185,7 @@ def test_attribute_in_list():
 
 
 def test_attribute_not_in_list():
-    result = parse('attr NOT IN ("A", "B", \'C\', \'D\')')
+    result = parse('attr NOT IN (\'A\', \'B\', \'C\', \'D\')')
     assert result == ast.InPredicateNode(
         ast.AttributeExpression('attr'), [
             "A",
@@ -209,6 +209,31 @@ def test_attribute_is_not_null():
     assert result == ast.NullPredicateNode(
         ast.AttributeExpression('attr'), True
     )
+
+
+def test_attribute_exists():
+    result = parse('attr EXISTS')
+    assert result == ast.ExistsPredicateNode(
+        ast.AttributeExpression('attr'), False
+    )
+
+
+def test_attribute_does_not_exist():
+    result = parse('attr DOES-NOT-EXIST')
+    assert result == ast.ExistsPredicateNode(
+        ast.AttributeExpression('attr'), True
+    )
+
+
+def test_include():
+    result = parse('INCLUDE')
+    assert result == ast.IncludePredicateNode(False)
+
+
+def test_exclude():
+    result = parse('EXCLUDE')
+    assert result == ast.IncludePredicateNode(True)
+
 
 # Temporal predicate
 
@@ -372,7 +397,9 @@ def test_overlaps_attr_multilinestring():
 # relate
 
 def test_relate_attr_polygon():
-    result = parse('RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)), "1*T***T**")')
+    result = parse(
+        'RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)), \'1*T***T**\')'
+    )
     assert result == ast.SpatialPatternPredicateNode(
         ast.AttributeExpression('geometry'),
         geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
@@ -423,7 +450,7 @@ def test_bbox_simple():
 
 
 def test_bbox_crs():
-    result = parse('BBOX(geometry, 1, 2, 3, 4, "EPSG:3875")')
+    result = parse('BBOX(geometry, 1, 2, 3, 4, \'EPSG:3875\')')
     assert result == ast.BBoxPredicateNode(
         ast.AttributeExpression('geometry'),
         1,
@@ -565,7 +592,7 @@ def test_function_single_arg():
 
 
 def test_function_attr_string_arg():
-    result = parse('attr = myfunc(other_attr, "abc")')
+    result = parse('attr = myfunc(other_attr, \'abc\')')
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.FunctionExpressionNode(

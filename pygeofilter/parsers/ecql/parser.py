@@ -104,7 +104,7 @@ class ECQLParser(Parser):
             nocase=False,
             wildcard='%',
             singlechar='.',
-            escapechar=None,
+            escapechar='\\',
             not_=p[1] == 'NOT',
         )
 
@@ -117,7 +117,7 @@ class ECQLParser(Parser):
             nocase=True,
             wildcard='%',
             singlechar='.',
-            escapechar=None,
+            escapechar='\\',
             not_=p[1] == 'NOT',
         )
 
@@ -130,6 +130,16 @@ class ECQLParser(Parser):
        'expression IS NULL')
     def predicate(self, p):
         return ast.NullPredicateNode(p[0], p[2] == 'NOT')
+
+    @_('attribute EXISTS',
+       'attribute DOES_NOT_EXIST')
+    def predicate(self, p):
+        return ast.ExistsPredicateNode(p[0], p[1] != 'EXISTS')
+
+    @_('INCLUDE',
+       'EXCLUDE')
+    def predicate(self, p):
+        return ast.IncludePredicateNode(p[0] != 'INCLUDE')
 
     @_('temporal_predicate',
        'spatial_predicate')
@@ -257,7 +267,8 @@ class ECQLParser(Parser):
     def duration(self, p):
         return p[0]
 
-    @_('IDENTIFIER')
+    @_('IDENTIFIER',
+       'DOUBLE_QUOTED')
     def attribute(self, p):
         return ast.AttributeExpression(p[0])
 
