@@ -82,29 +82,32 @@ identifier_pattern = r'[a-zA-Z_$][0-9a-zA-Z_$]*'
 int_pattern = r'[0-9]+'
 float_pattern = r'[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
 
-datetime_pattern = r"\d{4}-\d{2}-\d{2}T[0-2][0-9]:[0-5][0-9]:[0-5][0-9]Z"
+datetime_pattern = r"\d{4}-\d{2}-\d{2}T[0-2][0-9]:[0-5][0-9]:[0-5][0-9](\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})"
 duration_pattern = (
     # "P(?=[YMDHMS])"  # positive lookahead here... TODO: does not work
     # "((\d+Y)?(\d+M)?(\d+D)?)?(T(\d+H)?(\d+M)?(\d+S)?)?"
     r"P((\d+Y)?(\d+M)?(\d+D)?)?(T(\d+H)?(\d+M)?(\d+S)?)?"
 )
-quoted_string_pattern = r'(\"[^"]*\")|(\'[^\']*\')'
+double_quoted_string_pattern = r'(\"[^"]*\")'
+quoted_string_pattern = r'(\'[^\']*\')'
 
 
 class ECQLLexer(Lexer):
     tokens = {
+        EXISTS, DOES_NOT_EXIST, INCLUDE, EXCLUDE,
         NOT, AND, OR, BETWEEN, LIKE, ILIKE, IN, IS, NULL,
         BEFORE, AFTER, DURING, INTERSECTS, DISJOINT, CONTAINS,
         WITHIN, TOUCHES, CROSSES, OVERLAPS, EQUALS, RELATE,
         DWITHIN, BEYOND, BBOX,
         PLUS, MINUS, TIMES, DIVIDE, OR, AND, LT, GT, LE, GE, EQ, NE,
         GEOMETRY, ENVELOPE, UNITS,
-        QUOTED, DATETIME, DURATION, FLOAT, INTEGER,
+        QUOTED, DOUBLE_QUOTED, DATETIME, DURATION, FLOAT, INTEGER,
         IDENTIFIER,
     }
 
     literals = {'(', ')', '[', ']', ','}
 
+    DOES_NOT_EXIST = r'DOES-NOT-EXIST'
     PLUS = r'\+'
     MINUS = r'-'
     TIMES = r'\*'
@@ -161,9 +164,17 @@ class ECQLLexer(Lexer):
         t.value = t.value[1:-1]
         return t
 
+    @_(double_quoted_string_pattern)
+    def DOUBLE_QUOTED(self, t):
+        t.value = t.value[1:-1]
+        return t
+
     IDENTIFIER = identifier_pattern
 
     # remap some tokens to be confused with identifiers
+    IDENTIFIER['EXISTS'] = EXISTS
+    IDENTIFIER['INCLUDE'] = INCLUDE
+    IDENTIFIER['EXCLUDE'] = EXCLUDE
     IDENTIFIER['NOT'] = NOT
     IDENTIFIER['AND'] = AND
     IDENTIFIER['OR'] = OR
