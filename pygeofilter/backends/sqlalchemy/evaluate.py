@@ -3,16 +3,10 @@ from datetime import datetime, date, time, timedelta
 
 from . import filters
 from ... import ast
-from ...values import Envelope
+from ... import values
 
 
 LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
-
-
-def is_geometry(node):
-    return (
-        isinstance(node, dict) and 'type' in node and 'coordinates' in node
-    )
 
 
 class FilterEvaluator:
@@ -122,11 +116,11 @@ class FilterEvaluator:
                 node.op.value,
             )
 
-        elif isinstance(node, Envelope):
+        elif isinstance(node, values.Envelope):
             return filters.parse_bbox([node.x1, node.y1, node.x2, node.y2])
 
-        elif is_geometry(node):
-            return filters.parse_geometry(node)
+        elif isinstance(node, values.Geometry):
+            return filters.parse_geometry(node.__geo_interface__)
 
         elif isinstance(node, LITERALS):
             return filters.literal(node)

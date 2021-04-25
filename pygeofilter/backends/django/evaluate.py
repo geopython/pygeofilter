@@ -32,16 +32,10 @@ from django.contrib.gis.geos import GEOSGeometry, Polygon
 
 from . import filters
 from ... import ast
-from ...values import Envelope
+from ... import values
 
 
 LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
-
-
-def is_geometry(node):
-    return (
-        isinstance(node, dict) and 'type' in node and 'coordinates' in node
-    )
 
 
 class FilterEvaluator:
@@ -137,13 +131,13 @@ class FilterEvaluator:
                 node.op.value
             )
 
-        elif isinstance(node, Envelope):
+        elif isinstance(node, values.Envelope):
             return Polygon.from_bbox(
                 (node.x1, node.y1, node.x2, node.y2)
             )
 
-        elif is_geometry(node):
-            return GEOSGeometry(json.dumps(node))
+        elif isinstance(node, values.Geometry):
+            return GEOSGeometry(json.dumps(node.__geo_interface__))
 
         elif isinstance(node, LITERALS):
             return filters.literal(node)

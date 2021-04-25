@@ -31,16 +31,10 @@ from shapely import geometry
 
 from . import filters
 from ... import ast
-from ...values import Envelope
+from ... import values
 
 
 LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
-
-
-def is_geometry(node):
-    return (
-        isinstance(node, dict) and 'type' in node and 'coordinates' in node
-    )
 
 
 class FilterEvaluator:
@@ -146,12 +140,12 @@ class FilterEvaluator:
                 for sub_node in node.arguments
             ])
 
-        elif isinstance(node, Envelope):
+        elif isinstance(node, values.Envelope):
             return geometry.Polygon.from_bounds(
                 node.x1, node.y1, node.x2, node.y2
             )
 
-        elif is_geometry(node):
+        elif isinstance(node, values.Geometry):
             return geometry.shape(node)
 
         elif isinstance(node, LITERALS):
