@@ -13,7 +13,10 @@ def combine(sub_filters, combinator: str):
     """ Combine filters using a logical combinator """
     assert combinator in ("AND", "OR")
     op = and_ if combinator == "AND" else or_
-    return reduce(lambda acc, q: op(acc, q) if acc else q, sub_filters)
+    return reduce(
+        lambda acc, q: op(acc, q) if acc is not None else q,
+        sub_filters
+    )
 
 
 def negate(sub_filter):
@@ -32,34 +35,43 @@ OP_MAP = {
 
 
 def compare(lhs, rhs, op):
-    """ Compare a filter with an expression using a comparison operation """
-
     return OP_MAP[op](lhs, rhs)
 
 
 def between(lhs, low, high, not_):
-    return low <= lhs <= high
+    result = lhs.between(low, high)
+    if not_:
+        result = ~result
+    return result
 
 
-def like(lhs, pattern, nocase, wildcard, single_char, escape_char):
+def like(lhs, pattern, nocase, wildcard, singlechar, escapechar, not_):
     regex = like_pattern_to_re(
         pattern,
         nocase,
         wildcard,
-        single_char,
-        escape_char
+        singlechar,
+        escapechar or '\\'
     )
-    return lhs.str.match(regex)
-
+    result = lhs.str.match(regex)
+    if not_:
+        result = ~result
+    return result
 
 
 def contains(lhs, items, not_):
     # TODO: check if dataframe or scalar
-    return lhs.isin(items)
+    result = lhs.isin(items)
+    if not_:
+        result = ~result
+    return result
 
 
-def null(lhs):
-    return lhs.isnull()
+def null(lhs, not_):
+    result = lhs.isnull()
+    if not_:
+        result = ~result
+    return result
 
 
 def temporal(lhs, time_or_period, op):
@@ -67,14 +79,21 @@ def temporal(lhs, time_or_period, op):
     # TODO implement
 
 
-def spatial(lhs, rhs, op):
-    assert op in (
-        "INTERSECTS", "DISJOINT", "CONTAINS", "WITHIN", "TOUCHES", "CROSSES",
-        "OVERLAPS", "EQUALS",
-        # TODO: "RELATE", "DWITHIN", "BEYOND"
-    )
+SPATIAL_OP_MAP = {
+    "INTERSECTS": 'intersects',
+    "DISJOINT": 'disjoint',
+    "CONTAINS": 'contains',
+    "WITHIN": 'within',
+    "TOUCHES": 'touches',
+    "CROSSES": 'crosses',
+    "OVERLAPS": 'overlaps',
+    "EQUALS": 'geom_equals',
+}
 
-    return getattr(lhs, op.lower())(rhs)
+
+def spatial(lhs, rhs, op):
+    assert op in SPATIAL_OP_MAP
+    return getattr(lhs, SPATIAL_OP_MAP[op])(rhs)
 
 
 def bbox(lhs, minx, miny, maxx, maxy, crs=None):
