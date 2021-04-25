@@ -124,7 +124,9 @@ class ECQLLexer(Lexer):
     # for geometry parsing
     @_(geometry_pattern)
     def GEOMETRY(self, t):
-        t.value = from_wkt(t.value).__geo_interface__
+        t.value = values.Geometry(
+            from_wkt(t.value).__geo_interface__
+        )
         return t
 
     @_(envelope_pattern)

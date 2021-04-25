@@ -172,17 +172,15 @@ class NativeEvaluator(Evaluator):
     def literal(self, node):
         return node
 
+    @handle(values.Geometry)
+    def geometry(self, node):
+        return shapely.geometry.shape(node)
+
     @handle(values.Envelope)
     def envelope(self, node):
         return shapely.geometry.Polygon.from_bounds(
             node.x1, node.y1, node.x2, node.y2
         )
-
-    def adopt(self, node, *sub_args):
-        if isinstance(node, dict) or hasattr(node, '__geo_interface__'):
-            return shapely.geometry.shape(node)
-
-        return super().adopt(node, *sub_args)
 
 
 def to_interval(value):

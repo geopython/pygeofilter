@@ -29,35 +29,13 @@
 from dataclasses import dataclass
 
 
-class _Value:
-    def __init__(self, value):
-        self.value = value
+@dataclass
+class Geometry:
+    geometry: dict
 
-    def __eq__(self, other):
-        if type(self) != type(other):
-            return False
-
-        return self.value == other.value
-
-
-class Geometry(_Value):
-    def __repr__(self):
-        return "GEOMETRY '%s'" % self.value
-
-
-class DateTime(_Value):
-    def __repr__(self):
-        return "DATETIME '%s'" % self.value
-
-
-class Duration(_Value):
-    def __repr__(self):
-        return "DURATION '%s'" % self.value
-
-
-class BBox(_Value):
-    def __repr__(self):
-        return "BBOX '%s'" % self.value
+    @property
+    def __geo_interface__(self):
+        return self.geometry
 
 
 @dataclass

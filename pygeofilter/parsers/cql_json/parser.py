@@ -28,11 +28,10 @@
 from typing import Union
 import json
 
-import pygeoif
 from dateparser import parse as parse_datetime
 
 from ...util import parse_duration
-from ...values import Envelope
+from ...values import Envelope, Geometry
 from ... import ast
 
 # https://portal.ogc.org/files/96288
@@ -88,7 +87,7 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
     # check if we are dealing with a geometry
     if 'type' in node and 'coordinates' in node:
         # TODO: test if node is actually valid
-        return node
+        return Geometry(node)
 
     elif 'bbox' in node:
         return Envelope(*node['bbox'])
