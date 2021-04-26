@@ -29,8 +29,6 @@
 import operator
 from datetime import date, time, datetime, timedelta
 
-# from dateparser.timezones import
-
 import shapely
 
 from ... import ast
@@ -168,7 +166,7 @@ class NativeEvaluator(Evaluator):
     def function(self, node, *arguments):
         return self.function_map[node.name](*arguments)
 
-    @handle(list, str, float, int, bool, datetime, date, time, timedelta)
+    @handle(*values.LITERALS)
     def literal(self, node):
         return node
 

@@ -58,13 +58,13 @@ class CQLTestCase(TransactionTestCase):
 
     def test_id_eq(self):
         self.evaluate(
-            'identifier = "A"',
+            'identifier = \'A\'',
             ('A',)
         )
 
     def test_id_ne(self):
         self.evaluate(
-            'identifier <> "B"',
+            'identifier <> \'B\'',
             ('A',)
         )
 
@@ -102,25 +102,25 @@ class CQLTestCase(TransactionTestCase):
 
     def test_common_value_eq(self):
         self.evaluate(
-            'strAttribute = "AAA"',
+            'strAttribute = \'AAA\'',
             ('A',)
         )
 
     def test_common_value_in(self):
         self.evaluate(
-            'strAttribute IN ("AAA", "XXX")',
+            'strAttribute IN (\'AAA\', \'XXX\')',
             ('A',)
         )
 
     def test_common_value_like(self):
         self.evaluate(
-            'strAttribute LIKE "AA%"',
+            'strAttribute LIKE \'AA%\'',
             ('A',)
         )
 
     def test_common_value_like_middle(self):
         self.evaluate(
-            r'strAttribute LIKE "A%A"',
+            'strAttribute LIKE \'A%A\'',
             ('A',)
         )
 
@@ -159,79 +159,79 @@ class CQLTestCase(TransactionTestCase):
 
     def test_like_beginswith(self):
         self.evaluate(
-            'strMetaAttribute LIKE "A%"',
+            'strMetaAttribute LIKE \'A%\'',
             ('A',)
         )
 
     def test_ilike_beginswith(self):
         self.evaluate(
-            'strMetaAttribute ILIKE "a%"',
+            'strMetaAttribute ILIKE \'a%\'',
             ('A',)
         )
 
     def test_like_endswith(self):
         self.evaluate(
-            r'strMetaAttribute LIKE "%A"',
+            'strMetaAttribute LIKE \'%A\'',
             ('A',)
         )
 
     def test_ilike_endswith(self):
         self.evaluate(
-            r'strMetaAttribute ILIKE "%a"',
+            'strMetaAttribute ILIKE \'%a\'',
             ('A',)
         )
 
     def test_like_middle(self):
         self.evaluate(
-            r'strMetaAttribute LIKE "%parent%"',
+            'strMetaAttribute LIKE \'%parent%\'',
             ('A', 'B')
         )
 
     def test_like_startswith_middle(self):
         self.evaluate(
-            r'strMetaAttribute LIKE "A%rent%"',
+            'strMetaAttribute LIKE \'A%rent%\'',
             ('A',)
         )
 
     def test_like_middle_endswith(self):
         self.evaluate(
-            r'strMetaAttribute LIKE "%ren%A"',
+            'strMetaAttribute LIKE \'%ren%A\'',
             ('A',)
         )
 
     def test_like_startswith_middle_endswith(self):
         self.evaluate(
-            r'strMetaAttribute LIKE "A%ren%A"',
+            'strMetaAttribute LIKE \'A%ren%A\'',
             ('A',)
         )
 
     def test_ilike_middle(self):
         self.evaluate(
-            'strMetaAttribute ILIKE "%PaReNT%"',
+            'strMetaAttribute ILIKE \'%PaReNT%\'',
             ('A', 'B')
         )
 
     def test_not_like_beginswith(self):
         self.evaluate(
-            'strMetaAttribute NOT LIKE "B%"',
+            'strMetaAttribute NOT LIKE \'B%\'',
             ('A',)
         )
 
     def test_not_ilike_beginswith(self):
         self.evaluate(
-            'strMetaAttribute NOT ILIKE "b%"',
+            'strMetaAttribute NOT ILIKE \'b%\'',
             ('A',)
         )
 
     def test_not_like_endswith(self):
         self.evaluate(
-            r'strMetaAttribute NOT LIKE "%B"',
+            'strMetaAttribute NOT LIKE \'%B\'',
             ('A',)
         )
 
     def test_not_ilike_endswith(self):
         self.evaluate(
-            r'strMetaAttribute NOT ILIKE "%b"',
+            'strMetaAttribute NOT ILIKE \'%b\'',
             ('A',)
         )
 
@@ -239,13 +239,13 @@ class CQLTestCase(TransactionTestCase):
 
     def test_string_in(self):
         self.evaluate(
-            'identifier IN ("A", \'B\')',
+            'identifier IN (\'A\', \'B\')',
             ('A', 'B')
         )
 
     def test_string_not_in(self):
         self.evaluate(
-            'identifier NOT IN ("B", \'C\')',
+            'identifier NOT IN (\'B\', \'C\')',
             ('A',)
         )
 
@@ -368,7 +368,7 @@ class CQLTestCase(TransactionTestCase):
 
     def test_bbox(self):
         self.evaluate(
-            'BBOX(geometry, 0, 0, 1, 1, "EPSG:4326")',
+            'BBOX(geometry, 0, 0, 1, 1, \'EPSG:4326\')',
             ('A',)
         )
 

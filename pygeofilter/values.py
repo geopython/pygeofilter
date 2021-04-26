@@ -27,6 +27,10 @@
 
 
 from dataclasses import dataclass
+from datetime import date, time, datetime, timedelta
+
+
+LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
 
 
 @dataclass

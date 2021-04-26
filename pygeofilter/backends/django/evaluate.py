@@ -26,7 +26,6 @@
 # ------------------------------------------------------------------------------
 
 import json
-from datetime import date, time, datetime, timedelta
 
 from django.contrib.gis.geos import GEOSGeometry, Polygon
 
@@ -34,9 +33,6 @@ from . import filters
 from ... import ast
 from ... import values
 from ..evaluator import Evaluator, handle
-
-
-LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
 
 
 class DjangoFilterEvaluator(Evaluator):
@@ -170,7 +166,7 @@ class DjangoFilterEvaluator(Evaluator):
     # def function(self, node, *arguments):
     #     return self.function_map[node.name](*arguments)
 
-    @handle(list, str, float, int, bool, datetime, date, time, timedelta)
+    @handle(*values.LITERALS)
     def literal(self, node):
         return filters.literal(node)
 
