@@ -33,6 +33,7 @@ from pygeoif import geometry
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.ast import get_repr
 from pygeofilter import ast
+from pygeofilter import values
 
 
 def test_attribute_eq_literal():
@@ -306,7 +307,9 @@ def test_intersects_attr_point():
     result = parse('INTERSECTS(geometry, POINT(1 1))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Point(1, 1).__geo_interface__,
+        values.Geometry(
+            geometry.Point(1, 1).__geo_interface__
+        ),
         ast.SpatialComparisonOp('INTERSECTS'),
     )
 
@@ -314,7 +317,9 @@ def test_intersects_attr_point():
 def test_disjoint_linestring_attr():
     result = parse('DISJOINT(LINESTRING(1 1,2 2), geometry)')
     assert result == ast.SpatialOperationPredicateNode(
-        geometry.LineString([(1, 1), (2, 2)]).__geo_interface__,
+        values.Geometry(
+            geometry.LineString([(1, 1), (2, 2)]).__geo_interface__,
+        ),
         ast.AttributeExpression('geometry'),
         ast.SpatialComparisonOp('DISJOINT'),
     )
@@ -324,7 +329,9 @@ def test_contains_attr_polygon():
     result = parse('CONTAINS(geometry, POLYGON((1 1,2 2,0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('CONTAINS'),
     )
 
@@ -332,9 +339,11 @@ def test_contains_attr_polygon():
 def test_within_multipolygon_attr():
     result = parse('WITHIN(MULTIPOLYGON(((1 1,2 2,0 3,1 1))), geometry)')
     assert result == ast.SpatialOperationPredicateNode(
-        geometry.MultiPolygon([
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiPolygon([
+                geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
+            ]).__geo_interface__,
+        ),
         ast.AttributeExpression('geometry'),
         ast.SpatialComparisonOp('WITHIN'),
     )
@@ -344,10 +353,12 @@ def test_touches_attr_multilinestring():
     result = parse('TOUCHES(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.MultiLineString([
-            geometry.LineString([(1, 1), (2, 2)]),
-            geometry.LineString([(0, 3), (1, 1)]),
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiLineString([
+                geometry.LineString([(1, 1), (2, 2)]),
+                geometry.LineString([(0, 3), (1, 1)]),
+            ]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('TOUCHES'),
     )
 
@@ -356,10 +367,12 @@ def test_crosses_attr_multilinestring():
     result = parse('CROSSES(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.MultiLineString([
-            geometry.LineString([(1, 1), (2, 2)]),
-            geometry.LineString([(0, 3), (1, 1)]),
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiLineString([
+                geometry.LineString([(1, 1), (2, 2)]),
+                geometry.LineString([(0, 3), (1, 1)]),
+            ]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('CROSSES'),
     )
 
@@ -368,10 +381,12 @@ def test_overlaps_attr_multilinestring():
     result = parse('OVERLAPS(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.MultiLineString([
-            geometry.LineString([(1, 1), (2, 2)]),
-            geometry.LineString([(0, 3), (1, 1)]),
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiLineString([
+                geometry.LineString([(1, 1), (2, 2)]),
+                geometry.LineString([(0, 3), (1, 1)]),
+            ]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('OVERLAPS'),
     )
 
@@ -402,7 +417,9 @@ def test_relate_attr_polygon():
     )
     assert result == ast.SpatialPatternPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        ),
         pattern='1*T***T**',
     )
 
@@ -414,7 +431,9 @@ def test_dwithin_attr_polygon():
     print(get_repr(result))
     assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        ),
         ast.SpatialDistanceOp('DWITHIN'),
         distance=5,
         units='feet',
@@ -428,7 +447,9 @@ def test_beyond_attr_polygon():
     print(get_repr(result))
     assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        ),
         ast.SpatialDistanceOp('BEYOND'),
         distance=5,
         units='nautical miles',
