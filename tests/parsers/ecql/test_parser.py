@@ -330,7 +330,9 @@ def test_contains_attr_polygon():
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
         ),
         ast.SpatialComparisonOp('CONTAINS'),
     )
@@ -418,7 +420,9 @@ def test_relate_attr_polygon():
     assert result == ast.SpatialPatternPredicateNode(
         ast.AttributeExpression('geometry'),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
         ),
         pattern='1*T***T**',
     )
@@ -432,7 +436,9 @@ def test_dwithin_attr_polygon():
     assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
         ),
         ast.SpatialDistanceOp('DWITHIN'),
         distance=5,
@@ -448,7 +454,9 @@ def test_beyond_attr_polygon():
     assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
         ),
         ast.SpatialDistanceOp('BEYOND'),
         distance=5,
