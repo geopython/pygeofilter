@@ -147,10 +147,10 @@ class CQLTestCase(unittest.TestCase):
     # common comparisons
 
     def test_id_eq(self):
-        self.evaluate('identifier = "A"', ("A",))
+        self.evaluate("identifier = 'A'", ("A",))
 
     def test_id_ne(self):
-        self.evaluate('identifier <> "B"', ("A",))
+        self.evaluate("identifier <> 'B'", ("A",))
 
     def test_float_lt(self):
         self.evaluate("floatAttribute < 30", ("A",))
@@ -170,63 +170,63 @@ class CQLTestCase(unittest.TestCase):
     # test different field types
 
     def test_common_value_eq(self):
-        self.evaluate('strAttribute = "AAA"', ("A",))
+        self.evaluate("strAttribute = 'AAA'", ("A",))
 
     def test_common_value_in(self):
-        self.evaluate('strAttribute IN ("AAA", "XXX")', ("A",))
+        self.evaluate("strAttribute IN ('AAA', 'XXX')", ("A",))
 
     def test_common_value_like(self):
-        self.evaluate('strAttribute LIKE "AA%"', ("A",))
+        self.evaluate("strAttribute LIKE 'AA%'", ("A",))
 
     def test_common_value_like_middle(self):
-        self.evaluate(r'strAttribute LIKE "A%A"', ("A",))
+        self.evaluate("strAttribute LIKE 'A%A'", ("A",))
 
     def test_like_beginswith(self):
-        self.evaluate('strMetaAttribute LIKE "A%"', ("A",))
+        self.evaluate("strMetaAttribute LIKE 'A%'", ("A",))
 
     def test_ilike_beginswith(self):
-        self.evaluate('strMetaAttribute ILIKE "a%"', ("A",))
+        self.evaluate("strMetaAttribute ILIKE 'a%'", ("A",))
 
     def test_like_endswith(self):
-        self.evaluate(r'strMetaAttribute LIKE "%A"', ("A",))
+        self.evaluate("strMetaAttribute LIKE '%A'", ("A",))
 
     def test_ilike_endswith(self):
-        self.evaluate(r'strMetaAttribute ILIKE "%a"', ("A",))
+        self.evaluate("strMetaAttribute ILIKE '%a'", ("A",))
 
     def test_like_middle(self):
-        self.evaluate(r'strMetaAttribute LIKE "%parent%"', ("A", "B"))
+        self.evaluate("strMetaAttribute LIKE '%parent%'", ("A", "B"))
 
     def test_like_startswith_middle(self):
-        self.evaluate(r'strMetaAttribute LIKE "A%rent%"', ("A",))
+        self.evaluate("strMetaAttribute LIKE 'A%rent%'", ("A",))
 
     def test_like_middle_endswith(self):
-        self.evaluate(r'strMetaAttribute LIKE "%ren%A"', ("A",))
+        self.evaluate("strMetaAttribute LIKE '%ren%A'", ("A",))
 
     def test_like_startswith_middle_endswith(self):
-        self.evaluate(r'strMetaAttribute LIKE "A%ren%A"', ("A",))
+        self.evaluate("strMetaAttribute LIKE 'A%ren%A'", ("A",))
 
     def test_ilike_middle(self):
-        self.evaluate('strMetaAttribute ILIKE "%PaReNT%"', ("A", "B"))
+        self.evaluate("strMetaAttribute ILIKE '%PaReNT%'", ("A", "B"))
 
     def test_not_like_beginswith(self):
-        self.evaluate('strMetaAttribute NOT LIKE "B%"', ("A",))
+        self.evaluate("strMetaAttribute NOT LIKE 'B%'", ("A",))
 
     def test_not_ilike_beginswith(self):
-        self.evaluate('strMetaAttribute NOT ILIKE "b%"', ("A",))
+        self.evaluate("strMetaAttribute NOT ILIKE 'b%'", ("A",))
 
     def test_not_like_endswith(self):
-        self.evaluate(r'strMetaAttribute NOT LIKE "%B"', ("A",))
+        self.evaluate("strMetaAttribute NOT LIKE '%B'", ("A",))
 
     def test_not_ilike_endswith(self):
-        self.evaluate(r'strMetaAttribute NOT ILIKE "%b"', ("A",))
+        self.evaluate("strMetaAttribute NOT ILIKE '%b'", ("A",))
 
     # (NOT) IN
 
     def test_string_in(self):
-        self.evaluate("identifier IN (\"A\", 'B')", ("A", "B"))
+        self.evaluate("identifier IN ('A', 'B')", ("A", "B"))
 
     def test_string_not_in(self):
-        self.evaluate("identifier NOT IN (\"B\", 'C')", ("A",))
+        self.evaluate("identifier NOT IN ('B', 'C')", ("A",))
 
     # (NOT) NULL
 
@@ -315,7 +315,7 @@ class CQLTestCase(unittest.TestCase):
     #     self.evaluate("BEYOND(geometry, POINT(0 0), 10, meters)", ("B",))
 
     def test_bbox(self):
-        self.evaluate('BBOX(geometry, 0, 0, 1, 1, "EPSG:4326")', ("A",))
+        self.evaluate("BBOX(geometry, 0, 0, 1, 1, 'EPSG:4326')", ("A",))
 
     # arithmethic expressions
 
