@@ -1,3 +1,7 @@
 django
 geoalchemy2
 sqlalchemy
+geopandas
+fiona
+pyproj
+rtree

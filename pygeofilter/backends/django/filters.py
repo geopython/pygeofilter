@@ -301,9 +301,11 @@ def temporal(lhs, time_or_period, op):
         :rtype: :class:`django.db.models.Q`
     """
     assert isinstance(lhs, F)
+    assert isinstance(time_or_period, Value)
     assert op in (
         "BEFORE", "BEFORE OR DURING", "DURING", "DURING OR AFTER", "AFTER"
     )
+    time_or_period = time_or_period.value
     low = None
     high = None
     if op in ("BEFORE", "AFTER"):

@@ -26,130 +26,159 @@
 # ------------------------------------------------------------------------------
 
 import json
-from datetime import date, time, datetime, timedelta
 
 from django.contrib.gis.geos import GEOSGeometry, Polygon
 
 from . import filters
 from ... import ast
-from ...values import Envelope
+from ... import values
+from ..evaluator import Evaluator, handle
 
 
-LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
-
-
-def is_geometry(node):
-    return (
-        isinstance(node, dict) and 'type' in node and 'coordinates' in node
-    )
-
-
-class FilterEvaluator:
-    def __init__(self, field_mapping=None, mapping_choices=None):
+class DjangoFilterEvaluator(Evaluator):
+    def __init__(self, field_mapping, mapping_choices):
         self.field_mapping = field_mapping
         self.mapping_choices = mapping_choices
 
-    def to_filter(self, node):
-        to_filter = self.to_filter
-        if isinstance(node, ast.NotConditionNode):
-            return filters.negate(to_filter(node.sub_node))
-        elif isinstance(node, ast.CombinationConditionNode):
-            return filters.combine(
-                (to_filter(node.lhs), to_filter(node.rhs)),
-                node.op.value,
-            )
-        elif isinstance(node, ast.ComparisonPredicateNode):
-            return filters.compare(
-                to_filter(node.lhs),
-                to_filter(node.rhs),
-                node.op.value,
-                self.mapping_choices
-            )
-        elif isinstance(node, ast.BetweenPredicateNode):
-            return filters.between(
-                to_filter(node.lhs),
-                to_filter(node.low),
-                to_filter(node.high),
-                node.not_
-            )
-        elif isinstance(node, ast.LikePredicateNode):
-            return filters.like(
-                to_filter(node.lhs),
-                node.pattern,
-                node.nocase,
-                node.not_,
-                self.mapping_choices
-            )
-        elif isinstance(node, ast.InPredicateNode):
-            return filters.contains(
-                to_filter(node.lhs), [
-                    to_filter(sub_node) for sub_node in node.sub_nodes
-                ], node.not_, self.mapping_choices
-            )
-        elif isinstance(node, ast.NullPredicateNode):
-            return filters.null(
-                to_filter(node.lhs),
-                node.not_
-            )
-        elif isinstance(node, ast.TemporalPredicateNode):
-            return filters.temporal(
-                to_filter(node.lhs),
-                node.rhs,
-                node.op.value,
-            )
-        elif isinstance(node, ast.SpatialOperationPredicateNode):
-            return filters.spatial(
-                to_filter(node.lhs),
-                to_filter(node.rhs),
-                node.op.name,
-            )
-        elif isinstance(node, ast.SpatialPatternPredicateNode):
-            return filters.spatial(
-                to_filter(node.lhs),
-                to_filter(node.rhs),
-                'RELATE',
-                pattern=node.pattern,
-            )
-        elif isinstance(node, ast.SpatialDistancePredicateNode):
-            return filters.spatial(
-                to_filter(node.lhs),
-                to_filter(node.rhs),
-                node.op.value,
-                distance=node.distance,
-                units=node.units,
-            )
-        elif isinstance(node, ast.BBoxPredicateNode):
-            return filters.bbox(
-                to_filter(node.lhs),
-                node.minx,
-                node.miny,
-                node.maxx,
-                node.maxy,
-                node.crs
-            )
-        elif isinstance(node, ast.AttributeExpression):
-            return filters.attribute(node.name, self.field_mapping)
+    @handle(ast.NotConditionNode)
+    def not_(self, node, sub):
+        return filters.negate(sub)
 
-        elif isinstance(node, ast.ArithmeticExpressionNode):
-            return filters.arithmetic(
-                to_filter(node.lhs),
-                to_filter(node.rhs),
-                node.op.value
-            )
+    @handle(ast.CombinationConditionNode)
+    def combination(self, node, lhs, rhs):
+        return filters.combine((lhs, rhs), node.op.value)
 
-        elif isinstance(node, Envelope):
-            return Polygon.from_bbox(
-                (node.x1, node.y1, node.x2, node.y2)
-            )
+    @handle(ast.ComparisonPredicateNode)
+    def comparison(self, node, lhs, rhs):
+        return filters.compare(
+            lhs,
+            rhs,
+            node.op.value,
+            self.mapping_choices
+        )
 
-        elif is_geometry(node):
-            return GEOSGeometry(json.dumps(node))
+    @handle(ast.BetweenPredicateNode)
+    def between(self, node, lhs, low, high):
+        return filters.between(
+            lhs,
+            low,
+            high,
+            node.not_
+        )
 
-        elif isinstance(node, LITERALS):
-            return filters.literal(node)
+    @handle(ast.LikePredicateNode)
+    def like(self, node, lhs):
+        return filters.like(
+            lhs,
+            node.pattern,
+            node.nocase,
+            node.not_,
+            self.mapping_choices
+        )
 
-        else:
-            raise Exception(f'Unsupported AST node type {type(node)}')
+    @handle(ast.InPredicateNode)
+    def in_(self, node, lhs, *options):
+        return filters.contains(
+            lhs,
+            options,
+            node.not_,
+            self.mapping_choices
+        )
+
+    @handle(ast.NullPredicateNode)
+    def null(self, node, lhs):
+        return filters.null(
+            lhs,
+            node.not_
+        )
+
+    # @handle(ast.ExistsPredicateNode)
+    # def exists(self, node, lhs):
+    #     if self.use_getattr:
+    #         result = hasattr(self.obj, node.lhs.name)
+    #     else:
+    #         result = lhs in self.obj
+
+    #     if node.not_:
+    #         result = not result
+    #     return result
+
+    @handle(ast.TemporalPredicateNode)
+    def temporal(self, node, lhs, rhs):
+        return filters.temporal(
+            lhs,
+            rhs,
+            node.op.value,
+        )
+
+    @handle(ast.SpatialOperationPredicateNode)
+    def spatial_operation(self, node, lhs, rhs):
+        return filters.spatial(
+            lhs,
+            rhs,
+            node.op.name,
+        )
+
+    @handle(ast.SpatialPatternPredicateNode)
+    def spatial_pattern(self, node, lhs, rhs):
+        return filters.spatial(
+            lhs,
+            rhs,
+            'RELATE',
+            pattern=node.pattern,
+        )
+
+    @handle(ast.SpatialDistancePredicateNode)
+    def spatial_distance(self, node, lhs, rhs):
+        return filters.spatial(
+            lhs,
+            rhs,
+            node.op.value,
+            distance=node.distance,
+            units=node.units,
+        )
+
+    @handle(ast.BBoxPredicateNode)
+    def bbox(self, node, lhs):
+        return filters.bbox(
+            lhs,
+            node.minx,
+            node.miny,
+            node.maxx,
+            node.maxy,
+            node.crs
+        )
+
+    @handle(ast.AttributeExpression)
+    def attribute(self, node):
+        return filters.attribute(node.name, self.field_mapping)
+
+    @handle(ast.ArithmeticExpressionNode)
+    def arithmetic(self, node, lhs, rhs):
+        return filters.arithmetic(
+            lhs,
+            rhs,
+            node.op.value
+        )
+
+    # TODO: map functions
+    # @handle(ast.FunctionExpressionNode)
+    # def function(self, node, *arguments):
+    #     return self.function_map[node.name](*arguments)
+
+    @handle(*values.LITERALS)
+    def literal(self, node):
+        return filters.literal(node)
+
+    @handle(values.Geometry)
+    def geometry(self, node):
+        return GEOSGeometry(json.dumps(node.__geo_interface__))
+
+    @handle(values.Envelope)
+    def envelope(self, node):
+        return Polygon.from_bbox(
+            (node.x1, node.y1, node.x2, node.y2)
+        )
 
 
 def to_filter(root, field_mapping=None, mapping_choices=None):
@@ -163,4 +192,6 @@ def to_filter(root, field_mapping=None, mapping_choices=None):
         :returns: a Django query object
         :rtype: :class:`django.db.models.Q`
     """
-    return FilterEvaluator(field_mapping, mapping_choices).to_filter(root)
+    return DjangoFilterEvaluator(
+        field_mapping, mapping_choices
+    ).evaluate(root)

@@ -34,6 +34,13 @@ from pygeoif import geometry
 from pygeofilter.parsers.cql_json import parse
 from pygeofilter.ast import get_repr
 from pygeofilter import ast
+from pygeofilter import values
+
+
+def normalize_geom(geometry):
+    if hasattr(geometry, '__geo_interface__'):
+        geometry = geometry.__geo_interface__
+    return json.loads(json.dumps(geometry))
 
 
 def test_attribute_eq_literal():
@@ -388,7 +395,11 @@ def test_intersects_attr_point():
     })
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        json.loads(json.dumps(geometry.Point(1, 1).__geo_interface__)),
+        values.Geometry(
+            normalize_geom(
+                geometry.Point(1, 1).__geo_interface__
+            )
+        ),
         ast.SpatialComparisonOp('INTERSECTS'),
     )
 
@@ -405,7 +416,11 @@ def test_disjoint_linestring_attr():
         ]
     })
     assert result == ast.SpatialOperationPredicateNode(
-        json.loads(json.dumps(geometry.LineString([(1, 1), (2, 2)]).__geo_interface__)),
+        values.Geometry(
+            normalize_geom(
+                geometry.LineString([(1, 1), (2, 2)]).__geo_interface__
+            ),
+        ),
         ast.AttributeExpression('geometry'),
         ast.SpatialComparisonOp('DISJOINT'),
     )
@@ -426,7 +441,13 @@ def test_contains_attr_polygon():
     })
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        json.loads(json.dumps(geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__)),
+        values.Geometry(
+            normalize_geom(
+                geometry.Polygon(
+                    [(1, 1), (2, 2), (0, 3), (1, 1)]
+                ).__geo_interface__
+            ),
+        ),
         ast.SpatialComparisonOp('CONTAINS'),
     )
 
@@ -445,11 +466,13 @@ def test_within_multipolygon_attr():
         ]
     })
     assert result == ast.SpatialOperationPredicateNode(
-        json.loads(json.dumps(
-            geometry.MultiPolygon([
-                geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-            ]).__geo_interface__
-        )),
+        values.Geometry(
+            normalize_geom(
+                geometry.MultiPolygon([
+                    geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
+                ]).__geo_interface__
+            ),
+        ),
         ast.AttributeExpression('geometry'),
         ast.SpatialComparisonOp('WITHIN'),
     )
@@ -468,12 +491,14 @@ def test_touches_attr_multilinestring():
     })
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        json.loads(json.dumps(
-            geometry.MultiLineString([
-                geometry.LineString([(1, 1), (2, 2)]),
-                geometry.LineString([(0, 3), (1, 1)]),
-            ]).__geo_interface__
-        )),
+        values.Geometry(
+            normalize_geom(
+                geometry.MultiLineString([
+                    geometry.LineString([(1, 1), (2, 2)]),
+                    geometry.LineString([(0, 3), (1, 1)]),
+                ]).__geo_interface__
+            ),
+        ),
         ast.SpatialComparisonOp('TOUCHES'),
     )
 
@@ -491,12 +516,14 @@ def test_crosses_attr_multilinestring():
     })
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        json.loads(json.dumps(
-            geometry.MultiLineString([
-                geometry.LineString([(1, 1), (2, 2)]),
-                geometry.LineString([(0, 3), (1, 1)]),
-            ]).__geo_interface__
-        )),
+        values.Geometry(
+            normalize_geom(
+                geometry.MultiLineString([
+                    geometry.LineString([(1, 1), (2, 2)]),
+                    geometry.LineString([(0, 3), (1, 1)]),
+                ]).__geo_interface__
+            )
+        ),
         ast.SpatialComparisonOp('CROSSES'),
     )
 
@@ -514,12 +541,14 @@ def test_overlaps_attr_multilinestring():
     })
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        json.loads(json.dumps(
-            geometry.MultiLineString([
-                geometry.LineString([(1, 1), (2, 2)]),
-                geometry.LineString([(0, 3), (1, 1)]),
-            ]).__geo_interface__
-        )),
+        values.Geometry(
+            normalize_geom(
+                geometry.MultiLineString([
+                    geometry.LineString([(1, 1), (2, 2)]),
+                    geometry.LineString([(0, 3), (1, 1)]),
+                ]).__geo_interface__
+            ),
+        ),
         ast.SpatialComparisonOp('OVERLAPS'),
     )
 

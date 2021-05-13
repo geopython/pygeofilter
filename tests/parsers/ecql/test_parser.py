@@ -33,10 +33,11 @@ from pygeoif import geometry
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.ast import get_repr
 from pygeofilter import ast
+from pygeofilter import values
 
 
 def test_attribute_eq_literal():
-    result = parse('attr = "A"')
+    result = parse('attr = \'A\'')
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         'A',
@@ -120,7 +121,7 @@ def test_attribute_between_negative_positive():
 
 
 def test_string_like():
-    result = parse('attr LIKE "some%"')
+    result = parse('attr LIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -128,12 +129,12 @@ def test_string_like():
         not_=False,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
 def test_string_ilike():
-    result = parse('attr ILIKE "some%"')
+    result = parse('attr ILIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -141,12 +142,12 @@ def test_string_ilike():
         not_=False,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
 def test_string_not_like():
-    result = parse('attr NOT LIKE "some%"')
+    result = parse('attr NOT LIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -154,12 +155,12 @@ def test_string_not_like():
         not_=True,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
 def test_string_not_ilike():
-    result = parse('attr NOT ILIKE "some%"')
+    result = parse('attr NOT ILIKE \'some%\'')
     assert result == ast.LikePredicateNode(
         ast.AttributeExpression('attr'),
         'some%',
@@ -167,7 +168,7 @@ def test_string_not_ilike():
         not_=True,
         wildcard='%',
         singlechar='.',
-        escapechar=None,
+        escapechar='\\',
     )
 
 
@@ -185,7 +186,7 @@ def test_attribute_in_list():
 
 
 def test_attribute_not_in_list():
-    result = parse('attr NOT IN ("A", "B", \'C\', \'D\')')
+    result = parse('attr NOT IN (\'A\', \'B\', \'C\', \'D\')')
     assert result == ast.InPredicateNode(
         ast.AttributeExpression('attr'), [
             "A",
@@ -209,6 +210,31 @@ def test_attribute_is_not_null():
     assert result == ast.NullPredicateNode(
         ast.AttributeExpression('attr'), True
     )
+
+
+def test_attribute_exists():
+    result = parse('attr EXISTS')
+    assert result == ast.ExistsPredicateNode(
+        ast.AttributeExpression('attr'), False
+    )
+
+
+def test_attribute_does_not_exist():
+    result = parse('attr DOES-NOT-EXIST')
+    assert result == ast.ExistsPredicateNode(
+        ast.AttributeExpression('attr'), True
+    )
+
+
+def test_include():
+    result = parse('INCLUDE')
+    assert result == ast.IncludePredicateNode(False)
+
+
+def test_exclude():
+    result = parse('EXCLUDE')
+    assert result == ast.IncludePredicateNode(True)
+
 
 # Temporal predicate
 
@@ -281,7 +307,9 @@ def test_intersects_attr_point():
     result = parse('INTERSECTS(geometry, POINT(1 1))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Point(1, 1).__geo_interface__,
+        values.Geometry(
+            geometry.Point(1, 1).__geo_interface__
+        ),
         ast.SpatialComparisonOp('INTERSECTS'),
     )
 
@@ -289,7 +317,9 @@ def test_intersects_attr_point():
 def test_disjoint_linestring_attr():
     result = parse('DISJOINT(LINESTRING(1 1,2 2), geometry)')
     assert result == ast.SpatialOperationPredicateNode(
-        geometry.LineString([(1, 1), (2, 2)]).__geo_interface__,
+        values.Geometry(
+            geometry.LineString([(1, 1), (2, 2)]).__geo_interface__,
+        ),
         ast.AttributeExpression('geometry'),
         ast.SpatialComparisonOp('DISJOINT'),
     )
@@ -299,7 +329,11 @@ def test_contains_attr_polygon():
     result = parse('CONTAINS(geometry, POLYGON((1 1,2 2,0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('CONTAINS'),
     )
 
@@ -307,9 +341,11 @@ def test_contains_attr_polygon():
 def test_within_multipolygon_attr():
     result = parse('WITHIN(MULTIPOLYGON(((1 1,2 2,0 3,1 1))), geometry)')
     assert result == ast.SpatialOperationPredicateNode(
-        geometry.MultiPolygon([
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiPolygon([
+                geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
+            ]).__geo_interface__,
+        ),
         ast.AttributeExpression('geometry'),
         ast.SpatialComparisonOp('WITHIN'),
     )
@@ -319,10 +355,12 @@ def test_touches_attr_multilinestring():
     result = parse('TOUCHES(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.MultiLineString([
-            geometry.LineString([(1, 1), (2, 2)]),
-            geometry.LineString([(0, 3), (1, 1)]),
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiLineString([
+                geometry.LineString([(1, 1), (2, 2)]),
+                geometry.LineString([(0, 3), (1, 1)]),
+            ]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('TOUCHES'),
     )
 
@@ -331,10 +369,12 @@ def test_crosses_attr_multilinestring():
     result = parse('CROSSES(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.MultiLineString([
-            geometry.LineString([(1, 1), (2, 2)]),
-            geometry.LineString([(0, 3), (1, 1)]),
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiLineString([
+                geometry.LineString([(1, 1), (2, 2)]),
+                geometry.LineString([(0, 3), (1, 1)]),
+            ]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('CROSSES'),
     )
 
@@ -343,10 +383,12 @@ def test_overlaps_attr_multilinestring():
     result = parse('OVERLAPS(geometry, MULTILINESTRING((1 1,2 2),(0 3,1 1)))')
     assert result == ast.SpatialOperationPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.MultiLineString([
-            geometry.LineString([(1, 1), (2, 2)]),
-            geometry.LineString([(0, 3), (1, 1)]),
-        ]).__geo_interface__,
+        values.Geometry(
+            geometry.MultiLineString([
+                geometry.LineString([(1, 1), (2, 2)]),
+                geometry.LineString([(0, 3), (1, 1)]),
+            ]).__geo_interface__,
+        ),
         ast.SpatialComparisonOp('OVERLAPS'),
     )
 
@@ -372,10 +414,16 @@ def test_overlaps_attr_multilinestring():
 # relate
 
 def test_relate_attr_polygon():
-    result = parse('RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)), "1*T***T**")')
+    result = parse(
+        'RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)), \'1*T***T**\')'
+    )
     assert result == ast.SpatialPatternPredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
+        ),
         pattern='1*T***T**',
     )
 
@@ -387,7 +435,11 @@ def test_dwithin_attr_polygon():
     print(get_repr(result))
     assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
+        ),
         ast.SpatialDistanceOp('DWITHIN'),
         distance=5,
         units='feet',
@@ -401,7 +453,11 @@ def test_beyond_attr_polygon():
     print(get_repr(result))
     assert result == ast.SpatialDistancePredicateNode(
         ast.AttributeExpression('geometry'),
-        geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+        values.Geometry(
+            geometry.Polygon([
+                (1, 1), (2, 2), (0, 3), (1, 1)
+            ]).__geo_interface__,
+        ),
         ast.SpatialDistanceOp('BEYOND'),
         distance=5,
         units='nautical miles',
@@ -423,7 +479,7 @@ def test_bbox_simple():
 
 
 def test_bbox_crs():
-    result = parse('BBOX(geometry, 1, 2, 3, 4, "EPSG:3875")')
+    result = parse('BBOX(geometry, 1, 2, 3, 4, \'EPSG:3875\')')
     assert result == ast.BBoxPredicateNode(
         ast.AttributeExpression('geometry'),
         1,
@@ -565,7 +621,7 @@ def test_function_single_arg():
 
 
 def test_function_attr_string_arg():
-    result = parse('attr = myfunc(other_attr, "abc")')
+    result = parse('attr = myfunc(other_attr, \'abc\')')
     assert result == ast.ComparisonPredicateNode(
         ast.AttributeExpression('attr'),
         ast.FunctionExpressionNode(

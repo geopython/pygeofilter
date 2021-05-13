@@ -27,37 +27,19 @@
 
 
 from dataclasses import dataclass
+from datetime import date, time, datetime, timedelta
 
 
-class _Value:
-    def __init__(self, value):
-        self.value = value
-
-    def __eq__(self, other):
-        if type(self) != type(other):
-            return False
-
-        return self.value == other.value
+LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
 
 
-class Geometry(_Value):
-    def __repr__(self):
-        return "GEOMETRY '%s'" % self.value
+@dataclass
+class Geometry:
+    geometry: dict
 
-
-class DateTime(_Value):
-    def __repr__(self):
-        return "DATETIME '%s'" % self.value
-
-
-class Duration(_Value):
-    def __repr__(self):
-        return "DURATION '%s'" % self.value
-
-
-class BBox(_Value):
-    def __repr__(self):
-        return "BBOX '%s'" % self.value
+    @property
+    def __geo_interface__(self):
+        return self.geometry
 
 
 @dataclass
