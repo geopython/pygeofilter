@@ -79,8 +79,11 @@ def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):
         x_escape_char = '\\\\\\\\'
     else:
         x_escape_char = re.escape(escape_char)
+    dx_escape_char = re.escape(x_escape_char)
 
     pattern = re.escape(like)
+
+    # handle not escaped wildcards/single chars
     pattern = re.sub(
         f'(?<!{x_escape_char}){dx_wildcard}',
         '.*',
@@ -94,12 +97,12 @@ def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):
 
     # handle escaped wildcard, single chars and escape chars
     pattern = re.sub(
-        f'{x_escape_char}{dx_wildcard}',
+        f'{dx_escape_char}{dx_wildcard}',
         x_wildcard,
         pattern,
     )
     pattern = re.sub(
-        f'{x_escape_char}{dx_single_char}',
+        f'{dx_escape_char}{dx_single_char}',
         x_single_char,
         pattern,
     )
