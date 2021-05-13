@@ -380,6 +380,66 @@ def test_attribute_overlappedby_dt_open():
         ast.TemporalComparisonOp('OVERLAPPEDBY'),
     )
 
+
+# Array predicate
+
+
+def test_attribute_aequals():
+    result = parse({
+        "aequals": [
+            {"property": "arrayattr"},
+            [1, 2, 3]
+        ]
+    })
+    assert result == ast.ArrayPredicateNode(
+        ast.AttributeExpression('arrayattr'),
+        [1, 2, 3],
+        ast.ArrayComparisonOp('AEQUALS'),
+    )
+
+
+def test_attribute_aoverlaps():
+    result = parse({
+        "aoverlaps": [
+            {"property": "arrayattr"},
+            [1, 2, 3]
+        ]
+    })
+    assert result == ast.ArrayPredicateNode(
+        ast.AttributeExpression('arrayattr'),
+        [1, 2, 3],
+        ast.ArrayComparisonOp('AOVERLAPS'),
+    )
+
+
+def test_attribute_acontains():
+    result = parse({
+        "acontains": [
+            {"property": "arrayattr"},
+            [1, 2, 3]
+        ]
+    })
+    assert result == ast.ArrayPredicateNode(
+        ast.AttributeExpression('arrayattr'),
+        [1, 2, 3],
+        ast.ArrayComparisonOp('ACONTAINS'),
+    )
+
+
+def test_attribute_acontainedby():
+    result = parse({
+        "acontainedBy": [
+            {"property": "arrayattr"},
+            [1, 2, 3]
+        ]
+    })
+    assert result == ast.ArrayPredicateNode(
+        ast.AttributeExpression('arrayattr'),
+        [1, 2, 3],
+        ast.ArrayComparisonOp('ACONTAINEDBY'),
+    )
+
+
 # Spatial predicate
 
 

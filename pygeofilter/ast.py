@@ -294,6 +294,29 @@ class TemporalPredicateNode(PredicateNode):
         return f"{{}} {self.op} {{}}"
 
 
+class ArrayComparisonOp(Enum):
+    AEQUALS = 'AEQUALS'
+    ACONTAINS = 'ACONTAINS'
+    ACONTAINEDBY = 'ACONTAINEDBY'
+    AOVERLAPS = 'AOVERLAPS'
+
+
+@dataclass
+class ArrayPredicateNode(PredicateNode):
+    """ Node class to represent array predicates.
+    """
+
+    lhs: Node
+    rhs: Node
+    op: ArrayComparisonOp
+
+    def get_sub_nodes(self):
+        return [self.lhs, self.rhs]
+
+    def get_template(self):
+        return f"{{}} {self.op} {{}}"
+
+
 class SpatialdPredicateNode(PredicateNode):
     pass
 

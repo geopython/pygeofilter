@@ -56,6 +56,10 @@ TEMPORAL_PREDICATES = {
     'tequals', 'anyinteract'
 }
 
+ARRAY_PREDICATES = {
+    'aequals', 'acontains', 'acontainedBy', 'aoverlaps'
+}
+
 
 def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
     if is_temporal and isinstance(node, str):
@@ -168,7 +172,12 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
                 op=ast.TemporalComparisonOp(name.upper()),
             )
 
-        # TODO: array predicates
+        elif name in ARRAY_PREDICATES:
+            return ast.ArrayPredicateNode(
+                walk_cql_json(value[0]),
+                walk_cql_json(value[1]),
+                op=ast.ArrayComparisonOp(name.upper())
+            )
 
         elif name in ('+', '-', '*', '/'):
             return ast.ArithmeticExpressionNode(
