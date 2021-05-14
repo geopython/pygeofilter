@@ -61,8 +61,8 @@ class ECQLParser(Parser):
     def condition(self, p):
         return p.predicate
 
-    @_('condition AND condition',
-       'condition OR condition')
+    @_('predicate AND predicate',
+       'predicate OR predicate')
     def condition(self, p):
         return ast.CombinationConditionNode(
             p[0],
