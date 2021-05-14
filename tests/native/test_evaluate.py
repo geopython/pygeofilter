@@ -1,6 +1,6 @@
 from datetime import date, time, datetime, timedelta
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 import math
 
 from shapely.geometry import Point
@@ -8,6 +8,7 @@ import pytest
 
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.native.evaluate import NativeEvaluator
+from pygeofilter import ast
 
 
 @dataclass
@@ -19,6 +20,7 @@ class Record:
     date_attr: date
     datetime_attr: datetime
     point_attr: Point
+    array_attr: List[int]
 
 
 @pytest.fixture
@@ -32,6 +34,7 @@ def data():
             date(2010, 1, 1),
             datetime(2010, 1, 1),
             Point(1, 1),
+            [2, 3]
         ),
         Record(
             'this is another test',
@@ -41,6 +44,7 @@ def data():
             date(2010, 1, 10),
             datetime(2010, 1, 10),
             Point(2, 2),
+            [1, 2, 3, 4, 5]
         )
     ]
 
@@ -151,6 +155,48 @@ def test_temporal(data, filter_):
 
     result = filter_(
         parse('date_attr AFTER 2010-01-08T00:00:00.00+01:00'),
+        data
+    )
+    assert len(result) == 1 and result[0] is data[1]
+
+
+def test_array(data, filter_):
+    result = filter_(
+        ast.ArrayPredicateNode(
+            ast.AttributeExpression('array_attr'),
+            [2, 3],
+            ast.ArrayComparisonOp('AEQUALS'),
+        ),
+        data
+    )
+    assert len(result) == 1 and result[0] is data[0]
+
+    result = filter_(
+        ast.ArrayPredicateNode(
+            ast.AttributeExpression('array_attr'),
+            [1, 2, 3, 4],
+            ast.ArrayComparisonOp('ACONTAINS'),
+        ),
+        data
+    )
+    assert len(result) == 1 and result[0] is data[1]
+
+    result = filter_(
+        ast.ArrayPredicateNode(
+            ast.AttributeExpression('array_attr'),
+            [1, 2, 3, 4],
+            ast.ArrayComparisonOp('ACONTAINEDBY'),
+        ),
+        data
+    )
+    assert len(result) == 1 and result[0] is data[0]
+
+    result = filter_(
+        ast.ArrayPredicateNode(
+            ast.AttributeExpression('array_attr'),
+            [5, 6, 7],
+            ast.ArrayComparisonOp('AOVERLAPS'),
+        ),
         data
     )
     assert len(result) == 1 and result[0] is data[1]

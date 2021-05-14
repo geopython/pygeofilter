@@ -129,6 +129,20 @@ class NativeEvaluator(Evaluator):
 
         return node.op.value == relate_intervals(lhs, rhs)
 
+    @handle(ast.ArrayPredicateNode)
+    def array(self, node, lhs, rhs):
+        left = set(lhs)
+        right = set(rhs)
+
+        if node.op == ast.ArrayComparisonOp.AEQUALS:
+            return left == right
+        elif node.op == ast.ArrayComparisonOp.ACONTAINS:
+            return left >= right
+        elif node.op == ast.ArrayComparisonOp.ACONTAINEDBY:
+            return left <= right
+        elif node.op == ast.ArrayComparisonOp.AOVERLAPS:
+            return bool(left & right)
+
     @handle(ast.SpatialOperationPredicateNode)
     def spatial_operation(self, node, lhs, rhs):
         op = getattr(lhs, node.op.value.lower())
