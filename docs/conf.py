@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'pygeofilter'
-copyright = '2019, Fabian Schindler'
+copyright = '2021, Fabian Schindler'
 author = 'Fabian Schindler'
 
 # The short X.Y version
@@ -41,6 +41,7 @@ release = '0.0.3'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.apidoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -182,3 +183,10 @@ intersphinx_mapping = {
     'python': ('https://python.readthedocs.org/en/latest/', None),
     'django': ('https://django.readthedocs.org/en/latest/', None),
 }
+
+# apidoc configs:
+apidoc_module_dir = '../pygeofilter'
+apidoc_output_dir = 'api'
+# apidoc_excluded_paths = ['tests']
+# apidoc_separate_modules = True
+# apidoc_module_first = True

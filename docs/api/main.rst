@@ -1,5 +1,0 @@
-pygeofilter
-=====
-
-.. automodule:: pygeofilter
-    :members:
