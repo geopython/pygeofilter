@@ -37,27 +37,55 @@ from ... import ast
 # https://portal.ogc.org/files/96288
 
 
-COMPARISON_OP_MAP = {
-    'eq': ast.ComparisonOp.EQ,
-    'lt': ast.ComparisonOp.LT,
-    'gt': ast.ComparisonOp.GT,
-    'lte': ast.ComparisonOp.LE,
-    'gte': ast.ComparisonOp.GE,
+COMPARISON_MAP = {
+    'eq': ast.Equal,
+    'lt': ast.LessThan,
+    'lte': ast.LessEqual,
+    'gt': ast.GreaterThan,
+    'gte': ast.GreaterEqual,
 }
 
-SPATIAL_PREDICATES = {
-    'intersects', 'equals', 'disjoint', 'touches', 'within', 'overlaps',
-    'crosses', 'contains'
+SPATIAL_PREDICATES_MAP = {
+    'intersects': ast.GeometryIntersects,
+    'equals': ast.GeometryEquals,
+    'disjoint': ast.GeometryDisjoint,
+    'touches': ast.GeometryTouches,
+    'within': ast.GeometryWithin,
+    'overlaps': ast.GeometryOverlaps,
+    'crosses': ast.GeometryCrosses,
+    'contains': ast.GeometryContains,
 }
 
-TEMPORAL_PREDICATES = {
-    'before', 'after', 'meets', 'metby', 'toverlaps', 'overlappedby',
-    'begins', 'begunby', 'during', 'tcontains', 'ends', 'endedby',
-    'tequals', 'anyinteract'
+TEMPORAL_PREDICATES_MAP = {
+    'before': ast.TimeBefore,
+    'after': ast.TimeAfter,
+    'meets': ast.TimeMeets,
+    'metby': ast.TimeMetBy,
+    'toverlaps': ast.TimeOverlaps,
+    'overlappedby': ast.TimeOverlappedBy,
+    'begins': ast.TimeBegins,
+    'begunby': ast.TimeBegunBy,
+    'during': ast.TimeDuring,
+    'tcontains': ast.TimeContains,
+    'ends': ast.TimeEnds,
+    'endedby': ast.TimeEndedBy,
+    'tequals': ast.TimeEquals,
+    # 'anyinteract': ast.TimeAnyInteract, # TODO?
 }
 
-ARRAY_PREDICATES = {
-    'aequals', 'acontains', 'acontainedBy', 'aoverlaps'
+
+ARRAY_PREDICATES_MAP = {
+    'aequals': ast.ArrayEquals,
+    'acontains': ast.ArrayContains,
+    'acontainedBy': ast.ArrayContainedBy,
+    'aoverlaps': ast.ArrayOverlaps,
+}
+
+ARITHMETIC_MAP = {
+    '+': ast.Add,
+    '-': ast.Sub,
+    '*': ast.Mul,
+    '/': ast.Div,
 }
 
 
@@ -99,14 +127,12 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
     # decode all other nodes
     for name, value in node.items():
         if name in ('and', 'or'):
-            op = ast.CombinationOp(name.upper())
             sub_items = walk_cql_json(value)
             last = sub_items[0]
             for sub_item in sub_items[1:]:
-                last = ast.CombinationConditionNode(
+                last = (ast.And if name == 'and' else ast.Or)(
                     last,
                     sub_item,
-                    op=op
                 )
             return last
 
@@ -115,18 +141,16 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
             # that regard
             if isinstance(value, list):
                 value = value[0]
-            return ast.NotConditionNode(walk_cql_json(value))
+            return ast.Not(walk_cql_json(value))
 
-        elif name in ('eq', 'lt', 'gt', 'lte', 'gte'):
-            op = COMPARISON_OP_MAP[name]
-            return ast.ComparisonPredicateNode(
+        elif name in COMPARISON_MAP:
+            return COMPARISON_MAP[name](
                 walk_cql_json(value[0]),
                 walk_cql_json(value[1]),
-                op,
             )
 
         elif name == 'between':
-            return ast.BetweenPredicateNode(
+            return ast.Between(
                 walk_cql_json(value['value']),
                 walk_cql_json(value['lower']),
                 walk_cql_json(value['upper']),
@@ -134,7 +158,7 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
             )
 
         elif name == 'like':
-            return ast.LikePredicateNode(
+            return ast.Like(
                 walk_cql_json(value['like'][0]),
                 value['like'][1],
                 nocase=value.get('nocase', True),
@@ -145,7 +169,7 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
             )
 
         elif name == 'in':
-            return ast.InPredicateNode(
+            return ast.In(
                 walk_cql_json(value['value']),
                 walk_cql_json(value['list']),
                 not_=False,
@@ -153,44 +177,40 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
             )
 
         elif name == 'isNull':
-            return ast.NullPredicateNode(
+            return ast.IsNull(
                 walk_cql_json(value),
                 not_=False,
             )
 
-        elif name in SPATIAL_PREDICATES:
-            return ast.SpatialOperationPredicateNode(
+        elif name in SPATIAL_PREDICATES_MAP:
+            return SPATIAL_PREDICATES_MAP[name](
                 walk_cql_json(value[0]),
                 walk_cql_json(value[1]),
-                op=ast.SpatialComparisonOp(name.upper()),
             )
 
-        elif name in TEMPORAL_PREDICATES:
-            return ast.TemporalPredicateNode(
+        elif name in TEMPORAL_PREDICATES_MAP:
+            return TEMPORAL_PREDICATES_MAP[name](
                 walk_cql_json(value[0], is_temporal=True),
                 walk_cql_json(value[1], is_temporal=True),
-                op=ast.TemporalComparisonOp(name.upper()),
             )
 
-        elif name in ARRAY_PREDICATES:
-            return ast.ArrayPredicateNode(
+        elif name in ARRAY_PREDICATES_MAP:
+            return ARRAY_PREDICATES_MAP[name](
                 walk_cql_json(value[0]),
                 walk_cql_json(value[1]),
-                op=ast.ArrayComparisonOp(name.upper())
             )
 
-        elif name in ('+', '-', '*', '/'):
-            return ast.ArithmeticExpressionNode(
+        elif name in ARITHMETIC_MAP:
+            return ARITHMETIC_MAP[name](
                 walk_cql_json(value[0]),
                 walk_cql_json(value[1]),
-                op=ast.ArithmeticOp(name),
             )
 
         elif name == 'property':
-            return ast.AttributeExpression(value)
+            return ast.Attribute(value)
 
         elif name == 'function':
-            return ast.FunctionExpressionNode(
+            return ast.Function(
                 value['name'],
                 walk_cql_json(value['arguments']),
             )

@@ -64,15 +64,14 @@ class ECQLParser(Parser):
     @_('predicate AND predicate',
        'predicate OR predicate')
     def condition(self, p):
-        return ast.CombinationConditionNode(
-            p[0],
-            p[2],
-            ast.CombinationOp(p[1])
-        )
+        if p[1] == 'AND':
+            return ast.And(p[0], p[2])
+        else:
+            return ast.Or(p[0], p[2])
 
     @_('NOT condition')
     def condition(self, p):
-        return ast.NotConditionNode(p.condition)
+        return ast.Not(p.condition)
 
     @_('"(" condition ")"',
        '"[" condition "]"')
@@ -86,19 +85,31 @@ class ECQLParser(Parser):
        'expression GT expression',
        'expression GE expression')
     def predicate(self, p):
-        return ast.ComparisonPredicateNode(p[0], p[2], ast.ComparisonOp(p[1]))
+        op = p[1]
+        if op == '=':
+            return ast.Equal(p[0], p[2])
+        elif op == '<>':
+            return ast.NotEqual(p[0], p[2])
+        elif op == '<':
+            return ast.LessThan(p[0], p[2])
+        elif op == '<=':
+            return ast.LessEqual(p[0], p[2])
+        elif op == '>':
+            return ast.GreaterThan(p[0], p[2])
+        elif op == '>=':
+            return ast.GreaterEqual(p[0], p[2])
 
     @_('expression NOT BETWEEN expression AND expression',
        'expression BETWEEN expression AND expression')
     def predicate(self, p):
-        return ast.BetweenPredicateNode(
+        return ast.Between(
             p[0], p[-3], p[-1], p[1] == 'NOT'
         )
 
     @_('expression NOT LIKE QUOTED',
        'expression LIKE QUOTED')
     def predicate(self, p):
-        return ast.LikePredicateNode(
+        return ast.Like(
             p.expression,
             p[-1],
             nocase=False,
@@ -111,7 +122,7 @@ class ECQLParser(Parser):
     @_('expression NOT ILIKE QUOTED',
        'expression ILIKE QUOTED')
     def predicate(self, p):
-        return ast.LikePredicateNode(
+        return ast.Like(
             p.expression,
             p[-1],
             nocase=True,
@@ -124,22 +135,22 @@ class ECQLParser(Parser):
     @_('expression NOT IN "(" expression_list ")"',
        'expression IN "(" expression_list ")"')
     def predicate(self, p):
-        return ast.InPredicateNode(p[0], p[-2], p[1] == 'NOT')
+        return ast.In(p[0], p[-2], p[1] == 'NOT')
 
     @_('expression IS NOT NULL',
        'expression IS NULL')
     def predicate(self, p):
-        return ast.NullPredicateNode(p[0], p[2] == 'NOT')
+        return ast.IsNull(p[0], p[2] == 'NOT')
 
     @_('attribute EXISTS',
        'attribute DOES_NOT_EXIST')
     def predicate(self, p):
-        return ast.ExistsPredicateNode(p[0], p[1] != 'EXISTS')
+        return ast.Exists(p[0], p[1] != 'EXISTS')
 
     @_('INCLUDE',
        'EXCLUDE')
     def predicate(self, p):
-        return ast.IncludePredicateNode(p[0] != 'INCLUDE')
+        return ast.Include(p[0] != 'INCLUDE')
 
     @_('temporal_predicate',
        'spatial_predicate')
@@ -153,15 +164,19 @@ class ECQLParser(Parser):
        'expression AFTER datetime')
     def temporal_predicate(self, p):
         if len(p) == 3:
-            op = ast.TemporalComparisonOp(p[1])
+            op = p[1]
+            if op == 'BEFORE':
+                return ast.TimeBefore(p.expression, p[-1])
+            elif op == 'DURING':
+                return ast.TimeDuring(p.expression, p[-1])
+            elif op == 'AFTER':
+                return ast.TimeAfter(p.expression, p[-1])
         else:
-            op = ast.TemporalComparisonOp(f'{p[1]} {p[2]} {p[3]}')
-
-        return ast.TemporalPredicateNode(
-            p.expression,
-            p[-1],
-            op,
-        )
+            op = f'{p[1]} {p[2]} {p[3]}'
+            if op == 'BEFORE OR DURING':
+                return ast.TimeBeforeOrDuring(p.expression, p[-1])
+            elif op == 'DURING OR AFTER':
+                return ast.TimeDuringOrAfter(p.expression, p[-1])
 
     @_('datetime DIVIDE datetime',
        'datetime DIVIDE duration',
@@ -178,34 +193,44 @@ class ECQLParser(Parser):
        'OVERLAPS "(" expression "," expression ")"',
        'EQUALS "(" expression "," expression ")"')
     def spatial_predicate(self, p):
-        return ast.SpatialOperationPredicateNode(
-            p[2],
-            p[4],
-            ast.SpatialComparisonOp(p[0])
-        )
+        op = p[0]
+        if op == 'INTERSECTS':
+            return ast.GeometryIntersects(p[2], p[4])
+        elif op == 'DISJOINT':
+            return ast.GeometryDisjoint(p[2], p[4])
+        elif op == 'CONTAINS':
+            return ast.GeometryContains(p[2], p[4])
+        elif op == 'WITHIN':
+            return ast.GeometryWithin(p[2], p[4])
+        elif op == 'TOUCHES':
+            return ast.GeometryTouches(p[2], p[4])
+        elif op == 'CROSSES':
+            return ast.GeometryCrosses(p[2], p[4])
+        elif op == 'OVERLAPS':
+            return ast.GeometryOverlaps(p[2], p[4])
+        elif op == 'EQUALS':
+            return ast.GeometryEquals(p[2], p[4])
 
     @_('RELATE "(" expression "," expression "," QUOTED ")"')
     def spatial_predicate(self, p):
-        return ast.SpatialPatternPredicateNode(p[2], p[4], pattern=p[6])
+        return ast.Relate(p[2], p[4], pattern=p[6])
 
     @_('DWITHIN "(" expression "," expression "," number "," UNITS ")"',
        'BEYOND "(" expression "," expression "," number "," UNITS ")"')
     def spatial_predicate(self, p):
-        return ast.SpatialDistancePredicateNode(
-            p[2],
-            p[4],
-            ast.SpatialDistanceOp(p[0]),
-            distance=p[6],
-            units=p[8],
-        )
+        op = p[0]
+        if op == 'DWITHIN':
+            return ast.DistanceWithin(p[2], p[4], p[6], p[8])
+        elif op == 'BEYOND':
+            return ast.DistanceBeyond(p[2], p[4], p[6], p[8])
 
     @_('BBOX "(" expression "," number "," number "," number "," number ")"')
     def spatial_predicate(self, p):
-        return ast.BBoxPredicateNode(p[2], p[4], p[6], p[8], p[10])
+        return ast.BBox(p[2], p[4], p[6], p[8], p[10])
 
     @_('BBOX "(" expression "," number "," number "," number "," number "," QUOTED ")"')
     def spatial_predicate(self, p):
-        return ast.BBoxPredicateNode(p[2], p[4], p[6], p[8], p[10], p[12])
+        return ast.BBox(p[2], p[4], p[6], p[8], p[10], p[12])
 
     @_('expression_list "," expression')
     def expression_list(self, p):
@@ -221,11 +246,15 @@ class ECQLParser(Parser):
        'expression TIMES expression',
        'expression DIVIDE expression')
     def expression(self, p):
-        return ast.ArithmeticExpressionNode(
-            p[0],
-            p[2],
-            ast.ArithmeticOp(p[1]),
-        )
+        op = p[1]
+        if op == '+':
+            return ast.Add(p[0], p[2])
+        elif op == '-':
+            return ast.Sub(p[0], p[2])
+        elif op == '*':
+            return ast.Mul(p[0], p[2])
+        elif op == '/':
+            return ast.Div(p[0], p[2])
 
     @_('"(" expression ")"',
        '"[" expression "]"')
@@ -234,11 +263,11 @@ class ECQLParser(Parser):
 
     @_('IDENTIFIER "(" ")"')
     def expression(self, p):
-        return ast.FunctionExpressionNode(p[0], [])
+        return ast.Function(p[0], [])
 
     @_('IDENTIFIER "(" expression_list ")"')
     def expression(self, p):
-        return ast.FunctionExpressionNode(p[0], p.expression_list)
+        return ast.Function(p[0], p.expression_list)
 
     @_('GEOMETRY',
        'ENVELOPE',
@@ -270,7 +299,7 @@ class ECQLParser(Parser):
     @_('IDENTIFIER',
        'DOUBLE_QUOTED')
     def attribute(self, p):
-        return ast.AttributeExpression(p[0])
+        return ast.Attribute(p[0])
 
     def error(self, tok):
         raise Exception(f"{repr(tok)}")

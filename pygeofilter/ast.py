@@ -30,7 +30,7 @@
 
 from enum import Enum
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, ClassVar
 
 
 class Node:
@@ -71,13 +71,13 @@ class Node:
         return self_dict == other_dict
 
 
-class ConditionNode(Node):
+class Condition(Node):
     """ The base class for all nodes representing a condition
     """
     pass
 
 
-class NotConditionNode(ConditionNode):
+class Not(Condition):
     """
     Node class to represent a negation condition.
 
@@ -102,14 +102,14 @@ class CombinationOp(Enum):
 
 
 @dataclass
-class CombinationConditionNode(ConditionNode):
+class Combination(Condition):
     """ Node class to represent a condition to combine two other conditions
         using either AND or OR.
     """
 
     lhs: Node
     rhs: Node
-    op: CombinationOp
+    op: ClassVar[CombinationOp] = None
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
@@ -118,7 +118,17 @@ class CombinationConditionNode(ConditionNode):
         return f"{{}} {self.op.name} {{}}"
 
 
-class PredicateNode(Node):
+@dataclass
+class And(Combination):
+    op: ClassVar[CombinationOp] = CombinationOp.AND
+
+
+@dataclass
+class Or(Combination):
+    op: ClassVar[CombinationOp] = CombinationOp.OR
+
+
+class Predicate(Node):
     """ The base class for all nodes representing a predicate
     """
     pass
@@ -134,14 +144,14 @@ class ComparisonOp(Enum):
 
 
 @dataclass
-class ComparisonPredicateNode(PredicateNode):
+class Comparison(Predicate):
     """ Node class to represent a comparison predicate: to compare two
         expressions using a comparison operation.
     """
 
     lhs: Node
     rhs: Node
-    op: ComparisonOp
+    op: ClassVar[ComparisonOp] = None
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
@@ -151,7 +161,37 @@ class ComparisonPredicateNode(PredicateNode):
 
 
 @dataclass
-class BetweenPredicateNode(PredicateNode):
+class Equal(Comparison):
+    op: ClassVar[ComparisonOp] = ComparisonOp.EQ
+
+
+@dataclass
+class NotEqual(Comparison):
+    op: ClassVar[ComparisonOp] = ComparisonOp.NE
+
+
+@dataclass
+class LessThan(Comparison):
+    op: ClassVar[ComparisonOp] = ComparisonOp.LT
+
+
+@dataclass
+class LessEqual(Comparison):
+    op: ClassVar[ComparisonOp] = ComparisonOp.LE
+
+
+@dataclass
+class GreaterThan(Comparison):
+    op: ClassVar[ComparisonOp] = ComparisonOp.GT
+
+
+@dataclass
+class GreaterEqual(Comparison):
+    op: ClassVar[ComparisonOp] = ComparisonOp.GE
+
+
+@dataclass
+class Between(Predicate):
     """ Node class to represent a BETWEEN predicate: to check whether an
         expression value within a range.
     """
@@ -169,7 +209,7 @@ class BetweenPredicateNode(PredicateNode):
 
 
 @dataclass
-class LikePredicateNode(PredicateNode):
+class Like(Predicate):
     """ Node class to represent a wildcard sting matching predicate.
     """
 
@@ -193,7 +233,7 @@ class LikePredicateNode(PredicateNode):
 
 
 @dataclass
-class InPredicateNode(PredicateNode):
+class In(Predicate):
     """ Node class to represent list checking predicate.
     """
     lhs: Node
@@ -211,7 +251,7 @@ class InPredicateNode(PredicateNode):
 
 
 @dataclass
-class NullPredicateNode(PredicateNode):
+class IsNull(Predicate):
     """ Node class to represent null check predicate.
     """
 
@@ -226,7 +266,7 @@ class NullPredicateNode(PredicateNode):
 
 
 @dataclass
-class ExistsPredicateNode(PredicateNode):
+class Exists(Predicate):
     lhs: Node
     not_: bool
 
@@ -238,7 +278,7 @@ class ExistsPredicateNode(PredicateNode):
 
 
 @dataclass
-class IncludePredicateNode(PredicateNode):
+class Include(Predicate):
     not_: bool
 
     def get_template(self):
@@ -279,19 +319,94 @@ class TemporalComparisonOp(Enum):
 
 
 @dataclass
-class TemporalPredicateNode(PredicateNode):
+class TemporalPredicate(Predicate):
     """ Node class to represent temporal predicate.
     """
 
     lhs: Node
     rhs: Node
-    op: TemporalComparisonOp
+    op: ClassVar[TemporalComparisonOp] = None
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
 
     def get_template(self):
         return f"{{}} {self.op} {{}}"
+
+
+@dataclass
+class TimeAfter(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.AFTER
+
+
+@dataclass
+class TimeBefore(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.BEFORE
+
+
+@dataclass
+class TimeBegins(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.BEGINS
+
+
+@dataclass
+class TimeBegunBy(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.BEGUNBY
+
+
+@dataclass
+class TimeContains(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.TCONTAINS
+
+
+@dataclass
+class TimeDuring(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.DURING
+
+
+@dataclass
+class TimeEndedBy(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.ENDEDBY
+
+
+@dataclass
+class TimeEnds(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.ENDS
+
+
+@dataclass
+class TimeEquals(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.TEQUALS
+
+
+@dataclass
+class TimeMeets(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.MEETS
+
+
+@dataclass
+class TimeMetBy(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.METBY
+
+
+@dataclass
+class TimeOverlaps(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.TOVERLAPS
+
+
+@dataclass
+class TimeOverlappedBy(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.OVERLAPPEDBY
+
+
+@dataclass
+class TimeBeforeOrDuring(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.BEFORE_OR_DURING
+
+
+@dataclass
+class TimeDuringOrAfter(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.DURING_OR_AFTER
 
 
 class ArrayComparisonOp(Enum):
@@ -302,13 +417,13 @@ class ArrayComparisonOp(Enum):
 
 
 @dataclass
-class ArrayPredicateNode(PredicateNode):
+class ArrayPredicate(Predicate):
     """ Node class to represent array predicates.
     """
 
     lhs: Node
     rhs: Node
-    op: ArrayComparisonOp
+    op: ClassVar[ArrayComparisonOp] = None
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
@@ -317,7 +432,27 @@ class ArrayPredicateNode(PredicateNode):
         return f"{{}} {self.op} {{}}"
 
 
-class SpatialdPredicateNode(PredicateNode):
+@dataclass
+class ArrayEquals(ArrayPredicate):
+    op: ClassVar[ArrayComparisonOp] = ArrayComparisonOp.AEQUALS
+
+
+@dataclass
+class ArrayContains(ArrayPredicate):
+    op: ClassVar[ArrayComparisonOp] = ArrayComparisonOp.ACONTAINS
+
+
+@dataclass
+class ArrayContainedBy(ArrayPredicate):
+    op: ClassVar[ArrayComparisonOp] = ArrayComparisonOp.ACONTAINEDBY
+
+
+@dataclass
+class ArrayOverlaps(ArrayPredicate):
+    op: ClassVar[ArrayComparisonOp] = ArrayComparisonOp.AOVERLAPS
+
+
+class SpatialdPredicate(Predicate):
     pass
 
 
@@ -333,13 +468,13 @@ class SpatialComparisonOp(Enum):
 
 
 @dataclass
-class SpatialOperationPredicateNode(PredicateNode):
+class SpatialComparisonPredicate(Predicate):
     """ Node class to represent spatial relation predicate.
     """
 
     lhs: Node
     rhs: Node
-    op: SpatialComparisonOp
+    op: ClassVar[SpatialComparisonOp] = None
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
@@ -349,7 +484,47 @@ class SpatialOperationPredicateNode(PredicateNode):
 
 
 @dataclass
-class SpatialPatternPredicateNode(PredicateNode):
+class GeometryIntersects(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.INTERSECTS
+
+
+@dataclass
+class GeometryDisjoint(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.DISJOINT
+
+
+@dataclass
+class GeometryContains(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.CONTAINS
+
+
+@dataclass
+class GeometryWithin(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.WITHIN
+
+
+@dataclass
+class GeometryTouches(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.TOUCHES
+
+
+@dataclass
+class GeometryCrosses(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.CROSSES
+
+
+@dataclass
+class GeometryOverlaps(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.OVERLAPS
+
+
+@dataclass
+class GeometryEquals(SpatialComparisonPredicate):
+    op: ClassVar[SpatialComparisonOp] = SpatialComparisonOp.EQUALS
+
+
+@dataclass
+class Relate(Predicate):
     """ Node class to represent spatial relation predicate.
     """
 
@@ -370,15 +545,15 @@ class SpatialDistanceOp(Enum):
 
 
 @dataclass
-class SpatialDistancePredicateNode(PredicateNode):
+class SpatialDistancePredicate(Predicate):
     """ Node class to represent spatial relation predicate.
     """
 
     lhs: Node
     rhs: Node
-    op: SpatialDistanceOp
     distance: float
     units: str
+    op: ClassVar[SpatialDistanceOp] = None
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
@@ -388,7 +563,17 @@ class SpatialDistancePredicateNode(PredicateNode):
 
 
 @dataclass
-class BBoxPredicateNode(PredicateNode):
+class DistanceWithin(SpatialDistancePredicate):
+    op: ClassVar[SpatialDistanceOp] = SpatialDistanceOp.DWITHIN
+
+
+@dataclass
+class DistanceBeyond(SpatialDistancePredicate):
+    op: ClassVar[SpatialDistanceOp] = SpatialDistanceOp.BEYOND
+
+
+@dataclass
+class BBox(Predicate):
     """ Node class to represent a bounding box predicate.
     """
 
@@ -409,16 +594,13 @@ class BBoxPredicateNode(PredicateNode):
         )
 
 
-# TODO: Array predicates
-
-
-class ExpressionNode(Node):
+class Expression(Node):
     """ The base class for all nodes representing expressions
     """
     pass
 
 
-class AttributeExpression(ExpressionNode):
+class Attribute(Expression):
     """ Node class to represent attribute lookup expressions
 
         :ivar name: the name of the attribute to be accessed
@@ -441,14 +623,14 @@ class ArithmeticOp(Enum):
 
 
 @dataclass
-class ArithmeticExpressionNode(ExpressionNode):
+class Arithmetic(Expression):
     """ Node class to represent arithmetic operation expressions with two
         sub-expressions and an operator.
     """
 
     lhs: Node
     rhs: Node
-    op: ArithmeticOp
+    op: ClassVar[ArithmeticOp] = None
 
     def get_sub_nodes(self):
         return [self.lhs, self.rhs]
@@ -458,7 +640,27 @@ class ArithmeticExpressionNode(ExpressionNode):
 
 
 @dataclass
-class FunctionExpressionNode(ExpressionNode):
+class Add(Arithmetic):
+    op: ClassVar[ArithmeticOp] = ArithmeticOp.ADD
+
+
+@dataclass
+class Sub(Arithmetic):
+    op: ClassVar[ArithmeticOp] = ArithmeticOp.SUB
+
+
+@dataclass
+class Mul(Arithmetic):
+    op: ClassVar[ArithmeticOp] = ArithmeticOp.MUL
+
+
+@dataclass
+class Div(Arithmetic):
+    op: ClassVar[ArithmeticOp] = ArithmeticOp.DIV
+
+
+@dataclass
+class Function(Expression):
     """ Node class to represent function invocations.
     """
 
