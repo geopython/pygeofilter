@@ -62,7 +62,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "dateparser",
-        "sly",
+        "lark",
         "pygeoif",
         "dataclasses;python_version<'3.7'",
     ] if not on_rtd else [],
