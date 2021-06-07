@@ -1,4 +1,5 @@
-recursive-include pygeofilter *.py
+recursive-include pygeofilter *.py *.lark
+global-include *.lark
 include README.md
 include LICENSE
 include requirements.txt

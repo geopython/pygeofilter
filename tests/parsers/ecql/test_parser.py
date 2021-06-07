@@ -407,27 +407,8 @@ def test_intersects_attr_geometrycollection():
         ),
     )
 
-
-
-# POINT(1 1)
-# LINESTRING(1 1,2 2)
-# MULTIPOLYGON(((1 1,2 2,0 3,1 1))
-# MULTILINESTRING((1 1,2 2),(0 3,1 1))
-# POLYGON((1 1,2 2,0 3,1 1))
-
-# def test_equals_attr_geometrycollection():
-#     result = parse('OVERLAPS(geometry, )')
-#     assert result == ast.SpatialPredicateNode(
-#         ast.Attribute('geometry'),
-#         geometry.MultiLineString([
-#             geometry.LineString([(1, 1), (2, 2)]),
-#             geometry.LineString([(0, 3), (1, 1)]),
-#         ]).__geo_interface__,
-#         'OVERLAPS'
-#     )
-
-
 # relate
+
 
 def test_relate_attr_polygon():
     result = parse(

@@ -172,7 +172,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
 
 
 parser = Lark.open(
-    'ecql.lark',
+    'grammar.lark',
     rel_to=__file__,
     parser='lalr',
     debug=True,

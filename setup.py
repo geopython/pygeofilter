@@ -59,7 +59,7 @@ setup(
     url='https://github.com/geopython/pygeofilter',
     license='MIT',
     packages=find_packages(),
-    package_dir={'static': 'static'},
+    include_package_data=True,
     install_requires=[
         "dateparser",
         "sly",
