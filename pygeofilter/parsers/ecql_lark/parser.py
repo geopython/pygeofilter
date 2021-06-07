@@ -1,11 +1,12 @@
 import os.path
 import logging
 
-from lark import Lark, Transformer, logger, v_args
-from dateparser import parse as parse_datetime
+from lark import Lark, logger, v_args
 
 from ... import ast
-from ...util import parse_duration
+from ... import values
+from ..wkt import WKTTransformer
+from ..iso8601 import ISO8601Transformer
 
 
 logger.setLevel(logging.DEBUG)
@@ -24,7 +25,7 @@ SPATIAL_PREDICATES_MAP = {
 
 
 @v_args(inline=True)
-class ECQLTransformer(Transformer):
+class ECQLTransformer(WKTTransformer, ISO8601Transformer):
     def and_(self, lhs, rhs):
         return ast.And(lhs, rhs)
 
@@ -119,6 +120,9 @@ class ECQLTransformer(Transformer):
         cls = ast.DistanceWithin if op == "DWITHIN" else ast.DistanceBeyond
         return cls(lhs, rhs, distance, units)
 
+    def distance_units(self, value):
+        return value
+
     def bbox_spatial_predicate(self, lhs, minx, miny, maxx, maxy, crs=None):
         return ast.BBox(lhs, minx, miny, maxx, maxy, crs)
 
@@ -148,12 +152,6 @@ class ECQLTransformer(Transformer):
     def period(self, start, end):
         return [start, end]
 
-    def DATETIME(self, dt):
-        return parse_datetime(dt)
-
-    def DURATION(self, duration):
-        return parse_duration(duration)
-
     def INT(self, value):
         return int(value)
 
@@ -168,6 +166,9 @@ class ECQLTransformer(Transformer):
 
     def SINGLE_QUOTED(self, token):
         return token[1:-1]
+
+    def geometry(self, value):
+        return values.Geometry(value)
 
 
 parser = Lark.open(

@@ -29,6 +29,8 @@
 from dataclasses import dataclass
 from datetime import date, time, datetime, timedelta
 
+from pygeoif.geometry import as_shape
+
 
 LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
 
@@ -40,6 +42,11 @@ class Geometry:
     @property
     def __geo_interface__(self):
         return self.geometry
+
+    def __eq__(self, o: object) -> bool:
+        return (
+            as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
+        )
 
 
 @dataclass

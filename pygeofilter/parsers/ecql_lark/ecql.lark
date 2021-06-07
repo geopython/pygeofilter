@@ -37,19 +37,13 @@
                    | expression "DURING" "OR" "AFTER" period                -> during_or_after
                    | expression "AFTER" DATETIME                            -> after
 
-?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                 -> binary_spatial_predicate
-                  | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                     -> relate_spatial_predicate
-                  | _distance_spatial_predicate_func "(" expression "," expression "," number "," SINGLE_QUOTED ")"  -> distance_spatial_predicate
-                  | "BBOX" "(" expression "," number "," number "," number "," number [ "," SINGLE_QUOTED ] ")"      -> bbox_spatial_predicate
+?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate
+                  | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                    -> relate_spatial_predicate
+                  | _distance_spatial_predicate_func "(" expression "," expression "," number "," distance_units ")" -> distance_spatial_predicate
+                  | "BBOX" "(" expression "," number "," number "," number "," number [ ","  SINGLE_QUOTED] ")"     -> bbox_spatial_predicate
 !_binary_spatial_predicate_func: "INTERSECTS" | "DISJOINT" | "CONTAINS" | "WITHIN" | "TOUCHES" | "CROSSES" | "OVERLAPS" | "EQUALS"
 !_distance_spatial_predicate_func: "DWITHIN" | "BEYOND"
-// TODO: Spatial predicates
-
-// ?expression: attribute
-//            | literal
-//            | expression ("+" | "-" | "*" | "/") expression
-//            | NAME "(" expression ("," expression)* ")"                      -> function
-//            | "(" expression ")"
+!distance_units: "feet" | "meters" | "statute miles" | "nautical miles" | "kilometers"                              -> distance_units
 
 ?expression: sum
            | NAME "(" [ expression ("," expression)* ] ")"                  -> function
@@ -73,7 +67,7 @@ attribute: NAME
 ?literal: number
         | BOOLEAN
         | SINGLE_QUOTED
-    //    | geometry
+        | geometry                                                          -> geometry
 
 ?number: FLOAT | INT
 
@@ -86,9 +80,9 @@ BOOLEAN: ( "TRUE" | "FALSE" )
 DOUBLE_QUOTED: "\"" /.*?/ "\""
 SINGLE_QUOTED: "'" /.*?/ "'"
 
-%import .spatiotemporal.geometry
-%import .spatiotemporal.DATETIME
-%import .spatiotemporal.DURATION
+%import .wkt.geometry
+%import .iso8601.DATETIME
+%import .iso8601.DURATION
 %import common.CNAME -> NAME
 %import common.INT
 %import common.FLOAT
