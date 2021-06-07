@@ -375,6 +375,40 @@ def test_overlaps_attr_multilinestring():
     )
 
 
+def test_intersects_attr_point_ewkt():
+    result = parse('INTERSECTS(geometry, SRID=4326;POINT(1 1))')
+    assert result.rhs.geometry['crs']['properties']['name'] == \
+        "urn:ogc:def:crs:EPSG::4326"
+    assert result == ast.GeometryIntersects(
+        ast.Attribute('geometry'),
+        values.Geometry(
+            geometry.Point(1, 1).__geo_interface__
+        ),
+    )
+
+
+def test_intersects_attr_geometrycollection():
+    result = parse(
+        'INTERSECTS(geometry, GEOMETRYCOLLECTION(POINT(1 1),'
+        'LINESTRING(1 1,2 2),'
+        'POLYGON((1 1,2 2,0 3,1 1))'
+        '))'
+    )
+    assert result == ast.GeometryIntersects(
+        ast.Attribute('geometry'),
+        values.Geometry(
+            geometry.GeometryCollection([
+                geometry.Point(1, 1),
+                geometry.LineString([(1, 1), (2, 2)]),
+                geometry.Polygon([
+                    (1, 1), (2, 2), (0, 3), (1, 1)
+                ])
+            ]).__geo_interface__
+        ),
+    )
+
+
+
 # POINT(1 1)
 # LINESTRING(1 1,2 2)
 # MULTIPOLYGON(((1 1,2 2,0 3,1 1))

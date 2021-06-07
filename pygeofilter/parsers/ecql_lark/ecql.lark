@@ -67,7 +67,7 @@ attribute: NAME
 ?literal: number
         | BOOLEAN
         | SINGLE_QUOTED
-        | geometry                                                          -> geometry
+        | ewkt_geometry                                                     -> geometry
 
 ?number: FLOAT | INT
 
@@ -80,7 +80,7 @@ BOOLEAN: ( "TRUE" | "FALSE" )
 DOUBLE_QUOTED: "\"" /.*?/ "\""
 SINGLE_QUOTED: "'" /.*?/ "'"
 
-%import .wkt.geometry
+%import .wkt.ewkt_geometry
 %import .iso8601.DATETIME
 %import .iso8601.DURATION
 %import common.CNAME -> NAME
