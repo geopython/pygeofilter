@@ -53,18 +53,6 @@ def data():
     return data
 
 
-# @pytest.fixture(scope='function')
-# def filter_():
-#     function_map = math.__dict__
-
-#     def inner(ast, data):
-#         return [
-#             record
-#             for record in data
-#             if NativeEvaluator(record, function_map).evaluate(ast)
-#         ]
-#     return inner
-
 def filter_(ast, data):
     return [
         record
