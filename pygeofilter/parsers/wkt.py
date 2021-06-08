@@ -70,6 +70,13 @@ class WKTTransformer(Transformer):
             "coordinates": coordinates,
         }
 
+    def wkt__multipoint_2(self, *coordinates):
+        print(coordinates)
+        return {
+            "type": "MultiPoint",
+            "coordinates": coordinates,
+        }
+
     def wkt__multilinestring(self, coordinate_lists):
         return {
             "type": "MultiLineString",

@@ -41,8 +41,8 @@ point: "POINT" "(" coordinate ")"
 linestring: "LINESTRING" "(" coordinate_list ")"
 polygon: "POLYGON" "(" coordinate_lists ")"
 
-multipoint: "MULTIPOINT" "(" coordinate_list ")"
-          | "MULTIPOINT" "(" "(" coordinate ")" ( "," "(" coordinate ")" )* ")"
+multipoint: "MULTIPOINT" "(" coordinate_list ")"                                -> multipoint
+          | "MULTIPOINT" "(" "(" coordinate ")" ( "," "(" coordinate ")" )* ")" -> multipoint_2
 multilinestring: "MULTILINESTRING" "(" coordinate_lists ")"
 
 multipolygon: "MULTIPOLYGON" "(" "(" coordinate_lists ")" ( "," "(" coordinate_lists ")" )* ")"
