@@ -45,6 +45,7 @@ class EvaluatorMeta(type):
         all handler methods by their respective handled types.
     """
     def __init__(cls, name, bases, dct):
+        cls.handler_map = {}
         for value in dct.values():
             if hasattr(value, 'handles_classes'):
                 for handled_class in value.handles_classes:
@@ -54,7 +55,6 @@ class EvaluatorMeta(type):
 class Evaluator(metaclass=EvaluatorMeta):
     """ Base class for AST evaluators.
     """
-    handler_map = {}
 
     def evaluate(self, node: ast.Node) -> Any:
         """ Recursive function to evaluate an abstract syntax tree.
