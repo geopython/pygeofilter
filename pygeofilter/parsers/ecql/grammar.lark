@@ -95,12 +95,15 @@ attribute: NAME
         | BOOLEAN
         | SINGLE_QUOTED
         | ewkt_geometry                                                     -> geometry
+        | envelope
 
 ?number: FLOAT | INT
 
 period: DATETIME "/" DATETIME
       | DURATION "/" DATETIME
       | DATETIME "/" DURATION
+
+envelope: "ENVELOPE" "(" number number number number ")"
 
 BOOLEAN: ( "TRUE" | "FALSE" )
 

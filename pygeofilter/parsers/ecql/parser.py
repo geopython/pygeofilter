@@ -173,7 +173,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return -value
 
     def attribute(self, name):
-        return ast.Attribute(name)
+        return ast.Attribute(str(name))
 
     def period(self, start, end):
         return [start, end]
@@ -195,6 +195,9 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
 
     def geometry(self, value):
         return values.Geometry(value)
+
+    def envelope(self, x1, x2, y1, y2):
+        return values.Envelope(x1, x2, y1, y2)
 
 
 parser = Lark.open(
