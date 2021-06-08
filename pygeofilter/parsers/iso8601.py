@@ -4,7 +4,7 @@
 # Authors: Fabian Schindler <fabian.schindler@eox.at>
 #
 # ------------------------------------------------------------------------------
-# Copyright (C) 2019 EOX IT Services GmbH
+# Copyright (C) 2021 EOX IT Services GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,33 +25,16 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
+from dateparser import parse as parse_datetime
+from lark import Transformer, v_args
 
-from dataclasses import dataclass
-from datetime import date, time, datetime, timedelta
-
-from pygeoif.geometry import as_shape
-
-
-LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
+from ..util import parse_duration
 
 
-@dataclass
-class Geometry:
-    geometry: dict
+@v_args(inline=True)
+class ISO8601Transformer(Transformer):
+    def DATETIME(self, dt):
+        return parse_datetime(dt)
 
-    @property
-    def __geo_interface__(self):
-        return self.geometry
-
-    def __eq__(self, o: object) -> bool:
-        return (
-            as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
-        )
-
-
-@dataclass
-class Envelope:
-    x1: float
-    x2: float
-    y1: float
-    y2: float
+    def DURATION(self, duration):
+        return parse_duration(duration)

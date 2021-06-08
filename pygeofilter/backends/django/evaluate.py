@@ -40,15 +40,15 @@ class DjangoFilterEvaluator(Evaluator):
         self.field_mapping = field_mapping
         self.mapping_choices = mapping_choices
 
-    @handle(ast.NotConditionNode)
+    @handle(ast.Not)
     def not_(self, node, sub):
         return filters.negate(sub)
 
-    @handle(ast.CombinationConditionNode)
+    @handle(ast.And, ast.Or)
     def combination(self, node, lhs, rhs):
         return filters.combine((lhs, rhs), node.op.value)
 
-    @handle(ast.ComparisonPredicateNode)
+    @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
         return filters.compare(
             lhs,
@@ -57,7 +57,7 @@ class DjangoFilterEvaluator(Evaluator):
             self.mapping_choices
         )
 
-    @handle(ast.BetweenPredicateNode)
+    @handle(ast.Between)
     def between(self, node, lhs, low, high):
         return filters.between(
             lhs,
@@ -66,7 +66,7 @@ class DjangoFilterEvaluator(Evaluator):
             node.not_
         )
 
-    @handle(ast.LikePredicateNode)
+    @handle(ast.Like)
     def like(self, node, lhs):
         return filters.like(
             lhs,
@@ -76,7 +76,7 @@ class DjangoFilterEvaluator(Evaluator):
             self.mapping_choices
         )
 
-    @handle(ast.InPredicateNode)
+    @handle(ast.In)
     def in_(self, node, lhs, *options):
         return filters.contains(
             lhs,
@@ -85,7 +85,7 @@ class DjangoFilterEvaluator(Evaluator):
             self.mapping_choices
         )
 
-    @handle(ast.NullPredicateNode)
+    @handle(ast.IsNull)
     def null(self, node, lhs):
         return filters.null(
             lhs,
@@ -103,7 +103,7 @@ class DjangoFilterEvaluator(Evaluator):
     #         result = not result
     #     return result
 
-    @handle(ast.TemporalPredicateNode)
+    @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node, lhs, rhs):
         return filters.temporal(
             lhs,
@@ -111,7 +111,7 @@ class DjangoFilterEvaluator(Evaluator):
             node.op.value,
         )
 
-    @handle(ast.SpatialOperationPredicateNode)
+    @handle(ast.SpatialComparisonPredicate, subclasses=True)
     def spatial_operation(self, node, lhs, rhs):
         return filters.spatial(
             lhs,
@@ -119,7 +119,7 @@ class DjangoFilterEvaluator(Evaluator):
             node.op.name,
         )
 
-    @handle(ast.SpatialPatternPredicateNode)
+    @handle(ast.Relate)
     def spatial_pattern(self, node, lhs, rhs):
         return filters.spatial(
             lhs,
@@ -128,7 +128,7 @@ class DjangoFilterEvaluator(Evaluator):
             pattern=node.pattern,
         )
 
-    @handle(ast.SpatialDistancePredicateNode)
+    @handle(ast.SpatialDistancePredicate, subclasses=True)
     def spatial_distance(self, node, lhs, rhs):
         return filters.spatial(
             lhs,
@@ -138,7 +138,7 @@ class DjangoFilterEvaluator(Evaluator):
             units=node.units,
         )
 
-    @handle(ast.BBoxPredicateNode)
+    @handle(ast.BBox)
     def bbox(self, node, lhs):
         return filters.bbox(
             lhs,
@@ -149,11 +149,11 @@ class DjangoFilterEvaluator(Evaluator):
             node.crs
         )
 
-    @handle(ast.AttributeExpression)
+    @handle(ast.Attribute)
     def attribute(self, node):
         return filters.attribute(node.name, self.field_mapping)
 
-    @handle(ast.ArithmeticExpressionNode)
+    @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
         return filters.arithmetic(
             lhs,

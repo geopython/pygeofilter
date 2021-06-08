@@ -1,0 +1,120 @@
+// ------------------------------------------------------------------------------
+//
+// Project: pygeofilter <https://github.com/geopython/pygeofilter>
+// Authors: Fabian Schindler <fabian.schindler@eox.at>
+//
+// ------------------------------------------------------------------------------
+// Copyright (C) 2021 EOX IT Services GmbH
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies of this Software or works derived from this Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+// ------------------------------------------------------------------------------
+
+?start: condition
+
+?condition: condition_1
+          | condition "AND" condition_1                                     -> and_
+          | condition "OR" condition_1                                      -> or_
+
+?condition_1: predicate
+            | "NOT" predicate                                               -> not_
+            | "(" condition ")"
+
+?predicate: expression "=" expression                                       -> eq
+          | expression "<>" expression                                      -> ne
+          | expression "<" expression                                       -> lt
+          | expression "<=" expression                                      -> lte
+          | expression ">" expression                                       -> gt
+          | expression ">=" expression                                      -> gte
+          | expression "BETWEEN" expression "AND" expression                -> between
+          | expression "NOT" "BETWEEN" expression "AND" expression          -> not_between
+          | expression "LIKE" SINGLE_QUOTED                                 -> like
+          | expression "NOT" "LIKE" SINGLE_QUOTED                           -> not_like
+          | expression "ILIKE" SINGLE_QUOTED                                -> ilike
+          | expression "NOT" "ILIKE" SINGLE_QUOTED                          -> not_ilike
+          | expression "IN" "(" expression ( "," expression )* ")"          -> in_
+          | expression "NOT" "IN" "(" expression ( "," expression )* ")"    -> not_in
+          | expression "IS" "NULL"                                          -> null
+          | expression "IS" "NOT" "NULL"                                    -> not_null
+          | attribute "EXISTS"                                              -> exists
+          | attribute "DOES-NOT-EXIST"                                      -> does_not_exist
+          | "INCLUDE"                                                       -> include
+          | "EXCLUDE"                                                       -> exclude
+          | temporal_predicate
+          | spatial_predicate
+
+?temporal_predicate: expression "BEFORE" DATETIME                           -> before
+                   | expression "BEFORE" "OR" "DURING" period               -> before_or_during
+                   | expression "DURING" period                             -> during
+                   | expression "DURING" "OR" "AFTER" period                -> during_or_after
+                   | expression "AFTER" DATETIME                            -> after
+
+?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate
+                  | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                    -> relate_spatial_predicate
+                  | _distance_spatial_predicate_func "(" expression "," expression "," number "," distance_units ")" -> distance_spatial_predicate
+                  | "BBOX" "(" expression "," number "," number "," number "," number [ ","  SINGLE_QUOTED] ")"     -> bbox_spatial_predicate
+!_binary_spatial_predicate_func: "INTERSECTS" | "DISJOINT" | "CONTAINS" | "WITHIN" | "TOUCHES" | "CROSSES" | "OVERLAPS" | "EQUALS"
+!_distance_spatial_predicate_func: "DWITHIN" | "BEYOND"
+!distance_units: "feet" | "meters" | "statute miles" | "nautical miles" | "kilometers"                              -> distance_units
+
+?expression: sum
+           | NAME "(" [ expression ("," expression)* ] ")"                  -> function
+
+?sum: product
+    | sum "+" product                                                       -> add
+    | sum "-" product                                                       -> sub
+
+?product: atom
+        | product "*" atom                                                  -> mul
+        | product "/" atom                                                  -> div
+
+?atom: attribute
+     | literal
+     | "-" atom                                                             -> neg
+     | "(" expression ")"
+
+attribute: NAME
+         | DOUBLE_QUOTED
+
+?literal: number
+        | BOOLEAN
+        | SINGLE_QUOTED
+        | ewkt_geometry                                                     -> geometry
+        | envelope
+
+?number: FLOAT | INT
+
+period: DATETIME "/" DATETIME
+      | DURATION "/" DATETIME
+      | DATETIME "/" DURATION
+
+envelope: "ENVELOPE" "(" number number number number ")"
+
+BOOLEAN: ( "TRUE" | "FALSE" )
+
+DOUBLE_QUOTED: "\"" /.*?/ "\""
+SINGLE_QUOTED: "'" /.*?/ "'"
+
+%import .wkt.ewkt_geometry
+%import .iso8601.DATETIME
+%import .iso8601.DURATION
+%import common.CNAME -> NAME
+%import common.INT
+%import common.FLOAT
+%import common.WS_INLINE
+%ignore WS_INLINE

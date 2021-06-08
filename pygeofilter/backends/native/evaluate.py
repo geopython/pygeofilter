@@ -61,29 +61,29 @@ class NativeEvaluator(Evaluator):
         self.function_map = function_map if function_map is not None else {}
         self.use_getattr = use_getattr
 
-    @handle(ast.NotConditionNode)
+    @handle(ast.Not)
     def not_(self, node, sub):
         return operator.not_(sub)
 
-    @handle(ast.CombinationConditionNode)
+    @handle(ast.And, ast.Or)
     def combination(self, node, lhs, rhs):
         op = operator.and_ if node.op.value == 'AND' else operator.or_
         return op(lhs, rhs)
 
-    @handle(ast.ComparisonPredicateNode)
+    @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
         op = COMPARISON_MAP[node.op.value]
         print(op, lhs, rhs, op(lhs, rhs))
         return op(lhs, rhs)
 
-    @handle(ast.BetweenPredicateNode)
+    @handle(ast.Between)
     def between(self, node, lhs, low, high):
         result = low <= lhs <= high
         if node.not_:
             result = not result
         return result
 
-    @handle(ast.LikePredicateNode)
+    @handle(ast.Like)
     def like(self, node, lhs):
         regex = like_pattern_to_re(
             node.pattern,
@@ -97,21 +97,21 @@ class NativeEvaluator(Evaluator):
             result = not result
         return result
 
-    @handle(ast.InPredicateNode)
+    @handle(ast.In)
     def in_(self, node, lhs, *options):
         result = lhs in options
         if node.not_:
             result = not result
         return result
 
-    @handle(ast.NullPredicateNode)
+    @handle(ast.IsNull)
     def null(self, node, lhs):
         result = lhs is None
         if node.not_:
             result = not result
         return result
 
-    @handle(ast.ExistsPredicateNode)
+    @handle(ast.Exists)
     def exists(self, node, lhs):
         if self.use_getattr:
             result = hasattr(self.obj, node.lhs.name)
@@ -122,14 +122,14 @@ class NativeEvaluator(Evaluator):
             result = not result
         return result
 
-    @handle(ast.TemporalPredicateNode)
+    @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node, lhs, rhs):
         lhs = to_interval(lhs)
         rhs = to_interval(rhs)
 
         return node.op.value == relate_intervals(lhs, rhs)
 
-    @handle(ast.ArrayPredicateNode)
+    @handle(ast.ArrayPredicate, subclasses=True)
     def array(self, node, lhs, rhs):
         left = set(lhs)
         right = set(rhs)
@@ -143,12 +143,12 @@ class NativeEvaluator(Evaluator):
         elif node.op == ast.ArrayComparisonOp.AOVERLAPS:
             return bool(left & right)
 
-    @handle(ast.SpatialOperationPredicateNode)
+    @handle(ast.SpatialComparisonPredicate, subclasses=True)
     def spatial_operation(self, node, lhs, rhs):
         op = getattr(lhs, node.op.value.lower())
         return op(rhs)
 
-    @handle(ast.SpatialPatternPredicateNode)
+    @handle(ast.Relate)
     def spatial_pattern(self, node, lhs, rhs):
         return lhs.relate_pattern(rhs, node.pattern)
 
@@ -156,7 +156,7 @@ class NativeEvaluator(Evaluator):
     # def handle__(self, node, lhs, rhs):
     #     pass
 
-    @handle(ast.BBoxPredicateNode)
+    @handle(ast.BBox)
     def bbox(self, node, lhs):
         return lhs.intersects(
             shapely.geometry.Polygon.from_bounds(
@@ -164,19 +164,19 @@ class NativeEvaluator(Evaluator):
             )
         )
 
-    @handle(ast.AttributeExpression)
+    @handle(ast.Attribute)
     def attribute(self, node):
         if self.use_getattr:
             return getattr(self.obj, node.name, None)
         else:
             return self.obj.get(node.name)
 
-    @handle(ast.ArithmeticExpressionNode)
+    @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
         op = ARITHMETIC_MAP[node.op.value]
         return op(lhs, rhs)
 
-    @handle(ast.FunctionExpressionNode)
+    @handle(ast.Function)
     def function(self, node, *arguments):
         return self.function_map[node.name](*arguments)
 

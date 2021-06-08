@@ -23,270 +23,192 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# ------------------------------------------------------------------------------
 
+import os.path
+import logging
 
-# pylint: disable=undefined-variable,function-redefined
-# flake8: noqa
-
-from sly import Parser
+from lark import Lark, logger, v_args
 
 from ... import ast
-from .lexer import ECQLLexer
+from ... import values
+from ..wkt import WKTTransformer
+from ..iso8601 import ISO8601Transformer
 
 
-class ECQLParser(Parser):
-    tokens = ECQLLexer.tokens
+logger.setLevel(logging.DEBUG)
 
-    precedence = (
-        ('left', EQ, NE),
-        ('left', GT, GE, LT, LE),
-        ('left', PLUS, MINUS),
-        ('left', TIMES, DIVIDE),
-        ('right', UMINUS),
-    )
 
-    start = 'condition_or_empty'
+SPATIAL_PREDICATES_MAP = {
+    "INTERSECTS": ast.GeometryIntersects,
+    "DISJOINT": ast.GeometryDisjoint,
+    "CONTAINS": ast.GeometryContains,
+    "WITHIN": ast.GeometryWithin,
+    "TOUCHES": ast.GeometryTouches,
+    "CROSSES": ast.GeometryCrosses,
+    "OVERLAPS": ast.GeometryOverlaps,
+    "EQUALS": ast.GeometryEquals,
+}
 
-    @_('')
-    def empty(self, p):
-        return None
 
-    @_('condition',
-       'empty')
-    def condition_or_empty(self, p):
-        return p[0]
+@v_args(inline=True)
+class ECQLTransformer(WKTTransformer, ISO8601Transformer):
+    def and_(self, lhs, rhs):
+        return ast.And(lhs, rhs)
 
-    @_('predicate')
-    def condition(self, p):
-        return p.predicate
+    def or_(self, lhs, rhs):
+        return ast.Or(lhs, rhs)
 
-    @_('predicate AND predicate',
-       'predicate OR predicate')
-    def condition(self, p):
-        return ast.CombinationConditionNode(
-            p[0],
-            p[2],
-            ast.CombinationOp(p[1])
+    def not_(self, node):
+        return ast.Not(node)
+
+    def eq(self, lhs, rhs):
+        return ast.Equal(lhs, rhs)
+
+    def ne(self, lhs, rhs):
+        return ast.NotEqual(lhs, rhs)
+
+    def lt(self, lhs, rhs):
+        return ast.LessThan(lhs, rhs)
+
+    def lte(self, lhs, rhs):
+        return ast.LessEqual(lhs, rhs)
+
+    def gt(self, lhs, rhs):
+        return ast.GreaterThan(lhs, rhs)
+
+    def gte(self, lhs, rhs):
+        return ast.GreaterEqual(lhs, rhs)
+
+    def between(self, lhs, low, high):
+        return ast.Between(lhs, low, high, False)
+
+    def not_between(self, lhs, low, high):
+        return ast.Between(lhs, low, high, True)
+
+    def like(self, node, pattern):
+        return ast.Like(node, pattern, False, '%', '.', '\\', False)
+
+    def not_like(self, node, pattern):
+        return ast.Like(node, pattern, False, '%', '.', '\\', True)
+
+    def ilike(self, node, pattern):
+        return ast.Like(node, pattern, True, '%', '.', '\\', False)
+
+    def not_ilike(self, node, pattern):
+        return ast.Like(node, pattern, True, '%', '.', '\\', True)
+
+    def in_(self, node, *options):
+        return ast.In(node, list(options), False)
+
+    def not_in(self, node, *options):
+        return ast.In(node, list(options), True)
+
+    def null(self, node):
+        return ast.IsNull(node, False)
+
+    def not_null(self, node):
+        return ast.IsNull(node, True)
+
+    def exists(self, attribute):
+        return ast.Exists(attribute, False)
+
+    def does_not_exist(self, attribute):
+        return ast.Exists(attribute, True)
+
+    def include(self):
+        return ast.Include(False)
+
+    def exclude(self):
+        return ast.Include(True)
+
+    def before(self, node, dt):
+        return ast.TimeBefore(node, dt)
+
+    def before_or_during(self, node, period):
+        return ast.TimeBeforeOrDuring(node, period)
+
+    def during(self, node, period):
+        return ast.TimeDuring(node, period)
+
+    def during_or_after(self, node, period):
+        return ast.TimeDuringOrAfter(node, period)
+
+    def after(self, node, dt):
+        return ast.TimeAfter(node, dt)
+
+    def binary_spatial_predicate(self, op, lhs, rhs):
+        return SPATIAL_PREDICATES_MAP[op](lhs, rhs)
+
+    def relate_spatial_predicate(self, lhs, rhs, pattern):
+        return ast.Relate(lhs, rhs, pattern)
+
+    def distance_spatial_predicate(self, op, lhs, rhs, distance, units):
+        cls = ast.DistanceWithin if op == "DWITHIN" else ast.DistanceBeyond
+        return cls(lhs, rhs, distance, units)
+
+    def distance_units(self, value):
+        return value
+
+    def bbox_spatial_predicate(self, lhs, minx, miny, maxx, maxy, crs=None):
+        return ast.BBox(lhs, minx, miny, maxx, maxy, crs)
+
+    def function(self, func_name, *expressions):
+        return ast.Function(
+            func_name, list(expressions)
         )
 
-    @_('NOT condition')
-    def condition(self, p):
-        return ast.NotConditionNode(p.condition)
+    def add(self, lhs, rhs):
+        return ast.Add(lhs, rhs)
 
-    @_('"(" condition ")"',
-       '"[" condition "]"')
-    def condition(self, p):
-        return p.condition
+    def sub(self, lhs, rhs):
+        return ast.Sub(lhs, rhs)
 
-    @_('expression EQ expression',
-       'expression NE expression',
-       'expression LT expression',
-       'expression LE expression',
-       'expression GT expression',
-       'expression GE expression')
-    def predicate(self, p):
-        return ast.ComparisonPredicateNode(p[0], p[2], ast.ComparisonOp(p[1]))
+    def mul(self, lhs, rhs):
+        return ast.Mul(lhs, rhs)
 
-    @_('expression NOT BETWEEN expression AND expression',
-       'expression BETWEEN expression AND expression')
-    def predicate(self, p):
-        return ast.BetweenPredicateNode(
-            p[0], p[-3], p[-1], p[1] == 'NOT'
-        )
+    def div(self, lhs, rhs):
+        return ast.Div(lhs, rhs)
 
-    @_('expression NOT LIKE QUOTED',
-       'expression LIKE QUOTED')
-    def predicate(self, p):
-        return ast.LikePredicateNode(
-            p.expression,
-            p[-1],
-            nocase=False,
-            wildcard='%',
-            singlechar='.',
-            escapechar='\\',
-            not_=p[1] == 'NOT',
-        )
+    def neg(self, value):
+        return -value
 
-    @_('expression NOT ILIKE QUOTED',
-       'expression ILIKE QUOTED')
-    def predicate(self, p):
-        return ast.LikePredicateNode(
-            p.expression,
-            p[-1],
-            nocase=True,
-            wildcard='%',
-            singlechar='.',
-            escapechar='\\',
-            not_=p[1] == 'NOT',
-        )
+    def attribute(self, name):
+        return ast.Attribute(str(name))
 
-    @_('expression NOT IN "(" expression_list ")"',
-       'expression IN "(" expression_list ")"')
-    def predicate(self, p):
-        return ast.InPredicateNode(p[0], p[-2], p[1] == 'NOT')
+    def period(self, start, end):
+        return [start, end]
 
-    @_('expression IS NOT NULL',
-       'expression IS NULL')
-    def predicate(self, p):
-        return ast.NullPredicateNode(p[0], p[2] == 'NOT')
+    def INT(self, value):
+        return int(value)
 
-    @_('attribute EXISTS',
-       'attribute DOES_NOT_EXIST')
-    def predicate(self, p):
-        return ast.ExistsPredicateNode(p[0], p[1] != 'EXISTS')
+    def FLOAT(self, value):
+        return float(value)
 
-    @_('INCLUDE',
-       'EXCLUDE')
-    def predicate(self, p):
-        return ast.IncludePredicateNode(p[0] != 'INCLUDE')
+    def BOOLEAN(self, value):
+        return value == "TRUE"
 
-    @_('temporal_predicate',
-       'spatial_predicate')
-    def predicate(self, p):
-        return p[0]
+    def DOUBLE_QUOTED(self, token):
+        return token[1:-1]
 
-    @_('expression BEFORE datetime',
-       'expression BEFORE OR DURING time_period',
-       'expression DURING time_period',
-       'expression DURING OR AFTER time_period',
-       'expression AFTER datetime')
-    def temporal_predicate(self, p):
-        if len(p) == 3:
-            op = ast.TemporalComparisonOp(p[1])
-        else:
-            op = ast.TemporalComparisonOp(f'{p[1]} {p[2]} {p[3]}')
+    def SINGLE_QUOTED(self, token):
+        return token[1:-1]
 
-        return ast.TemporalPredicateNode(
-            p.expression,
-            p[-1],
-            op,
-        )
+    def geometry(self, value):
+        return values.Geometry(value)
 
-    @_('datetime DIVIDE datetime',
-       'datetime DIVIDE duration',
-       'duration DIVIDE datetime')
-    def time_period(self, p):
-        return [p[0], p[2]]
-
-    @_('INTERSECTS "(" expression "," expression ")"',
-       'DISJOINT "(" expression "," expression ")"',
-       'CONTAINS "(" expression "," expression ")"',
-       'WITHIN "(" expression "," expression ")"',
-       'TOUCHES "(" expression "," expression ")"',
-       'CROSSES "(" expression "," expression ")"',
-       'OVERLAPS "(" expression "," expression ")"',
-       'EQUALS "(" expression "," expression ")"')
-    def spatial_predicate(self, p):
-        return ast.SpatialOperationPredicateNode(
-            p[2],
-            p[4],
-            ast.SpatialComparisonOp(p[0])
-        )
-
-    @_('RELATE "(" expression "," expression "," QUOTED ")"')
-    def spatial_predicate(self, p):
-        return ast.SpatialPatternPredicateNode(p[2], p[4], pattern=p[6])
-
-    @_('DWITHIN "(" expression "," expression "," number "," UNITS ")"',
-       'BEYOND "(" expression "," expression "," number "," UNITS ")"')
-    def spatial_predicate(self, p):
-        return ast.SpatialDistancePredicateNode(
-            p[2],
-            p[4],
-            ast.SpatialDistanceOp(p[0]),
-            distance=p[6],
-            units=p[8],
-        )
-
-    @_('BBOX "(" expression "," number "," number "," number "," number ")"')
-    def spatial_predicate(self, p):
-        return ast.BBoxPredicateNode(p[2], p[4], p[6], p[8], p[10])
-
-    @_('BBOX "(" expression "," number "," number "," number "," number "," QUOTED ")"')
-    def spatial_predicate(self, p):
-        return ast.BBoxPredicateNode(p[2], p[4], p[6], p[8], p[10], p[12])
-
-    @_('expression_list "," expression')
-    def expression_list(self, p):
-        p.expression_list.append(p.expression)
-        return p.expression_list
-
-    @_('expression')
-    def expression_list(self, p):
-        return [p.expression]
-
-    @_('expression PLUS expression',
-       'expression MINUS expression',
-       'expression TIMES expression',
-       'expression DIVIDE expression')
-    def expression(self, p):
-        return ast.ArithmeticExpressionNode(
-            p[0],
-            p[2],
-            ast.ArithmeticOp(p[1]),
-        )
-
-    @_('"(" expression ")"',
-       '"[" expression "]"')
-    def expression(self, p):
-        return p[1]
-
-    @_('IDENTIFIER "(" ")"')
-    def expression(self, p):
-        return ast.FunctionExpressionNode(p[0], [])
-
-    @_('IDENTIFIER "(" expression_list ")"')
-    def expression(self, p):
-        return ast.FunctionExpressionNode(p[0], p.expression_list)
-
-    @_('GEOMETRY',
-       'ENVELOPE',
-       'attribute',
-       'QUOTED',
-       'number')
-    def expression(self, p):
-        if isinstance(p[0], ast.Node):
-            return p[0]
-        return p[0]
-
-    @_('MINUS number %prec UMINUS')
-    def number(self, p):
-        return -p.number
-
-    @_('INTEGER',
-       'FLOAT')
-    def number(self, p):
-        return p[0]
-
-    @_('DATETIME')
-    def datetime(self, p):
-        return p[0]
-
-    @_('DURATION')
-    def duration(self, p):
-        return p[0]
-
-    @_('IDENTIFIER',
-       'DOUBLE_QUOTED')
-    def attribute(self, p):
-        return ast.AttributeExpression(p[0])
-
-    def error(self, tok):
-        raise Exception(f"{repr(tok)}")
+    def envelope(self, x1, x2, y1, y2):
+        return values.Envelope(x1, x2, y1, y2)
 
 
-def parse(cql: str) -> ast.Node:
-    lexer = ECQLLexer()
-    parser = ECQLParser()
+parser = Lark.open(
+    'grammar.lark',
+    rel_to=__file__,
+    parser='lalr',
+    debug=True,
+    transformer=ECQLTransformer(),
+    import_paths=[os.path.dirname(os.path.dirname(__file__))]
+)
 
-    try:
-        result = parser.parse(lexer.tokenize(cql))
-        if not result:
-            raise Exception
-        return result
-    except:
-        print(cql)
-        for tok in lexer.tokenize(cql):
-            print('\ttype=%r, value=%r' % (tok.type, tok.value))
-        raise
+
+def parse(cql_text):
+    return parser.parse(cql_text)
