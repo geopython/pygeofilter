@@ -22,19 +22,15 @@ def data():
     })
 
 
-@pytest.fixture
-def filter_():
+def filter_(ast, data):
     function_map = {
         'sin': np.sin,
     }
 
-    def inner(ast, data):
-        return data[to_filter(data, ast, {}, function_map)]
-
-    return inner
+    return data[to_filter(data, ast, {}, function_map)]
 
 
-def test_comparison(data, filter_):
+def test_comparison(data):
     result = filter_(parse('int_attr = 5'), data)
     assert len(result) == 1 and result.index[0] == 0
 
@@ -54,7 +50,7 @@ def test_comparison(data, filter_):
     assert len(result) == 1 and result.index[0] == 1
 
 
-def test_combination(data, filter_):
+def test_combination(data):
     result = filter_(parse('int_attr = 5 AND float_attr < 6.0'), data)
     assert len(result) == 1 and result.index[0] == 0
 
@@ -62,7 +58,7 @@ def test_combination(data, filter_):
     assert len(result) == 1 and result.index[0] == 0
 
 
-def test_between(data, filter_):
+def test_between(data):
     result = filter_(parse('float_attr BETWEEN 4 AND 6'), data)
     assert len(result) == 1 and result.index[0] == 0
 
@@ -70,7 +66,7 @@ def test_between(data, filter_):
     assert len(result) == 1 and result.index[0] == 1
 
 
-def test_like(data, filter_):
+def test_like(data):
     result = filter_(parse('str_attr LIKE \'this is . test\''), data)
     assert len(result) == 1 and result.index[0] == 0
 
@@ -90,7 +86,7 @@ def test_like(data, filter_):
     assert len(result) == 2
 
 
-def test_in(data, filter_):
+def test_in(data):
     result = filter_(parse('int_attr IN ( 1, 2, 3, 4, 5 )'), data)
     assert len(result) == 1 and result.index[0] == 0
 
@@ -98,7 +94,7 @@ def test_in(data, filter_):
     assert len(result) == 1 and result.index[0] == 1
 
 
-def test_null(data, filter_):
+def test_null(data):
     result = filter_(parse('maybe_str_attr IS NULL'), data)
     assert len(result) == 1 and result.index[0] == 0
 
@@ -106,7 +102,7 @@ def test_null(data, filter_):
     assert len(result) == 1 and result.index[0] == 1
 
 # TODO: possible?
-# def test_has_attr(data, filter_):
+# def test_has_attr(data):
 #     result = filter_(parse('extra_attr EXISTS'), data)
 #     assert len(result) == 1 and result[0] is data[0]
 
@@ -114,7 +110,7 @@ def test_null(data, filter_):
 #     assert len(result) == 1 and result[0] is data[1]
 
 
-# def test_temporal(data, filter_):
+# def test_temporal(data):
 #     result = filter_(
 #         parse('date_attr BEFORE 2010-01-08T00:00:00.00Z'),
 #         data
@@ -128,7 +124,7 @@ def test_null(data, filter_):
 #     assert len(result) == 1 and result.index[0] == 1
 
 
-def test_spatial(data, filter_):
+def test_spatial(data):
     result = filter_(
         parse('INTERSECTS(point_attr, ENVELOPE (0 1 0 1))'),
         data,
@@ -142,7 +138,7 @@ def test_spatial(data, filter_):
     assert len(result) == 1 and result.index[0] == 1
 
 
-def test_arithmetic(data, filter_):
+def test_arithmetic(data):
     result = filter_(
         parse('int_attr = float_attr - 0.5'),
         data,
@@ -156,7 +152,7 @@ def test_arithmetic(data, filter_):
     assert len(result) == 1 and result.index[0] == 0
 
 
-def test_function(data, filter_):
+def test_function(data):
     result = filter_(
         parse('sin(float_attr) BETWEEN -0.75 AND -0.70'),
         data,
