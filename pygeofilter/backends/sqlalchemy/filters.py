@@ -53,7 +53,7 @@ class Operator:
         "not_in": lambda f, a: ~f.in_(a),
         "any": lambda f, a: f.any(a),
         "not_any": lambda f, a: func.not_(f.any(a)),
-        "INTERSECTS": lambda f, a: f.ST_Contains(a),
+        "INTERSECTS": lambda f, a: f.ST_Intersects(a),
         "DISJOINT": lambda f, a: f.ST_Disjoint(a),
         "CONTAINS": lambda f, a: f.ST_Contains(a),
         "WITHIN": lambda f, a: f.ST_Within(a),
