@@ -244,7 +244,7 @@ def bbox(lhs, minx, miny, maxx, maxy, crs=4326):
         :return: a comparison expression object
     """
 
-    return lhs.ST_Intersects(parse_bbox([minx, miny, maxx, maxy]))
+    return lhs.ST_Intersects(parse_bbox([minx, miny, maxx, maxy], crs))
 
 
 def attribute(name, field_mapping=None):
