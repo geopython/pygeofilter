@@ -180,11 +180,14 @@ def temporal(lhs, time_or_period, op):
     """
     low = None
     high = None
+    equal = None
     if op in ("BEFORE", "AFTER"):
         if op == "BEFORE":
             high = time_or_period
         else:
             low = time_or_period
+    elif op == "TEQUALS":
+        equal = time_or_period
     else:
         low, high = time_or_period
 
@@ -192,12 +195,15 @@ def temporal(lhs, time_or_period, op):
             low = high - low
         if isinstance(high, timedelta):
             high = low + high
-    if low and high:
-        return between(lhs, low, high)
-    elif low:
-        return runop(lhs, low, ">=")
-    else:
-        return runop(lhs, high, "<=")
+    if low or high:
+        if low and high:
+            return between(lhs, low, high)
+        elif low:
+            return runop(lhs, low, ">=")
+        else:
+            return runop(lhs, high, "<=")
+    elif equal:
+        return runop(lhs, equal, "==")
 
 
 UNITS_LOOKUP = {"kilometers": "km", "meters": "m"}
