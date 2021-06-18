@@ -195,14 +195,14 @@ def temporal(lhs, time_or_period, op):
             low = high - low
         if isinstance(high, timedelta):
             high = low + high
-    if low or high:
-        if low and high:
+    if low is not None or high is not None:
+        if low is not None and high is not None:
             return between(lhs, low, high)
-        elif low:
+        elif low is not None:
             return runop(lhs, low, ">=")
         else:
             return runop(lhs, high, "<=")
-    elif equal:
+    elif equal is not None:
         return runop(lhs, equal, "==")
 
 
