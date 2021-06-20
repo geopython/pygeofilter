@@ -5,4 +5,3 @@ geopandas
 fiona
 pyproj
 rtree
-pygdal
