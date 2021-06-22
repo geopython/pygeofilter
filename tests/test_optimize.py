@@ -163,6 +163,51 @@ def test_like():
     )
 
 
+def test_in():
+    # allow reduction when the left hand side and all options
+    # are certain
+    result = optimize(parse("1 IN (1, 2, 3) AND attr = 1"))
+    assert result == ast.Equal(
+        ast.Attribute('attr'),
+        1
+    )
+    result = optimize(parse("5 NOT IN (1, 2, 3) AND attr = 1"))
+    assert result == ast.Equal(
+        ast.Attribute('attr'),
+        1
+    )
+    # don't allow reduction if either left hand side or either option
+    # is uncertain
+    result = optimize(parse("attr IN (1, 2, 3)"))
+    assert result == ast.In(
+        ast.Attribute('attr'),
+        [1, 2, 3],
+        False
+    )
+    result = optimize(parse("1 IN (attr, 2, 3)"))
+    assert result == ast.In(
+        1,
+        [ast.Attribute('attr'), 2, 3],
+        False
+    )
+
+
+def test_temporal():
+    # TODO
+    pass
+
+
+def test_array():
+    # TODO
+    pass
+
+
+def test_spatial():
+    # TODO
+    pass
+
+
+
 def test_arithmetic():
     # test possible optimizations
     result = optimize(parse("attr = 10 + 10"))
