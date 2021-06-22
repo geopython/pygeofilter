@@ -1,0 +1,229 @@
+// ------------------------------------------------------------------------------
+//
+// Project: pygeofilter <https://github.com/geopython/pygeofilter>
+// Authors: Fabian Schindler <fabian.schindler@eox.at>
+//
+// ------------------------------------------------------------------------------
+// Copyright (C) 2021 EOX IT Services GmbH
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies of this Software or works derived from this Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+// ------------------------------------------------------------------------------
+
+?start: boolean_value_expression
+
+
+?boolean_value_expression: boolean_value_expression_1
+                         | boolean_value_expression "AND" boolean_value_expression_1      -> and_
+                         | boolean_value_expression "OR" boolean_value_expression_1       -> or_
+
+?boolean_value_expression_1: boolean_value_expression_2
+                           | "NOT" boolean_value_expression_2                             -> not_
+                           | "(" boolean_value_expression ")"
+
+?boolean_value_expression_2: comparison_predicate
+                           | spatial_predicate
+                        //    | temporal_predicate
+                        //    | array_predicate
+
+?comparison_predicate: binary_comparison_predicate
+                     | is_like_predicate
+                     | is_between_predicate
+                     | is_in_list_predicate
+                     | is_null_predicate
+
+?binary_comparison_predicate: scalar_expression "=" scalar_expression                     -> eq
+                            | scalar_expression "<>" scalar_expression                    -> ne
+                            | scalar_expression "<" scalar_expression                     -> lt
+                            | scalar_expression "<=" scalar_expression                    -> lte
+                            | scalar_expression ">" scalar_expression                     -> gt
+                            | scalar_expression ">=" scalar_expression                    -> gte
+
+!is_like_predicate: scalar_expression [ "NOT" ] "LIKE" character_literal [ "WILDCARD" SINGLE_QUOTED_ALPHA ] [ "SINGLECHAR" SINGLE_QUOTED_ALPHA ] [ "ESCAPECHAR" SINGLE_QUOTED_ALPHA ] [ "NOCASE" boolean ]                                                  -> like
+!is_between_predicate: numeric_expression [ "NOT" ] "BETWEEN" numeric_expression "AND" numeric_expression
+
+!is_in_list_predicate: in_list_operand [ "NOT" ] "IN" "(" in_list_operand { "," in_list_operand } ")"
+?in_list_operand: scalar_expression | temporal_literal | spatial_literal
+
+!is_null_predicate: scalar_expression "IS" [ "NOT" ] "NULL"
+
+?spatial_predicate: spatial_operator "(" geom_expression "," geom_expression ")"
+
+!spatial_operator = "INTERSECTS"
+                  | "EQUALS"
+                  | "DISJOINT"
+                  | "TOUCHES"
+                  | "WITHIN"
+                  | "OVERLAPS"
+                  | "CROSSES"
+                  | "CONTAINS"
+
+?geom_expression: spatial_literal
+                | property
+                | function
+
+?temporal_predicate: temporal_expression temporal_operator temporal_expression
+
+?temporal_expression: temporal_literal
+                    | property
+                    | function
+
+!temporal_operator: "ANYINTERACTS"
+                  | "BEFORE"
+                  | "AFTER"
+                  | "MEETS"
+                  | "METBY"
+                  | "TOVERLAPS"
+                  | "OVERLAPPEDBY"
+                  | "BEGINS"
+                  | "BEGUNBY"
+                  | "DURING"
+                  | "TCONTAINS"
+                  | "ENDS"
+                  | "ENDEDBY"
+                  | "TEQUALS"
+
+?array_predicate: array_expression array_operator array_expression
+
+?array_expression: property
+                 | function
+                 | array_literal
+
+array_literal = "[" "]"
+              | "[" array_element { "," array_element } "]"
+
+?array_element: character_literal
+              | numeric_literal
+              | boolean_literal
+              | spatial_literal
+              | temporal_literal
+              | property
+              | function
+              | arithmetic_expression
+              | array_literal
+
+!array_operator: "AEQUALS"
+               | "ACONTAINS"
+               | "CONTAINED BY"
+               | "AOVERLAPS"
+
+
+?scalar_expression: character_literal
+                  | numeric_literal
+                  | boolean
+                  | property
+                  | function
+                  | arithmetic_expression
+
+
+?arithmetic_expression: sum
+//            | NAME "(" [ expression ("," expression)* ] ")"                  -> function
+
+?sum: product
+    | sum "+" product                                                       -> add
+    | sum "-" product                                                       -> sub
+
+?product: atom
+        | product "*" atom                                                  -> mul
+        | product "/" atom                                                  -> div
+
+?atom: attribute
+     | numeric_literal
+     | "-" atom                                                             -> neg
+     | function
+
+?character_literal: SINGLE_QUOTED
+                  | "B" SINGLE_QUOTED                                           -> binary_string
+                  | "X" SINGLE_QUOTED                                           -> hex_string
+?numeric_literal: FLOAT | INT
+?boolean: "TRUE" | "true" | "FALSE" | "false" | "T"i | "F"i | "1" | "0"
+
+// ?condition: condition_1
+//           | condition "AND" condition_1                                     -> and_
+//           | condition "OR" condition_1                                      -> or_
+
+// ?condition_1: predicate
+//             | "NOT" predicate                                               -> not_
+//             | "(" condition ")"
+
+// ?predicate: expression "=" expression                                       -> eq
+//           | expression "<>" expression                                      -> ne
+//           | expression "<" expression                                       -> lt
+//           | expression "<=" expression                                      -> lte
+//           | expression ">" expression                                       -> gt
+//           | expression ">=" expression                                      -> gte
+//           | expression "BETWEEN" expression "AND" expression                -> between
+//           | expression "NOT" "BETWEEN" expression "AND" expression          -> not_between
+//           | expression "LIKE" SINGLE_QUOTED                                 -> like
+//           | expression "NOT" "LIKE" SINGLE_QUOTED                           -> not_like
+//           | expression "ILIKE" SINGLE_QUOTED                                -> ilike
+//           | expression "NOT" "ILIKE" SINGLE_QUOTED                          -> not_ilike
+//           | expression "IN" "(" expression ( "," expression )* ")"          -> in_
+//           | expression "NOT" "IN" "(" expression ( "," expression )* ")"    -> not_in
+//           | expression "IS" "NULL"                                          -> null
+//           | expression "IS" "NOT" "NULL"                                    -> not_null
+//           | attribute "EXISTS"                                              -> exists
+//           | attribute "DOES-NOT-EXIST"                                      -> does_not_exist
+//           | "INCLUDE"                                                       -> include
+//           | "EXCLUDE"                                                       -> exclude
+//           | temporal_predicate
+//           | spatial_predicate
+
+// ?temporal_predicate: expression "BEFORE" DATETIME                           -> before
+//                    | expression "BEFORE" "OR" "DURING" period               -> before_or_during
+//                    | expression "DURING" period                             -> during
+//                    | expression "DURING" "OR" "AFTER" period                -> during_or_after
+//                    | expression "AFTER" DATETIME                            -> after
+
+// ?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate
+//                   | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                    -> relate_spatial_predicate
+//                   | _distance_spatial_predicate_func "(" expression "," expression "," number "," distance_units ")" -> distance_spatial_predicate
+//                   | "BBOX" "(" expression "," number "," number "," number "," number [ ","  SINGLE_QUOTED] ")"     -> bbox_spatial_predicate
+// !_binary_spatial_predicate_func: "INTERSECTS" | "DISJOINT" | "CONTAINS" | "WITHIN" | "TOUCHES" | "CROSSES" | "OVERLAPS" | "EQUALS"
+// !_distance_spatial_predicate_func: "DWITHIN" | "BEYOND"
+// !distance_units: "feet" | "meters" | "statute miles" | "nautical miles" | "kilometers"                              -> distance_units
+
+// attribute: NAME
+//          | DOUBLE_QUOTED
+
+// ?literal: number
+//         | BOOLEAN
+//         | SINGLE_QUOTED
+//         | ewkt_geometry                                                     -> geometry
+//         | envelope
+
+// ?number: FLOAT | INT
+
+// period: DATETIME "/" DATETIME
+//       | DURATION "/" DATETIME
+//       | DATETIME "/" DURATION
+
+// envelope: "ENVELOPE" "(" number number number number ")"
+
+DOUBLE_QUOTED: "\"" /.*?/ "\""
+SINGLE_QUOTED: "'" /.*?/ "'"
+SINGLE_QUOTED_ALPHA: "'" /[a-z]/ "'"
+
+%import .wkt.ewkt_geometry
+%import .iso8601.DATETIME
+%import .iso8601.DURATION
+%import common.CNAME -> NAME
+%import common.INT
+%import common.FLOAT
+%import common.WS_INLINE
+%ignore WS_INLINE
