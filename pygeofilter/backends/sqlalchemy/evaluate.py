@@ -147,6 +147,10 @@ class SQLAlchemyFilterEvaluator(Evaluator):
     def literal(self, node):
         return filters.literal(node)
 
+    @handle(values.Interval)
+    def interval(self, node):
+        return filters.literal((node.start, node.end))
+
     @handle(values.Geometry)
     def geometry(self, node):
         return filters.parse_geometry(node.__geo_interface__)
