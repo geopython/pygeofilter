@@ -5,23 +5,41 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
 [![Build Status](https://github.com/geopython/pygeofilter/workflows/build%20%E2%9A%99%EF%B8%8F/badge.svg)](https://github.com/geopython/pygeofilter/actions)
 [![Documentation Status](https://readthedocs.org/projects/pygeofilter/badge/?version=latest)](https://pygeofilter.readthedocs.io/en/latest/?badge=latest)
 
-pygeofilter is a pure Python parser implementation of the OGC CQL standard
+pygeofilter is a pure Python parser implementation of various filter language standards
 
 ## Installation
+
+The package can be installed via PIP:
 
 ```bash
 pip install pygeofilter
 ```
 
+Some features require additional dependencies. This currently only affects the backends. To install these, the features have to be listed:
+
+```bash
+# for the Django backend
+pip install pygeofilter[backend-django]
+
+# for the sqlalchemy backend
+pip install pygeofilter[backend-sqlalchemy]
+
+# for the native backend
+pip install pygeofilter[backend-native]
+```
+
 ## Usage
 
-The basic functionality parses the input string to an abstract syntax tree (AST) representation.
-This AST can then be used to build database filters or similar functionality.
+pygeofilter can be used on various levels. It provides parsers for various filtering languages, such as ECQL or CQL-JSON. Each parser lives in its own sub-package:
 
 ```python
->>> import pygeofilter
->>> ast = pygeofilter.parse(filter_expression)
+>>> from pygeofilter.parsers.ecql import parse as parse_ecql
+>>> filters = parse_ecql(filter_expression)
+>>> from pygeofilter.parsers.cql_json import parse as parse_json
+>>> filters = parse_json(filter_expression)
 ```
+
+Each parser creates an abstract syntax tree (AST) representation of that filter expression and thus unifies all possible languages to a single common denominator. All possible nodes are defined as classes in the `pygeofilter.ast` module.
 
 ### Inspection
 
@@ -29,84 +47,114 @@ The easiest way to inspect the resulting AST is to use the `get_repr` function, 
 nice string representation of what was parsed:
 
 ```python
->>> ast = pygeofilter.parse('id = 10')
+>>> filters = pygeofilter.parsers.ecql.parse('id = 10')
 >>> print(pygeofilter.get_repr(ast))
 ATTRIBUTE id = LITERAL 10.0
 >>>
 >>>
->>> filter_expr = '(number BETWEEN 5 AND 10 AND string NOT LIKE "%B") OR INTERSECTS(geometry, LINESTRING(0 0, 1 1))'
->>> print(pygeofilter.get_repr(pygeofilter.parse(filter_expr)))
+>>> filter_expr = '(number BETWEEN 5 AND 10 AND string NOT LIKE \'%B\') OR INTERSECTS(geometry, LINESTRING(0 0, 1 1))'
+>>> print(pygeofilter.ast.get_repr(pygeofilter.parse(filter_expr)))
 (
     (
-            ATTRIBUTE number BETWEEN LITERAL 5.0 AND LITERAL 10.0
+            ATTRIBUTE number BETWEEN 5 AND 10
     ) AND (
-            ATTRIBUTE string NOT ILIKE LITERAL '%B'
+            ATTRIBUTE string NOT LIKE '%B'
     )
 ) OR (
-    INTERSECTS(ATTRIBUTE geometry, LITERAL GEOMETRY 'LINESTRING(0 0, 1 1)')
+    INTERSECTS(ATTRIBUTE geometry, Geometry(geometry={'type': 'LineString', 'coordinates': ((0.0, 0.0), (1.0, 1.0))}))
 )
 ```
 
 ### Evaluation
 
-In order to create useful filters from the resulting AST, it has to be evaluated. For the
-Django integration, this was done using a recursive descent into the AST, evaluating the
-subnodes first and constructing a `Q` object. Consider having a `filters` API (for an
-example look at the Django one) which creates the filter. Now the evaluator looks something
-like this:
+A parsed AST can then be evaluated and transformed into filtering mechanisms in the required context. Usually this is a language such as SQL or an object-relational mapper (ORM) interfacing a data store of some kind.
+
+There are a number of pre-defined backends available, where parsed expressions can be applied. For the moment this includes:
+
+* Django
+* sqlalchemy
+* (Geo)Pandas
+* Pure Python object filtering
+
+The usage of those are described in their own documentation.
+
+pygeofilter provides mechanisms to help building such an evaluator (the included backends use them as well). The `Evaluator` class allows to conveniently walk through an AST depth-first and build the filters for the API in question. Only handled node classes are evaluated, unsupported ones will raise an exception.
+
+Consider this example:
 
 ```python
 
-from pygeofilter.ast import *
+from pygeofilter import ast
+from pygeofilter.backends.evaluator import Evaluator, handle
 from myapi import filters   # <- this is where the filters are created.
                             # of course, this can also be done in the
                             # evaluator itself
-class FilterEvaluator:
+
+# Evaluators must derive from the base class `Evaluator` to work
+class MyAPIEvaluator(Evaluator):
+    # you can use any constructor as you need
     def __init__(self, field_mapping=None, mapping_choices=None):
         self.field_mapping = field_mapping
         self.mapping_choices = mapping_choices
 
-    def to_filter(self, node):
-        to_filter = self.to_filter
-        if isinstance(node, NotConditionNode):
-            return filters.negate(to_filter(node.sub_node))
-        elif isinstance(node, CombinationConditionNode):
-            return filters.combine(
-                (to_filter(node.lhs), to_filter(node.rhs)), node.op
-            )
-        elif isinstance(node, ComparisonPredicateNode):
-            return filters.compare(
-                to_filter(node.lhs), to_filter(node.rhs), node.op,
-                self.mapping_choices
-            )
-        elif isinstance(node, BetweenPredicateNode):
-            return filters.between(
-                to_filter(node.lhs), to_filter(node.low),
-                to_filter(node.high), node.not_
-            )
-        elif isinstance(node, BetweenPredicateNode):
-            return filters.between(
-                to_filter(node.lhs), to_filter(node.low),
-                to_filter(node.high), node.not_
-            )
+    # specify the handled classes in the `handle` decorator to mark
+    # this function as the handler for that node class(es)
+    @handle(ast.Not)
+    def not_(self, node, sub):
+        return filters.negate(sub)
 
-        # ... Some nodes are left out for brevity
+    # multiple classes can be declared for the same handler function
+    @handle(ast.And, ast.Or)
+    def combination(self, node, lhs, rhs):
+        return filters.combine((lhs, rhs), node.op.value)
 
-        elif isinstance(node, AttributeExpression):
-            return filters.attribute(node.name, self.field_mapping)
+    # handle all sub-classes, like ast.Equal, ast.NotEqual,
+    # ast.LessThan, ast.GreaterThan, ...
+    @handle(ast.Comparison, subclasses=True)
+    def comparison(self, node, lhs, rhs):
+        return filters.compare(
+            lhs,
+            rhs,
+            node.op.value,
+            self.mapping_choices
+        )
 
-        elif isinstance(node, LiteralExpression):
-            return node.value
+    @handle(ast.Between)
+    def between(self, node, lhs, low, high):
+        return filters.between(
+            lhs,
+            low,
+            high,
+            node.not_
+        )
 
-        elif isinstance(node, ArithmeticExpressionNode):
-            return filters.arithmetic(
-                to_filter(node.lhs), to_filter(node.rhs), node.op
-            )
+    @handle(ast.Like)
+    def like(self, node, lhs):
+        return filters.like(
+            lhs,
+            node.pattern,
+            node.nocase,
+            node.not_,
+            self.mapping_choices
+        )
 
-        return node
+    @handle(ast.In)
+    def in_(self, node, lhs, *options):
+        return filters.contains(
+            lhs,
+            options,
+            node.not_,
+            self.mapping_choices
+        )
+
+    def adopt(self, node, *sub_args):
+        # a "catch-all" function for node classes that are not
+        # handled elsewhere. Use with caution and raise exceptions
+        # yourself when a node class is not supported.
+        ...
+
+    # ...further ast handlings removed for brevity
 ```
-
-As mentionend, the `to_filter` method is the recursion.
 
 ## Testing
 
@@ -116,8 +164,7 @@ The basic functionality can be tested using `pytest`.
 python -m pytest
 ```
 
-There is a test project/app to test the Django integration. This is tested using the following
-command:
+Some backends require a bit more to be tested.
 
 ```bash
 python manage.py test testapp
@@ -126,7 +173,7 @@ python manage.py test testapp
 
 ## Django integration
 
-For Django there is a default bridging implementation, where all the filters are translated to the
+For Django there is a default backend implementation, where all the filters are translated to the
 Django ORM. In order to use this integration, we need two dictionaries, one mapping the available
 fields to the Django model fields, and one to map the fields that use `choices`. Consider the
 following example models:
@@ -196,11 +243,11 @@ functions to parse the timestamps, durations, geometries and envelopes, so that 
 with the ORM layer:
 
 ```python
-from pygeofilter.integrations.django import to_filter, parse
+from pygeofilter.backends.django import to_filter
+from pygeofilter.parsers.ecql import parse
 
-cql_expr = 'strMetaAttribute LIKE "%parent%" AND datetimeAttribute BEFORE 2000-01-01T00:00:01Z'
+cql_expr = 'strMetaAttribute LIKE \'%parent%\' AND datetimeAttribute BEFORE 2000-01-01T00:00:01Z'
 
-# NOTE: we are using the django integration `parse` wrapper here
 ast = parse(cql_expr)
 filters = to_filter(ast, mapping, mapping_choices)
 
