@@ -5,7 +5,21 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
 [![Build Status](https://github.com/geopython/pygeofilter/workflows/build%20%E2%9A%99%EF%B8%8F/badge.svg)](https://github.com/geopython/pygeofilter/actions)
 [![Documentation Status](https://readthedocs.org/projects/pygeofilter/badge/?version=latest)](https://pygeofilter.readthedocs.io/en/latest/?badge=latest)
 
-pygeofilter is a pure Python parser implementation of various filter language standards
+
+## Features
+
+* Parsing of several filter encoding standards
+    * [CQL as defined in CSW 2.0](file:///Users/fabian/Downloads/07-006r1_OpenGIS_Catalogue_Services_Specification_V2.0.2.pdf)
+    * [CQL JSON as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-json-schema)
+    * Soon:
+        * [CQL Text as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-bnf)
+        * [FES](http://docs.opengeospatial.org/is/09-026r2/09-026r2.html)
+* Several backends included
+    * [Django](https://www.djangoproject.com/)
+    * [SQLAlchemy](https://www.sqlalchemy.org/)
+    * [(Geo)Pandas](https://pandas.pydata.org/)
+    * Native Python objects
+
 
 ## Installation
 
