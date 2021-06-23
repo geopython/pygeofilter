@@ -158,18 +158,34 @@ class MyAPIEvaluator(Evaluator):
 
 ## Testing
 
+For testing, several requirements must be satisfied. These can be installed, via pip:
+
+```bash
+pip install -r requirements-dev.txt
+pip install -r requirements-test.txt
+```
+
 The basic functionality can be tested using `pytest`.
 
 ```bash
 python -m pytest
 ```
 
-Some backends require a bit more to be tested.
+Some backends require a bit more to be tested. This is how the Django backend is tested:
 
 ```bash
+cd tests/django_test
 python manage.py test testapp
+cd -
 ```
 
+Similarly the sqlalchemy backend must be tested in that way:
+
+```bash
+cd tests/sqlalchemy_test/
+python -m unittest
+cd -
+```
 
 ## Django integration
 

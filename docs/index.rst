@@ -1,12 +1,12 @@
 .. mdinclude:: ../README.md
 
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   api/index
-
+   license
+   contributing
+   api/modules
 
 Indices and tables
 ==================
