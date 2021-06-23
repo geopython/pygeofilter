@@ -207,7 +207,6 @@ def test_spatial():
     pass
 
 
-
 def test_arithmetic():
     # test possible optimizations
     result = optimize(parse("attr = 10 + 10"))
