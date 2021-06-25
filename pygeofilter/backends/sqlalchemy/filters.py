@@ -7,10 +7,10 @@ from sqlalchemy import and_, func, not_, or_
 from pygeoif.geometry import as_shape
 
 
-def parse_bbox(box, srid: int = 4326):
+def parse_bbox(box, srid: int = None):
     minx, miny, maxx, maxy = box
     return func.ST_GeomFromEWKT(
-        f"SRID={srid};POLYGON(("
+        f"SRID={4326 if srid is None else srid};POLYGON(("
         f"{minx} {miny}, {minx} {maxy}, "
         f"{maxx} {maxy}, {maxx} {miny}, "
         f"{minx} {miny}))"
