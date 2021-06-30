@@ -157,7 +157,7 @@ class Comparison(Predicate):
         return [self.lhs, self.rhs]
 
     def get_template(self):
-        return f"{{}} {self.op} {{}}"
+        return f"{{}} {self.op.value} {{}}"
 
 
 @dataclass
