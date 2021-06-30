@@ -201,6 +201,15 @@ python -m unittest
 cd -
 ```
 
+### Docker
+
+To execute tests in Docker:
+
+```
+docker build -t pygeofilter/test -f Dockerfile-3.9 .
+docker run --rm pygeofilter/test
+```
+
 ## Django integration
 
 For Django there is a default backend implementation, where all the filters are translated to the
