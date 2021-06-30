@@ -16,9 +16,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install requirements 📦
       run: |
-        sudo apt-get install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite spatialite-bin
+        sudo apt-get install -y binutils libproj-dev gdal-bin libgdal-dev libsqlite3-mod-spatialite spatialite-bin
         pip install -r requirements-test.txt
         pip install -r requirements-dev.txt
+        pip install pygdal=="`gdal-config --version`.*"
         pip install .
     - name: Run unit tests ⚙️
       run: |
