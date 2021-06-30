@@ -210,7 +210,11 @@ docker build -t pygeofilter/test -f Dockerfile-3.9 .
 docker run --rm pygeofilter/test
 ```
 
-## Django integration
+## Backends
+
+The following backends are shipped with `pygeofilter`. Some require additional dependencies, refer to the [installation](#installation) section for further details.
+
+### Django
 
 For Django there is a default backend implementation, where all the filters are translated to the
 Django ORM. In order to use this integration, we need two dictionaries, one mapping the available
@@ -292,3 +296,48 @@ filters = to_filter(ast, mapping, mapping_choices)
 
 qs = Record.objects.filter(**filters)
 ```
+
+### SQL
+
+`pygeofilter` provides a rudimentary way to create an SQL `WHERE` clause from an AST. The following example shows this usage in conjunction with the OGR `ExecuteSQL` function:
+
+```python
+from osgeo import ogr
+from pygeofilter.backends.sql import to_sql_where
+from pygeofilter.parsers.ecql import parse
+
+
+FIELD_MAPPING = {
+    'str_attr': 'str_attr',
+    'maybe_str_attr': 'maybe_str_attr',
+    'int_attr': 'int_attr',
+    'float_attr': 'float_attr',
+    'date_attr': 'date_attr',
+    'datetime_attr': 'datetime_attr',
+    'point_attr': 'GEOMETRY',
+}
+
+FUNCTION_MAP = {
+    'sin': 'sin'
+}
+
+# parse the expression
+ast = parse('int_attr > 6')
+
+# open an OGR DataSource
+data = ogr.Open(...)
+
+# create the WHERE clause, field and function mappings must be provided
+where = to_sql_where(ast, FIELD_MAPPING, FUNCTION_MAP)
+
+# filter the DataSource to get a result Layer
+layer = data.ExecuteSQL(f"""
+    SELECT id, str_attr, maybe_str_attr, int_attr, float_attr, date_attr, datetime_attr, GEOMETRY
+    FROM layer
+    WHERE {where}
+""", None, "SQLite")
+```
+
+Note that it is vital to specify the `SQLite` dialect as this is the one used internally.
+
+:warning: Input values are *not* sanitized/separated from the generated SQL text. This is due to the compatibility with the OGR API not allowing to separate the SQL from the arguments.
