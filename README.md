@@ -341,3 +341,37 @@ layer = data.ExecuteSQL(f"""
 Note that it is vital to specify the `SQLite` dialect as this is the one used internally.
 
 :warning: Input values are *not* sanitized/separated from the generated SQL text. This is due to the compatibility with the OGR API not allowing to separate the SQL from the arguments.
+
+
+### Optimization
+
+This is a special kind of backend, as the result of the AST evaluation is actually a new AST. The purpose of this backend is to eliminate static branches of the AST, potentially reducing the cost of an actual evaluation for filtering values.
+
+What parts of an AST can be optimized:
+
+- Arithmetic operations of purely static operands
+- All predicates (spatial, temporal, array, `like`, `between`, `in`) if all of the operands are already static
+- Functions, when passed in a special lookup table and all arguments are static
+- `And` and `Or` combinators can be eliminated if either branch can be predicted
+
+What cannot be optimized are branches that contain references to attributes or functions not passed in the dictionary.
+
+The following example shows how a static computation can be optimized to a static value, replacing the whole branch of the AST:
+
+```python
+>>> import math
+>>> from pygeofilter import ast
+>>> from pygeofilter.parsers.ecql import parse
+>>> from pygeofilter.backends.optimize import optimize
+>>>
+>>> root = parse('attr < sin(3.7) - 5')
+>>> optimized_root = optimize(root, {'sin': math.sin})
+>>> print(ast.get_repr(root))
+ATTRIBUTE attr < (
+    (
+            sin (3.7)
+    ) - 5
+)
+>>> print(ast.get_repr(optimized_root))
+ATTRIBUTE attr < -5.529836140908493
+```
