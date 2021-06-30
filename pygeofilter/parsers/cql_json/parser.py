@@ -33,6 +33,7 @@ from dateparser import parse as parse_datetime
 from ...util import parse_duration
 from ...values import Envelope, Geometry
 from ... import ast
+from ... import values
 
 # https://portal.ogc.org/files/96288
 
@@ -109,10 +110,14 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
         return node
 
     if isinstance(node, list):
-        return [
+        result = [
             walk_cql_json(sub_node, is_temporal)
             for sub_node in node
         ]
+        if is_temporal:
+            return values.Interval(*result)
+        else:
+            return result
 
     assert isinstance(node, dict)
 

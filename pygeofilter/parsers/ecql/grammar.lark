@@ -73,7 +73,6 @@
 !distance_units: "feet" | "meters" | "statute miles" | "nautical miles" | "kilometers"                              -> distance_units
 
 ?expression: sum
-           | NAME "(" [ expression ("," expression)* ] ")"                  -> function
 
 ?sum: product
     | sum "+" product                                                       -> add
@@ -86,6 +85,7 @@
 ?atom: attribute
      | literal
      | "-" atom                                                             -> neg
+     | NAME "(" [ expression ("," expression)* ] ")"                        -> function
      | "(" expression ")"
 
 attribute: NAME

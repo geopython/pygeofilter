@@ -170,6 +170,10 @@ class DjangoFilterEvaluator(Evaluator):
     def literal(self, node):
         return filters.literal(node)
 
+    @handle(values.Interval)
+    def interval(self, node):
+        return filters.literal((node.start, node.end))
+
     @handle(values.Geometry)
     def geometry(self, node):
         return GEOSGeometry(json.dumps(node.__geo_interface__))
