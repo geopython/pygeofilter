@@ -315,7 +315,7 @@ class CQLTestCase(unittest.TestCase):
     #     self.evaluate("BEYOND(geometry, POINT(0 0), 10, meters)", ("B",))
 
     def test_bbox(self):
-        self.evaluate("BBOX(geometry, 0, 0, 1, 1, 'EPSG:4326')", ("A",))
+        self.evaluate("BBOX(geometry, 0, 0, 1, 1, '4326')", ("A",))
 
     # arithmethic expressions
 

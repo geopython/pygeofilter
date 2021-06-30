@@ -7,10 +7,10 @@ from sqlalchemy import and_, func, not_, or_
 from pygeoif.geometry import as_shape
 
 
-def parse_bbox(box, srid: int = 4326):
+def parse_bbox(box, srid: int = None):
     minx, miny, maxx, maxy = box
     return func.ST_GeomFromEWKT(
-        f"SRID={srid};POLYGON(("
+        f"SRID={4326 if srid is None else srid};POLYGON(("
         f"{minx} {miny}, {minx} {maxy}, "
         f"{maxx} {maxy}, {maxx} {miny}, "
         f"{minx} {miny}))"
@@ -180,11 +180,14 @@ def temporal(lhs, time_or_period, op):
     """
     low = None
     high = None
+    equal = None
     if op in ("BEFORE", "AFTER"):
         if op == "BEFORE":
             high = time_or_period
         else:
             low = time_or_period
+    elif op == "TEQUALS":
+        equal = time_or_period
     else:
         low, high = time_or_period
 
@@ -192,12 +195,15 @@ def temporal(lhs, time_or_period, op):
             low = high - low
         if isinstance(high, timedelta):
             high = low + high
-    if low and high:
-        return between(lhs, low, high)
-    elif low:
-        return runop(lhs, low, ">=")
-    else:
-        return runop(lhs, high, "<=")
+    if low is not None or high is not None:
+        if low is not None and high is not None:
+            return between(lhs, low, high)
+        elif low is not None:
+            return runop(lhs, low, ">=")
+        else:
+            return runop(lhs, high, "<=")
+    elif equal is not None:
+        return runop(lhs, equal, "==")
 
 
 UNITS_LOOKUP = {"kilometers": "km", "meters": "m"}
@@ -244,7 +250,7 @@ def bbox(lhs, minx, miny, maxx, maxy, crs=4326):
         :return: a comparison expression object
     """
 
-    return lhs.ST_Intersects(parse_bbox([minx, miny, maxx, maxy]))
+    return lhs.ST_Intersects(parse_bbox([minx, miny, maxx, maxy], crs))
 
 
 def attribute(name, field_mapping=None):

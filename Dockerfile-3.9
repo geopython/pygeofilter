@@ -1,0 +1,31 @@
+FROM python:3.9-buster
+
+LABEL description="Test executor"
+
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update --fix-missing \
+  && apt-get install -y --no-install-recommends \
+  binutils \
+  libproj-dev \
+  gdal-bin \
+  libsqlite3-mod-spatialite \
+  spatialite-bin \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY requirements-test.txt .
+COPY requirements-dev.txt .
+RUN pip install -r requirements-test.txt
+RUN pip install -r requirements-dev.txt
+
+COPY pygeofilter pygeofilter
+COPY tests tests
+COPY README.md .
+COPY setup.py .
+RUN pip install -e .
+
+RUN chmod +x tests/execute-tests.sh 
+
+CMD ["tests/execute-tests.sh"]
