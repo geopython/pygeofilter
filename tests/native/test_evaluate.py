@@ -1,4 +1,4 @@
-from datetime import date, time, datetime, timedelta
+from datetime import date, datetime
 from dataclasses import dataclass
 from typing import Optional, List
 import math
@@ -54,10 +54,11 @@ def data():
 
 
 def filter_(ast, data):
+    filter_expr = NativeEvaluator(math.__dict__).evaluate(ast)
     return [
         record
         for record in data
-        if NativeEvaluator(record, math.__dict__).evaluate(ast)
+        if filter_expr(record)
     ]
 
 

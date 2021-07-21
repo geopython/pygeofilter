@@ -26,7 +26,6 @@
 # ------------------------------------------------------------------------------
 
 
-import operator
 from datetime import date, time, datetime, timedelta
 
 import shapely
@@ -39,52 +38,60 @@ from ..evaluator import Evaluator, handle
 
 
 COMPARISON_MAP = {
-    '=': operator.eq,
-    '<>': operator.ne,
-    '<': operator.lt,
-    '<=': operator.le,
-    '>': operator.gt,
-    '>=': operator.ge,
+    ast.ComparisonOp.EQ: '==',
+    ast.ComparisonOp.NE: '!=',
+    ast.ComparisonOp.LT: '<',
+    ast.ComparisonOp.LE: '<=',
+    ast.ComparisonOp.GT: '>',
+    ast.ComparisonOp.GE: '>=',
 }
 
 ARITHMETIC_MAP = {
-    '+': operator.add,
-    '-': operator.sub,
-    '*': operator.mul,
-    '/': operator.truediv,
+    ast.ArithmeticOp.ADD: '+',
+    ast.ArithmeticOp.SUB: '-',
+    ast.ArithmeticOp.MUL: '*',
+    ast.ArithmeticOp.DIV: '/',
 }
 
 
 class NativeEvaluator(Evaluator):
-    def __init__(self, obj, function_map=None, use_getattr=True):
-        self.obj = obj
+    def __init__(self, function_map=None, use_getattr=True):
         self.function_map = function_map if function_map is not None else {}
         self.use_getattr = use_getattr
+        self.locals = {}
+        self.local_count = 0
+
+    def _add_local(self, value) -> str:
+        self.local_count += 1
+        key = f'local_{self.local_count}'
+        self.locals[key] = value
+        return key
 
     @handle(ast.Not)
     def not_(self, node, sub):
-        return operator.not_(sub)
+        return f'not ({sub})'
 
-    @handle(ast.And, ast.Or)
-    def combination(self, node, lhs, rhs):
-        op = operator.and_ if node.op.value == 'AND' else operator.or_
-        return op(lhs, rhs)
+    @handle(ast.And)
+    def and_(self, node, lhs, rhs):
+        return f'({lhs}) and ({rhs})'
+
+    @handle(ast.Or)
+    def or_(self, node, lhs, rhs):
+        return f'({lhs}) or ({rhs})'
 
     @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
-        op = COMPARISON_MAP[node.op.value]
-        print(op, lhs, rhs, op(lhs, rhs))
-        return op(lhs, rhs)
+        op = COMPARISON_MAP[node.op]
+        return f'({lhs}) {op} ({rhs})'
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        result = low <= lhs <= high
-        if node.not_:
-            result = not result
-        return result
+        maybe_not = "not " if node.not_ else ""
+        return f'{maybe_not}({low}) <= ({lhs}) <= ({high})'
 
     @handle(ast.Like)
     def like(self, node, lhs):
+        maybe_not_inv = "" if node.not_ else "not "
         regex = like_pattern_to_re(
             node.pattern,
             node.nocase,
@@ -92,111 +99,121 @@ class NativeEvaluator(Evaluator):
             node.singlechar,
             node.escapechar
         )
-        result = regex.match(lhs) is not None
-        if node.not_:
-            result = not result
-        return result
+        key = self._add_local(regex)
+        return f'{key}.match({lhs}) is {maybe_not_inv} None'
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
-        result = lhs in options
-        if node.not_:
-            result = not result
-        return result
+        maybe_not = 'not' if node.not_ else ''
+        opts = ', '.join([
+            f'({opt})' for opt in options
+        ])
+        return f'({lhs}) {maybe_not} in ({opts})'
 
     @handle(ast.IsNull)
     def null(self, node, lhs):
-        result = lhs is None
-        if node.not_:
-            result = not result
-        return result
+        maybe_not = 'not ' if node.not_ else ''
+        return f'({lhs}) is {maybe_not}None'
 
     @handle(ast.Exists)
     def exists(self, node, lhs):
+        maybe_not = 'not ' if node.not_ else ''
         if self.use_getattr:
-            result = hasattr(self.obj, node.lhs.name)
+            return f'{maybe_not}hasattr(item, "{node.lhs.name}")'
         else:
-            result = lhs in self.obj
-
-        if node.not_:
-            result = not result
-        return result
+            return f'"{node.lhs.name}" {maybe_not}in item'
 
     @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node, lhs, rhs):
-        lhs = to_interval(lhs)
-        rhs = to_interval(rhs)
-
-        return node.op.value == relate_intervals(lhs, rhs)
+        return (
+            f'relate_intervals(to_interval({lhs}),'
+            f'to_interval({rhs})) == "{node.op.value}"'
+        )
 
     @handle(ast.ArrayPredicate, subclasses=True)
     def array(self, node, lhs, rhs):
-        left = set(lhs)
-        right = set(rhs)
-
         if node.op == ast.ArrayComparisonOp.AEQUALS:
-            return left == right
+            op = '=='
         elif node.op == ast.ArrayComparisonOp.ACONTAINS:
-            return left >= right
+            op = '>='
         elif node.op == ast.ArrayComparisonOp.ACONTAINEDBY:
-            return left <= right
+            op = '<='
         elif node.op == ast.ArrayComparisonOp.AOVERLAPS:
-            return bool(left & right)
+            op = '&'
+        return f'bool(set({lhs}) {op} set({rhs}))'
 
     @handle(ast.SpatialComparisonPredicate, subclasses=True)
     def spatial_operation(self, node, lhs, rhs):
-        op = getattr(lhs, node.op.value.lower())
-        return op(rhs)
+        return f'getattr({lhs}, "{node.op.value.lower()}")({rhs})'
 
     @handle(ast.Relate)
     def spatial_pattern(self, node, lhs, rhs):
-        return lhs.relate_pattern(rhs, node.pattern)
-
-    # @handle(ast.SpatialDistancePredicateNode)
-    # def handle__(self, node, lhs, rhs):
-    #     pass
+        return f'({lhs}).relate_pattern(({rhs}), {node.pattern})'
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        return lhs.intersects(
-            shapely.geometry.Polygon.from_bounds(
-                node.minx, node.miny, node.maxx, node.maxy
-            )
+        return (
+            f'({lhs}).intersects(shapely.geometry.Polygon.from_bounds('
+            f'{node.minx}, {node.miny}, {node.maxx}, {node.maxy}))'
         )
 
     @handle(ast.Attribute)
     def attribute(self, node):
+        # TODO: nested lookup here?
         if self.use_getattr:
-            return getattr(self.obj, node.name, None)
+            return f'getattr(item, "{node.name}", None)'
         else:
-            return self.obj.get(node.name)
+            return f'item.get("{node.name}")'
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
-        op = ARITHMETIC_MAP[node.op.value]
-        return op(lhs, rhs)
+        op = ARITHMETIC_MAP[node.op]
+        return f'({lhs}) {op} ({rhs})'
 
     @handle(ast.Function)
     def function(self, node, *arguments):
-        return self.function_map[node.name](*arguments)
+        args = ', '.join([
+            f'({arg})' for arg in arguments
+        ])
+        return f'{node.name}({args})'
 
     @handle(*values.LITERALS)
     def literal(self, node):
-        return node
+        key = self._add_local(node)
+        return key
 
     @handle(values.Interval)
     def interval(self, node):
-        return node
+        key = self._add_local(node)
+        return key
 
     @handle(values.Geometry)
     def geometry(self, node):
-        return shapely.geometry.shape(node)
+        key = self._add_local(shapely.geometry.shape(node))
+        return key
 
     @handle(values.Envelope)
     def envelope(self, node):
-        return shapely.geometry.Polygon.from_bounds(
-            node.x1, node.y1, node.x2, node.y2
+        key = self._add_local(
+            shapely.geometry.Polygon.from_bounds(
+                node.x1, node.y1, node.x2, node.y2
+            )
         )
+        return key
+
+    def adopt_result(self, result):
+        expression = f'lambda item: {result}'
+        print(expression, self.locals)
+        globals_ = {
+            "relate_intervals": relate_intervals,
+            "to_interval": to_interval,
+        }
+        assert set(globals_).isdisjoint(set(self.function_map))
+
+        globals_.update(self.function_map)
+        globals_.update(self.locals)
+
+        return eval(expression, globals_)
 
 
 def to_interval(value):
