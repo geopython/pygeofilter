@@ -25,6 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
+from typing import Any, Dict, Callable
 
 from datetime import date, time, datetime, timedelta
 
@@ -55,13 +56,39 @@ ARITHMETIC_MAP = {
 
 
 class NativeEvaluator(Evaluator):
-    def __init__(self, function_map=None, use_getattr=True):
+    """ This evaluator type allows to create a filter that can be used to
+        filter objects or dicts.
+
+        The filter is built using Python expressions which are then parsed
+        using eval. The result is a callable object that can be used in any
+        circumstance a normal function would.
+        The callable object accepts a single parameter: the object to filter
+        and returns a boolean if the object matches the filters or not.
+    """
+
+    def __init__(self, function_map: Dict[str, Callable] = None,
+                 attribute_map: Dict[str, str] = None,
+                 use_getattr: bool = True,
+                 allow_nested_attributes: bool = True):
+        """ Constructs a NativeEvaluator.
+
+            Args:
+                function_map: a mapping of a function name to a callable
+                    function.
+                attribute_map: a mapping of an external name to an internal
+                    field of the item to be filtered. The internal field
+                    specifier can be a JSON-Path that will be resolved against
+                    the passed in item.
+        """
         self.function_map = function_map if function_map is not None else {}
+        self.attribute_map = attribute_map
         self.use_getattr = use_getattr
+        self.allow_nested_attributes = allow_nested_attributes
         self.locals = {}
         self.local_count = 0
 
-    def _add_local(self, value) -> str:
+    def _add_local(self, value: Any) -> str:
+        " Add a value as a local variable to the expression. "
         self.local_count += 1
         key = f'local_{self.local_count}'
         self.locals[key] = value
@@ -69,29 +96,31 @@ class NativeEvaluator(Evaluator):
 
     @handle(ast.Not)
     def not_(self, node, sub):
-        return f'not ({sub})'
+        return f'(not {sub})'
 
     @handle(ast.And)
     def and_(self, node, lhs, rhs):
-        return f'({lhs}) and ({rhs})'
+        return f'({lhs} and {rhs})'
 
     @handle(ast.Or)
     def or_(self, node, lhs, rhs):
-        return f'({lhs}) or ({rhs})'
+        return f'({lhs} or {rhs})'
 
     @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
         op = COMPARISON_MAP[node.op]
-        return f'({lhs}) {op} ({rhs})'
+        return f'({lhs} {op} {rhs})'
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        maybe_not = "not " if node.not_ else ""
-        return f'{maybe_not}({low}) <= ({lhs}) <= ({high})'
+        if node.not_:
+            return f'({low} > {lhs} or {lhs} > {high})'
+        else:
+            return f'({low} <= {lhs} <= {high})'
 
     @handle(ast.Like)
     def like(self, node, lhs):
-        maybe_not_inv = "" if node.not_ else "not "
+        maybe_not_inv = '' if node.not_ else 'not '
         regex = like_pattern_to_re(
             node.pattern,
             node.nocase,
@@ -100,34 +129,35 @@ class NativeEvaluator(Evaluator):
             node.escapechar
         )
         key = self._add_local(regex)
-        return f'{key}.match({lhs}) is {maybe_not_inv} None'
+        return f'({key}.match({lhs}) is {maybe_not_inv} None)'
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
         maybe_not = 'not' if node.not_ else ''
         opts = ', '.join([
-            f'({opt})' for opt in options
+            f'{opt}' for opt in options
         ])
-        return f'({lhs}) {maybe_not} in ({opts})'
+        return f'({lhs} {maybe_not} in ({opts}))'
 
     @handle(ast.IsNull)
     def null(self, node, lhs):
         maybe_not = 'not ' if node.not_ else ''
-        return f'({lhs}) is {maybe_not}None'
+        return f'({lhs} is {maybe_not}None)'
 
     @handle(ast.Exists)
     def exists(self, node, lhs):
         maybe_not = 'not ' if node.not_ else ''
+        # TODO: dotted path as with attribute
         if self.use_getattr:
-            return f'{maybe_not}hasattr(item, "{node.lhs.name}")'
+            return f'({maybe_not}hasattr(item, {node.lhs.name!r}))'
         else:
-            return f'"{node.lhs.name}" {maybe_not}in item'
+            return f'({node.lhs.name!r} {maybe_not}in item)'
 
     @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node, lhs, rhs):
         return (
-            f'relate_intervals(to_interval({lhs}),'
-            f'to_interval({rhs})) == "{node.op.value}"'
+            f'(relate_intervals(to_interval({lhs}),'
+            f'to_interval({rhs})) == {node.op.value!r})'
         )
 
     @handle(ast.ArrayPredicate, subclasses=True)
@@ -144,26 +174,46 @@ class NativeEvaluator(Evaluator):
 
     @handle(ast.SpatialComparisonPredicate, subclasses=True)
     def spatial_operation(self, node, lhs, rhs):
-        return f'getattr({lhs}, "{node.op.value.lower()}")({rhs})'
+        return f'(getattr({lhs}, {node.op.value.lower()!r})({rhs}))'
 
     @handle(ast.Relate)
     def spatial_pattern(self, node, lhs, rhs):
-        return f'({lhs}).relate_pattern(({rhs}), {node.pattern})'
+        return f'({lhs}.relate_pattern({rhs}, {node.pattern!r}))'
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
         return (
-            f'({lhs}).intersects(shapely.geometry.Polygon.from_bounds('
-            f'{node.minx}, {node.miny}, {node.maxx}, {node.maxy}))'
+            f'({lhs}.intersects(shapely.geometry.Polygon.from_bounds('
+            f'{node.minx!r}, {node.miny!r}, {node.maxx!r}, {node.maxy!r})))'
         )
 
     @handle(ast.Attribute)
     def attribute(self, node):
-        # TODO: nested lookup here?
-        if self.use_getattr:
-            return f'getattr(item, "{node.name}", None)'
+        if self.attribute_map is not None:
+            if node.name in self.attribute_map:
+                path = self.attribute_map[node.name]
+            elif '*' in self.attribute_map:
+                path = self.attribute_map['*'].replate('*', node.name)
+            allow_nested_attributes = True
         else:
-            return f'item.get("{node.name}")'
+            path = node.name
+            allow_nested_attributes = self.allow_nested_attributes
+
+        parts = path.split('.')
+        if not allow_nested_attributes and len(parts) > 1:
+            raise Exception('Nested attributes are not allowed')
+
+        if self.use_getattr:
+            cur = 'item'
+            for part in parts:
+                cur = f'getattr({cur}, {part!r}, None)'
+            return cur
+        else:
+            getters = ''.join(
+                f'.get({part!r})'
+                for part in parts
+            )
+            return f'item{getters}'
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
@@ -202,8 +252,10 @@ class NativeEvaluator(Evaluator):
         return key
 
     def adopt_result(self, result):
+        """ Turns the compiled expression into a callable object using
+            ``eval``. Literals are passed in as well as the function map.
+        """
         expression = f'lambda item: {result}'
-        print(expression, self.locals)
         globals_ = {
             "relate_intervals": relate_intervals,
             "to_interval": to_interval,
@@ -212,6 +264,9 @@ class NativeEvaluator(Evaluator):
 
         globals_.update(self.function_map)
         globals_.update(self.locals)
+
+        # clear any locals for later use
+        self.locals.clear()
 
         return eval(expression, globals_)
 
