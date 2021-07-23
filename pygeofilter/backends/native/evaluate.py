@@ -33,7 +33,7 @@ import shapely
 
 from ... import ast
 from ... import values
-from ...util import like_pattern_to_re
+from ...util import like_pattern_to_re, parse_datetime
 
 from ..evaluator import Evaluator, handle
 
@@ -52,6 +52,13 @@ ARITHMETIC_MAP = {
     ast.ArithmeticOp.SUB: '-',
     ast.ArithmeticOp.MUL: '*',
     ast.ArithmeticOp.DIV: '/',
+}
+
+ARRAY_COMPARISON_OP_MAP = {
+    ast.ArrayComparisonOp.AEQUALS: '==',
+    ast.ArrayComparisonOp.ACONTAINS: '>=',
+    ast.ArrayComparisonOp.ACONTAINEDBY: '<=',
+    ast.ArrayComparisonOp.AOVERLAPS: '&',
 }
 
 
@@ -93,6 +100,23 @@ class NativeEvaluator(Evaluator):
         key = f'local_{self.local_count}'
         self.locals[key] = value
         return key
+
+    def _resolve_attribute(self, name):
+        if self.attribute_map is not None:
+            if name in self.attribute_map:
+                path = self.attribute_map[name]
+            elif '*' in self.attribute_map:
+                path = self.attribute_map['*'].replace('*', name)
+            allow_nested_attributes = True
+        else:
+            path = name
+            allow_nested_attributes = self.allow_nested_attributes
+
+        parts = path.split('.')
+        if not allow_nested_attributes and len(parts) > 1:
+            raise Exception('Nested attributes are not allowed')
+
+        return parts
 
     @handle(ast.Not)
     def not_(self, node, sub):
@@ -146,12 +170,19 @@ class NativeEvaluator(Evaluator):
 
     @handle(ast.Exists)
     def exists(self, node, lhs):
+        parts = self._resolve_attribute(node.lhs.name)
         maybe_not = 'not ' if node.not_ else ''
-        # TODO: dotted path as with attribute
         if self.use_getattr:
-            return f'({maybe_not}hasattr(item, {node.lhs.name!r}))'
+            cur = 'item'
+            for part in parts[:-1]:
+                cur = f'getattr({cur}, {part!r}, None)'
+            return f'({maybe_not}hasattr({cur}, {parts[-1]!r}))'
         else:
-            return f'({node.lhs.name!r} {maybe_not}in item)'
+            getters = ''.join(
+                f'.get({part!r}, {{}})'
+                for part in parts[:-1]
+            )
+            return f'{parts[-1]!r} {maybe_not}in item{getters}'
 
     @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node, lhs, rhs):
@@ -162,47 +193,32 @@ class NativeEvaluator(Evaluator):
 
     @handle(ast.ArrayPredicate, subclasses=True)
     def array(self, node, lhs, rhs):
-        if node.op == ast.ArrayComparisonOp.AEQUALS:
-            op = '=='
-        elif node.op == ast.ArrayComparisonOp.ACONTAINS:
-            op = '>='
-        elif node.op == ast.ArrayComparisonOp.ACONTAINEDBY:
-            op = '<='
-        elif node.op == ast.ArrayComparisonOp.AOVERLAPS:
-            op = '&'
+        op = ARRAY_COMPARISON_OP_MAP[node.op]
         return f'bool(set({lhs}) {op} set({rhs}))'
 
     @handle(ast.SpatialComparisonPredicate, subclasses=True)
     def spatial_operation(self, node, lhs, rhs):
-        return f'(getattr({lhs}, {node.op.value.lower()!r})({rhs}))'
+        return (
+            f'(getattr(ensure_spatial({lhs}), '
+            f'{node.op.value.lower()!r})({rhs}))'
+        )
 
     @handle(ast.Relate)
     def spatial_pattern(self, node, lhs, rhs):
-        return f'({lhs}.relate_pattern({rhs}, {node.pattern!r}))'
+        return (
+            f'(ensure_spatial({lhs}).relate_pattern({rhs}, {node.pattern!r}))'
+        )
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        return (
-            f'({lhs}.intersects(shapely.geometry.Polygon.from_bounds('
-            f'{node.minx!r}, {node.miny!r}, {node.maxx!r}, {node.maxy!r})))'
-        )
+        bbox_local = self._add_local(shapely.geometry.Polygon.from_bounds(
+            node.minx, node.miny, node.maxx, node.maxy
+        ))
+        return f'(ensure_spatial({lhs}).intersects({bbox_local})'
 
     @handle(ast.Attribute)
     def attribute(self, node):
-        if self.attribute_map is not None:
-            if node.name in self.attribute_map:
-                path = self.attribute_map[node.name]
-            elif '*' in self.attribute_map:
-                path = self.attribute_map['*'].replate('*', node.name)
-            allow_nested_attributes = True
-        else:
-            path = node.name
-            allow_nested_attributes = self.allow_nested_attributes
-
-        parts = path.split('.')
-        if not allow_nested_attributes and len(parts) > 1:
-            raise Exception('Nested attributes are not allowed')
-
+        parts = self._resolve_attribute(node.name)
         if self.use_getattr:
             cur = 'item'
             for part in parts:
@@ -257,8 +273,9 @@ class NativeEvaluator(Evaluator):
         """
         expression = f'lambda item: {result}'
         globals_ = {
-            "relate_intervals": relate_intervals,
-            "to_interval": to_interval,
+            'relate_intervals': relate_intervals,
+            'to_interval': to_interval,
+            'ensure_spatial': ensure_spatial,
         }
         assert set(globals_).isdisjoint(set(self.function_map))
 
@@ -272,7 +289,6 @@ class NativeEvaluator(Evaluator):
 
 
 def to_interval(value):
-    # TODO:
     zulu = None
     if isinstance(value, values.Interval):
         low = value.start
@@ -297,6 +313,10 @@ def to_interval(value):
 
     elif isinstance(value, datetime):
         return (value, value)
+
+    elif isinstance(value, str):
+        parsed = parse_datetime(value)
+        return (parsed, parsed)
 
     raise ValueError(f'Invalid type {type(value)}')
 
@@ -334,3 +354,9 @@ def relate_intervals(lhs, rhs):
     raise ValueError(
         f'Error relating intervals [{ll}, {lh}] and ({rl}, {rh})'
     )
+
+
+def ensure_spatial(value):
+    if isinstance(value, shapely.geometry.base.BaseGeometry):
+        return value
+    return shapely.geometry.shape(value)
