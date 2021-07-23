@@ -214,7 +214,7 @@ class NativeEvaluator(Evaluator):
         bbox_local = self._add_local(shapely.geometry.Polygon.from_bounds(
             node.minx, node.miny, node.maxx, node.maxy
         ))
-        return f'(ensure_spatial({lhs}).intersects({bbox_local})'
+        return f'(ensure_spatial({lhs}).intersects({bbox_local}))'
 
     @handle(ast.Attribute)
     def attribute(self, node):
@@ -299,9 +299,9 @@ def to_interval(value):
             high = datetime.combine(high, time.max, zulu)
 
         if isinstance(low, timedelta):
-            low = high - timedelta
+            low = high - low
         elif isinstance(high, timedelta):
-            high = low + timedelta
+            high = low + high
 
         return (low, high)
 

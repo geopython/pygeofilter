@@ -12,6 +12,11 @@ from pygeofilter import ast
 
 
 @dataclass
+class Nested:
+    str_attr: str
+
+
+@dataclass
 class Record:
     str_attr: str
     maybe_str_attr: Optional[str]
@@ -21,6 +26,7 @@ class Record:
     datetime_attr: datetime
     point_attr: Point
     array_attr: List[int]
+    nested_attr: Nested
 
 
 @pytest.fixture
@@ -34,7 +40,10 @@ def data():
             date(2010, 1, 1),
             datetime(2010, 1, 1),
             Point(1, 1),
-            [2, 3]
+            [2, 3],
+            Nested(
+                'this is a test'
+            )
         ),
         Record(
             'this is another test',
@@ -44,7 +53,10 @@ def data():
             date(2010, 1, 10),
             datetime(2010, 1, 10),
             Point(2, 2),
-            [1, 2, 3, 4, 5]
+            [1, 2, 3, 4, 5],
+            Nested(
+                'this is another test'
+            )
         )
     ]
 
@@ -54,7 +66,11 @@ def data():
 
 
 def filter_(ast, data):
-    filter_expr = NativeEvaluator(math.__dict__).evaluate(ast)
+    filter_expr = NativeEvaluator(
+        math.__dict__,
+        allow_nested_attributes=True,
+    ).evaluate(ast)
+
     return [
         record
         for record in data
@@ -399,6 +415,12 @@ def test_spatial(data):
     )
     assert len(result) == 1 and result[0] is data[1]
 
+    result = filter_(
+        parse('BBOX(point_attr, 0.5, 0.5, 1.5, 1.5)'),
+        data,
+    )
+    assert len(result) == 1 and result[0] is data[0]
+
 
 def test_spatial_json(data_json):
     result = filter_json(
@@ -412,6 +434,12 @@ def test_spatial_json(data_json):
         data_json,
     )
     assert len(result) == 1 and result[0] is data_json[1]
+
+    result = filter_json(
+        parse('BBOX(point_attr, 0.5, 0.5, 1.5, 1.5)'),
+        data_json,
+    )
+    assert len(result) == 1 and result[0] is data_json[0]
 
 
 def test_arithmetic(data):
@@ -456,3 +484,11 @@ def test_function_json(data_json):
         data_json,
     )
     assert len(result) == 1 and result[0] is data_json[0]
+
+
+def test_nested(data):
+    result = filter_(
+        parse('"nested_attr.str_attr" = \'this is a test\''),
+        data,
+    )
+    assert len(result) == 1 and result[0] is data[0]
