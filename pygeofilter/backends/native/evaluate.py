@@ -27,7 +27,7 @@
 
 from typing import Any, Dict, Callable
 
-from datetime import date, time, datetime, timedelta
+from datetime import date, time, datetime, timedelta, timezone
 
 import shapely
 
@@ -289,14 +289,13 @@ class NativeEvaluator(Evaluator):
 
 
 def to_interval(value):
-    zulu = None
     if isinstance(value, values.Interval):
         low = value.start
         high = value.end
         if isinstance(low, date):
-            low = datetime.combine(low, time.min, zulu)
+            low = datetime.combine(low, time.min, timezone.utc)
         if isinstance(high, date):
-            high = datetime.combine(high, time.max, zulu)
+            high = datetime.combine(high, time.max, timezone.utc)
 
         if isinstance(low, timedelta):
             low = high - low
@@ -307,8 +306,8 @@ def to_interval(value):
 
     elif isinstance(value, date):
         return (
-            datetime.combine(value, time.min, zulu),
-            datetime.combine(value, time.max, zulu),
+            datetime.combine(value, time.min, timezone.utc),
+            datetime.combine(value, time.max, timezone.utc),
         )
 
     elif isinstance(value, datetime):
@@ -318,12 +317,17 @@ def to_interval(value):
         parsed = parse_datetime(value)
         return (parsed, parsed)
 
+    elif value is None:
+        return (None, None)
+
     raise ValueError(f'Invalid type {type(value)}')
 
 
 def relate_intervals(lhs, rhs):
     ll, lh = lhs
     rl, rh = rhs
+    if None in (ll, lh, rl, rh):
+        return 'DISJOINT'
     if lh < rl:
         return 'BEFORE'
     elif ll > rh:
