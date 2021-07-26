@@ -55,7 +55,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author='Fabian Schindler',
-    author_email='fabian.schindler@gmail.com',
+    author_email='fabian.schindler@eox.at',
     url='https://github.com/geopython/pygeofilter',
     license='MIT',
     packages=find_packages(),

@@ -1,0 +1,26 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - release-*
+
+jobs:
+  publish:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      name: Setup Python
+      with:
+        python-version: "3.x"
+    - name: Install build dependency
+      run: pip install wheel
+    - name: Build package
+      run: python setup.py sdist bdist_wheel --universal
+    - name: Publish package
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
