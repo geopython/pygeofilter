@@ -4,7 +4,7 @@
 # Authors: Fabian Schindler <fabian.schindler@eox.at>
 #
 # ------------------------------------------------------------------------------
-# Copyright (C) 2019 EOX IT Services GmbH
+# Copyright (C) 2021 EOX IT Services GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, Tuple, Union
 
 from datetime import date, time, datetime, timedelta, timezone
 
@@ -102,6 +102,9 @@ class NativeEvaluator(Evaluator):
         return key
 
     def _resolve_attribute(self, name):
+        """ Helper to resolve an attribute, either directly or via the
+            integrated ``attribute_map``
+        """
         if self.attribute_map is not None:
             if name in self.attribute_map:
                 path = self.attribute_map[name]
@@ -153,7 +156,7 @@ class NativeEvaluator(Evaluator):
             node.escapechar
         )
         key = self._add_local(regex)
-        return f'({key}.match({lhs}) is {maybe_not_inv} None)'
+        return f'({key}.match({lhs}) is {maybe_not_inv}None)'
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
@@ -188,7 +191,8 @@ class NativeEvaluator(Evaluator):
     def temporal(self, node, lhs, rhs):
         return (
             f'(relate_intervals(to_interval({lhs}),'
-            f'to_interval({rhs})) == {node.op.value!r})'
+            f'to_interval({rhs})) == '
+            f'ast.TemporalComparisonOp.{node.op.name})'
         )
 
     @handle(ast.ArrayPredicate, subclasses=True)
@@ -276,6 +280,7 @@ class NativeEvaluator(Evaluator):
             'relate_intervals': relate_intervals,
             'to_interval': to_interval,
             'ensure_spatial': ensure_spatial,
+            'ast': ast,
         }
         assert set(globals_).isdisjoint(set(self.function_map))
 
@@ -288,7 +293,32 @@ class NativeEvaluator(Evaluator):
         return eval(expression, globals_)
 
 
-def to_interval(value):
+MaybeInterval = Union[values.Interval, date, datetime, str, None]
+InternalInterval = Union[Tuple[datetime, datetime], Tuple[None, None]]
+
+
+def to_interval(value: MaybeInterval) -> InternalInterval:
+    """ Converts the given value to an interval tuple of ``start``/``stop``
+        as Python datetime objects.
+
+        - ``values.Interval`` objects are expanded to two datetimes:
+            - two datetimes are returned as such
+            - a date is transformed to a datetime, where the ``time``
+              component is either ``time.min`` for start or ``time.max``
+              for then end component.
+            - if either the start or end is a ``timedelta`` object, that value
+              is either added to the start value or subtracted from the end
+              value.
+        - ``date`` objects are transformed to two datetimes for the
+          ``time.min`` and ``time.end`` of that date in UTC.
+        - ``datetime`` and ``str`` objects are an interval with both
+          start and end of the same value. Strings are parsed beforehand.
+        - ``None`` is simply returned as ``(None, None)``
+    """
+
+    if isinstance(value, str):
+        value = parse_datetime(value)
+
     if isinstance(value, values.Interval):
         low = value.start
         high = value.end
@@ -313,54 +343,58 @@ def to_interval(value):
     elif isinstance(value, datetime):
         return (value, value)
 
-    elif isinstance(value, str):
-        parsed = parse_datetime(value)
-        return (parsed, parsed)
-
     elif value is None:
         return (None, None)
 
     raise ValueError(f'Invalid type {type(value)}')
 
 
-def relate_intervals(lhs, rhs):
+def relate_intervals(lhs: InternalInterval,
+                     rhs: InternalInterval) -> ast.TemporalComparisonOp:
+    """ Relates two intervals (tuples of two ``datetime`` or ``None`` values)
+        and returns the associated ``ast.TemporalComparisonOp`` value.
+    """
     ll, lh = lhs
     rl, rh = rhs
     if None in (ll, lh, rl, rh):
-        return 'DISJOINT'
-    if lh < rl:
-        return 'BEFORE'
+        return ast.TemporalComparisonOp.DISJOINT
+    elif lh < rl:
+        return ast.TemporalComparisonOp.BEFORE
     elif ll > rh:
-        return 'AFTER'
+        return ast.TemporalComparisonOp.AFTER
     elif lh == rl:
-        return 'MEETS'
+        return ast.TemporalComparisonOp.MEETS
     elif ll == rh:
-        return 'METBY'
+        return ast.TemporalComparisonOp.METBY
     elif ll < rl and rl < lh < rh:
-        return 'TOVERLAPS'
+        return ast.TemporalComparisonOp.TOVERLAPS
     elif rl < ll < rh and lh > rh:
-        return 'OVERLAPPEDBY'
+        return ast.TemporalComparisonOp.OVERLAPPEDBY
     elif ll == rl and lh < rh:
-        return 'BEGINS'
+        return ast.TemporalComparisonOp.BEGINS
     elif ll == rl and lh > rh:
-        return 'BEGUNBY'
+        return ast.TemporalComparisonOp.BEGUNBY
     elif ll > rl and lh < rh:
-        return 'DURING'
+        return ast.TemporalComparisonOp.DURING
     elif ll < rl and lh > rh:
-        return 'TCONTAINS'
+        return ast.TemporalComparisonOp.TCONTAINS
     elif ll > rl and lh == rh:
-        return 'TENDS'
+        return ast.TemporalComparisonOp.ENDS
     elif ll < rl and lh == rh:
-        return 'ENDEDBY'
+        return ast.TemporalComparisonOp.ENDEDBY
     elif ll == rl and lh == rh:
-        return 'TEQUALS'
+        return ast.TemporalComparisonOp.TEQUALS
 
     raise ValueError(
-        f'Error relating intervals [{ll}, {lh}] and ({rl}, {rh})'
+        f'Error relating intervals [{ll}, {lh}] and [{rl}, {rh}]'
     )
 
 
-def ensure_spatial(value):
+def ensure_spatial(value: Any) -> shapely.geometry.base.BaseGeometry:
+    """ Ensures that a given value is a shapely geometry. If it is already
+        it is passed through, otherwise it is tried to be parsed via
+        ``shapely.geometry.shape``.
+    """
     if isinstance(value, shapely.geometry.base.BaseGeometry):
         return value
     return shapely.geometry.shape(value)
