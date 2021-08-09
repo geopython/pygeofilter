@@ -157,7 +157,7 @@ class Comparison(Predicate):
         return [self.lhs, self.rhs]
 
     def get_template(self):
-        return f"{{}} {self.op} {{}}"
+        return f"{{}} {self.op.value} {{}}"
 
 
 @dataclass
@@ -205,7 +205,7 @@ class Between(Predicate):
         return [self.lhs, self.low, self.high]
 
     def get_template(self):
-        return f"%s {'NOT ' if self.not_ else ''}BETWEEN {{}} AND {{}}"
+        return f"{{}} {'NOT ' if self.not_ else ''}BETWEEN {{}} AND {{}}"
 
 
 @dataclass
@@ -226,7 +226,7 @@ class Like(Predicate):
 
     def get_template(self):
         return (
-            f"%{{}} {'NOT ' if self.not_ else ''}"
+            f"{{}} {'NOT ' if self.not_ else ''}"
             f"{'I' if self.nocase else ''}LIKE '{self.pattern}'"
             # TODO wildcard, singlechar, escapechar
         )

@@ -145,6 +145,10 @@ class GeoPandasEvaluator(Evaluator):
     def literal(self, node):
         return node
 
+    @handle(values.Interval)
+    def interval(self, node):
+        return (node.start, node.end)
+
     @handle(values.Geometry)
     def geometry(self, node):
         return geometry.shape(node)

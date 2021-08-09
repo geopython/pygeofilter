@@ -28,6 +28,7 @@
 
 from dataclasses import dataclass
 from datetime import date, time, datetime, timedelta
+from typing import Union, Optional
 
 from pygeoif.geometry import as_shape
 
@@ -55,3 +56,9 @@ class Envelope:
     x2: float
     y1: float
     y2: float
+
+
+@dataclass
+class Interval:
+    start: Optional[Union[date, datetime, timedelta]] = None
+    end: Optional[Union[date, datetime, timedelta]] = None

@@ -184,6 +184,10 @@ class NativeEvaluator(Evaluator):
     def literal(self, node):
         return node
 
+    @handle(values.Interval)
+    def interval(self, node):
+        return node
+
     @handle(values.Geometry)
     def geometry(self, node):
         return shapely.geometry.shape(node)
@@ -198,8 +202,9 @@ class NativeEvaluator(Evaluator):
 def to_interval(value):
     # TODO:
     zulu = None
-    if isinstance(value, (list, tuple)):
-        low, high = value
+    if isinstance(value, values.Interval):
+        low = value.start
+        high = value.end
         if isinstance(low, date):
             low = datetime.combine(low, time.min, zulu)
         if isinstance(high, date):

@@ -1,14 +1,12 @@
-Welcome to pygeofilter's documentation!
-=================================
+.. mdinclude:: ../README.md
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   introduction
-   installation
-   usage
-   api/index
+   license
+   contributing
+   api/modules
 
 Indices and tables
 ==================

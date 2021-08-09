@@ -154,7 +154,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
 
     def function(self, func_name, *expressions):
         return ast.Function(
-            func_name, list(expressions)
+            str(func_name), list(expressions)
         )
 
     def add(self, lhs, rhs):
@@ -176,7 +176,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return ast.Attribute(str(name))
 
     def period(self, start, end):
-        return [start, end]
+        return values.Interval(start, end)
 
     def INT(self, value):
         return int(value)
