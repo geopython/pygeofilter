@@ -70,6 +70,7 @@ setup(
         'backend-django': ['django'],
         'backend-sqlalchemy': ['geoalchemy2', 'sqlalchemy'],
         'backend-native': ['shapely'],
+        'fes': ['pygml>=0.2']
     },
     classifiers=[
         'Development Status :: 3 - Alpha',

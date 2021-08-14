@@ -23,9 +23,22 @@ def handle(*tags: List[str], namespace: Optional[str] = Missing,
 
     @wraps(handle)
     def inner(func):
-        print(func)
         func.handles_tags = tags
         func.namespace = namespace
+        func.subiter = subiter
+        return func
+
+    return inner
+
+
+def handle_namespace(namespace: str, subiter: bool = True) -> Callable:
+    """ Function-decorator to mark a class function as a handler for a
+        given namespace.
+    """
+
+    @wraps(handle)
+    def inner(func):
+        func.handles_namespace = namespace
         func.subiter = subiter
         return func
 
@@ -36,10 +49,10 @@ class XMLParserMeta(type):
     def __init__(cls, name, bases, dct):
         cls_values = [(cls, dct.values())]
         for base in bases:
-            print(base.__dict__)
             cls_values.append((base, base.__dict__.values()))
 
         tag_map = {}
+        namespace_map = {}
         for cls_, values in cls_values:
             for value in values:
                 if hasattr(value, 'handles_tags'):
@@ -59,7 +72,11 @@ class XMLParserMeta(type):
                         else:
                             tag_map[handled_tag] = value
 
+                if hasattr(value, 'handles_namespace'):
+                    namespace_map[value.handles_namespace] = value
+
         cls.tag_map = tag_map
+        cls.namespace_map = namespace_map
 
 
 ParseInput = Union[etree._Element, etree._ElementTree, str]
@@ -79,9 +96,12 @@ class XMLParser(metaclass=XMLParserMeta):
         return self._evaluate_node(root)
 
     def _evaluate_node(self, node: etree._Element) -> ast.Node:
-        try:
+        qname = etree.QName(node.tag)
+        if node.tag in self.tag_map:
             parse_func = self.tag_map[node.tag]
-        except KeyError:
+        elif qname.namespace in self.namespace_map:
+            parse_func = self.namespace_map[qname.namespace]
+        else:
             raise NodeParsingError(f"Cannot parse XML tag {node.tag}")
 
         if parse_func.subiter:
