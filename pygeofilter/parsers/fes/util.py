@@ -48,7 +48,10 @@ def handle_namespace(namespace: str, subiter: bool = True) -> Callable:
 class XMLParserMeta(type):
     def __init__(cls, name, bases, dct):
         cls_values = [(cls, dct.values())]
+        cls_namespace = getattr(cls, 'namespace', None)
+
         for base in bases:
+            cls_namespace = cls_namespace or getattr(base, 'namespace', None)
             cls_values.append((base, base.__dict__.values()))
 
         tag_map = {}
@@ -59,7 +62,8 @@ class XMLParserMeta(type):
                     for handled_tag in value.handles_tags:
                         namespace = value.namespace
                         if namespace is Missing:
-                            namespace = cls_.namespace
+                            namespace = getattr(cls_, 'namespace', None) \
+                                or cls_namespace
                         if namespace:
                             if isinstance(namespace, (list, tuple)):
                                 namespaces = namespace

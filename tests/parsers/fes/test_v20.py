@@ -1,4 +1,7 @@
-import pytest
+from datetime import datetime, timedelta
+
+from dateparser.timezone_parser import StaticTzInfo
+
 from pygeofilter.parsers.fes.v20 import parse
 from pygeofilter import ast
 from pygeofilter import values
@@ -478,4 +481,85 @@ def test_geom_dwithin():
         }),
         distance=10,
         units="m",
+    )
+
+
+def test_after():
+    result = parse('''
+    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
+        xmlns:gml="http://www.opengis.net/gml">
+      <fes:After>
+        <fes:ValueReference>attr</fes:ValueReference>
+        <gml:TimeInstant>
+          <gml:timePosition>2000-01-01T00:00:00Z</gml:timePosition>
+        </gml:TimeInstant>
+      </fes:After>
+    </fes:Filter>
+    ''')
+    assert result == ast.TimeAfter(
+        ast.Attribute('attr'),
+        datetime(
+            2000, 1, 1, 0, 0, 0,
+            tzinfo=StaticTzInfo('Z', timedelta(0))
+        ),
+    )
+
+
+def test_before():
+    # using timePosition directly
+    result = parse('''
+    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
+        xmlns:gml="http://www.opengis.net/gml">
+      <fes:Before>
+        <fes:ValueReference>attr</fes:ValueReference>
+        <gml:timePosition>2000-01-01T00:00:00Z</gml:timePosition>
+      </fes:Before>
+    </fes:Filter>
+    ''')
+    assert result == ast.TimeBefore(
+        ast.Attribute('attr'),
+        datetime(
+            2000, 1, 1, 0, 0, 0,
+            tzinfo=StaticTzInfo('Z', timedelta(0))
+        ),
+    )
+
+
+def test_begins():
+    # using timePosition directly
+    result = parse('''
+    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
+        xmlns:gml="http://www.opengis.net/gml">
+      <fes:Begins>
+        <fes:ValueReference>attr</fes:ValueReference>
+        <gml:TimePeriod>
+          <gml:begin>
+            <gml:TimeInstant>
+              <gml:timePosition>2000-01-01T00:00:00Z</gml:timePosition>
+            </gml:TimeInstant>
+          </gml:begin>
+          <gml:end>
+            <gml:TimeInstant>
+              <gml:timePosition>2001-01-01T00:00:00Z</gml:timePosition>
+            </gml:TimeInstant>
+          </gml:end>
+        </gml:TimePeriod>
+      </fes:Begins>
+    </fes:Filter>
+    ''')
+    assert result == ast.TimeBegins(
+        ast.Attribute('attr'),
+        values.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0,
+                tzinfo=StaticTzInfo('Z', timedelta(0))
+            ),
+            datetime(
+                2001, 1, 1, 0, 0, 0,
+                tzinfo=StaticTzInfo('Z', timedelta(0))
+            ),
+        ),
     )
