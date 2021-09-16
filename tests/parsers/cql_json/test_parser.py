@@ -32,7 +32,6 @@ from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
 from pygeofilter.parsers.cql_json import parse
-from pygeofilter.ast import get_repr
 from pygeofilter import ast
 from pygeofilter import values
 
@@ -614,7 +613,8 @@ def test_overlaps_attr_multilinestring():
 # relate
 
 # def test_relate_attr_polygon():
-#     result = parse('RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)), "1*T***T**")')
+#     result = parse('RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)),
+#          "1*T***T**")')
 #     assert result == ast.SpatialPatternPredicateNode(
 #         ast.Attribute('geometry'),
 #         ast.LiteralExpression(
