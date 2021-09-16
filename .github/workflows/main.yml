@@ -30,5 +30,5 @@ jobs:
         cd ../sqlalchemy_test/
         python3 -m unittest
         cd ../..
-        flake8 pygeofilter
+        flake8 pygeofilter tests
 
