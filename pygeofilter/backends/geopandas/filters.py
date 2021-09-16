@@ -1,7 +1,6 @@
 from operator import (
     and_, or_, lt, le, gt, ge, ne, eq, add, sub, mul, truediv
 )
-from datetime import datetime, timedelta
 from functools import reduce
 
 import shapely
