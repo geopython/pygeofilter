@@ -294,12 +294,17 @@ class Include(Predicate):
 # DURING            <---------------------->    TCONTAINS
 # TENDS             <---------->                ENDEDBY
 # TEQUALS               <------>                TEQUALS
+# DISJOINT: If a proper interval T1 is intervalDisjoint another proper
+#   interval T2,then the beginning of T1 is after the end of T2, or the end of
+#   T1 is before the beginning of T2, i.e. the intervals do not overlap in any
+#   way, but their ordering relationship is not known.
 
 # https://github.com/geotools/geotools/blob/main/modules/library/cql/ECQL.md#temporal-predicate
 # BEFORE_OR_DURING  <----->
 # DURING_OR_AFTER           <----->
 
 class TemporalComparisonOp(Enum):
+    DISJOINT = 'DISJOINT'
     AFTER = 'AFTER'
     BEFORE = 'BEFORE'
     BEGINS = 'BEGINS'

@@ -83,7 +83,7 @@ class Evaluator(metaclass=EvaluatorMeta):
     """ Base class for AST evaluators.
     """
 
-    def evaluate(self, node: ast.Node) -> Any:
+    def evaluate(self, node: ast.Node, adopt_result: bool = True) -> Any:
         """ Recursive function to evaluate an abstract syntax tree.
             For every node in the walked syntax tree, its registered handler
             is called with the node as first parameter and all pre-evaluated
@@ -94,16 +94,22 @@ class Evaluator(metaclass=EvaluatorMeta):
         """
         if hasattr(node, 'get_sub_nodes'):
             sub_args = [
-                self.evaluate(sub_node)
+                self.evaluate(sub_node, False)
                 for sub_node in node.get_sub_nodes()
             ]
         else:
             sub_args = []
 
-        node_type = type(node)
-        if node_type in self.handler_map:
-            return self.handler_map[node_type](self, node, *sub_args)
-        return self.adopt(node, *sub_args)
+        handler = self.handler_map.get(type(node))
+        if handler is not None:
+            result = handler(self, node, *sub_args)
+        else:
+            result = self.adopt(node, *sub_args)
+
+        if adopt_result:
+            return self.adopt_result(result)
+        else:
+            return result
 
     def adopt(self, node, *sub_args):
         """ Interface function for a last resort when trying to evaluate a node
@@ -112,3 +118,9 @@ class Evaluator(metaclass=EvaluatorMeta):
         raise NotImplementedError(
             f'Failed to evaluate node of type {type(node)}'
         )
+
+    def adopt_result(self, result: Any) -> Any:
+        """ Interface function for adopting the final evaluation result if necessary.
+            Default is no-op.
+        """
+        return result

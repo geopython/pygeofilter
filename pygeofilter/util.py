@@ -27,6 +27,12 @@
 
 import re
 from datetime import timedelta
+from dateparser import parse as parse_datetime
+
+__all__ = [
+    'parse_datetime', 'RE_ISO_8601', 'parse_duration',
+    'like_pattern_to_re_pattern', 'like_pattern_to_re'
+]
 
 RE_ISO_8601 = re.compile(
     r"^(?P<sign>[+-])?P"
