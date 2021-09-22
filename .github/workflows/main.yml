@@ -25,8 +25,5 @@ jobs:
     - name: Run unit tests ⚙️
       run: |
         pytest
-        cd tests/django_test
-        python manage.py test testapp
-        cd ../..
         flake8 pygeofilter tests
 
