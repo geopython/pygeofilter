@@ -483,6 +483,18 @@ def test_bbox_crs():
     )
 
 
+def test_bbox_negative():
+    result = parse('BBOX(geometry, -3, -4, -1, -2, \'EPSG:3875\')')
+    assert result == ast.BBox(
+        ast.Attribute('geometry'),
+        -3,
+        -4,
+        -1,
+        -2,
+        'EPSG:3875',
+    )
+
+
 def test_attribute_arithmetic_add():
     result = parse('attr = 5 + 2')
     assert result == ast.Equal(
