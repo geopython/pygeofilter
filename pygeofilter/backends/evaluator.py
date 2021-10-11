@@ -73,6 +73,9 @@ class EvaluatorMeta(type):
     """
     def __init__(cls, name, bases, dct):
         cls.handler_map = {}
+        for base in bases:
+            cls.handler_map.update(getattr(base, 'handler_map'))
+
         for value in dct.values():
             if hasattr(value, 'handles_classes'):
                 for handled_class in value.handles_classes:
