@@ -1,5 +1,5 @@
-pygeoapi (0.0.8) focal; urgency=medium
+pygeofilter (0.0.3-0~focal0) focal; urgency=low
 
-  * New upstream release
+  * Initial packaging.
 
- -- Tom Kralidis <tomkralidis@gmail.com>  Sun, 21 Mar 2021 14:44:12 +0000
+ -- Angelos Tzotsos <gcpp.kalxas@gmail.com>  Tue, 12 Oct 2021 13:00:00 +0300
