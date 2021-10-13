@@ -29,7 +29,7 @@ from typing import Any, Dict, Callable, Tuple, Union
 
 from datetime import date, time, datetime, timedelta, timezone
 
-import shapely
+import shapely.geometry
 
 from ... import ast
 from ... import values
