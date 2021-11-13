@@ -117,6 +117,13 @@ class Combination(Condition):
     def get_template(self):
         return f"{{}} {self.op.name} {{}}"
 
+    @classmethod
+    def from_items(cls, first, *rest) -> Node:
+        result = first
+        for item in rest:
+            result = cls(result, item)
+        return result
+
 
 @dataclass
 class And(Combination):
