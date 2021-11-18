@@ -139,13 +139,11 @@ def test_attribute_between_negative_positive():
 
 def test_string_like():
     result = parse({
-        "like": {
-            "like": [
-                {"property": "attr"},
-                "some%",
-            ],
-            "nocase": False,
-        }
+        "like": [
+            {"property": "attr"},
+            "some%",
+        ],
+        "nocase": False,
     })
     assert result == ast.Like(
         ast.Attribute('attr'),
@@ -160,13 +158,11 @@ def test_string_like():
 
 def test_string_ilike():
     result = parse({
-        "like": {
-            "like": [
-                {"property": "attr"},
-                "some%",
-            ],
-            "nocase": True,
-        }
+        "like": [
+            {"property": "attr"},
+            "some%",
+        ],
+        "nocase": True,
     })
     assert result == ast.Like(
         ast.Attribute('attr'),

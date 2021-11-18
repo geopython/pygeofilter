@@ -164,12 +164,12 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.Node:
 
         elif name == 'like':
             return ast.Like(
-                walk_cql_json(value['like'][0]),
-                value['like'][1],
-                nocase=value.get('nocase', True),
-                wildcard=value.get('wildcard', '%'),
-                singlechar=value.get('singleChar', '.'),
-                escapechar=value.get('escapeChar', '\\'),
+                walk_cql_json(value[0]),
+                value[1],
+                nocase=node.get('nocase', True),
+                wildcard=node.get('wildcard', '%'),
+                singlechar=node.get('singleChar', '.'),
+                escapechar=node.get('escapeChar', '\\'),
                 not_=False,
             )
 
