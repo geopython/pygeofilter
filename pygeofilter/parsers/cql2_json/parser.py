@@ -25,13 +25,12 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-import datetime
 from typing import Union
 import json
 
 from ... import ast
 from ... import values
-from ... util import parse_datetime, parse_duration
+from ... util import parse_datetime, parse_date, parse_duration
 
 # https://github.com/opengeospatial/ogcapi-features/tree/master/cql2
 
@@ -116,7 +115,7 @@ def walk_cql_json(node: dict) -> ast.Node:
         return values.Envelope(*node['bbox'])
 
     elif 'date' in node:
-        return datetime.date.fromisoformat(node['date'])
+        return parse_date(node['date'])
 
     elif 'timestamp' in node:
         return parse_datetime(node['timestamp'])
@@ -130,7 +129,7 @@ def walk_cql_json(node: dict) -> ast.Node:
                 continue
             try:
                 parsed.append(
-                    datetime.date.fromisoformat(value)
+                    parse_date(value)
                 )
             except ValueError:
                 try:

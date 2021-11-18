@@ -26,7 +26,7 @@
 # ------------------------------------------------------------------------------
 
 import re
-from datetime import timedelta
+from datetime import timedelta, date
 from dateparser import parse as parse_datetime
 
 __all__ = [
@@ -71,6 +71,16 @@ def parse_duration(value: str) -> timedelta:
     fsec += float(match['hours'] or 0) * 3600
 
     return sign * timedelta(days, fsec)
+
+
+def parse_date(value: str) -> date:
+    """ Backport for `fromisoformat` for dates in Python 3.6
+    """
+
+    if hasattr(date, 'fromisoformat'):
+        return date.fromisoformat(value)
+
+    return date(*(int(part) for part in value.split('-')))
 
 
 def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):
