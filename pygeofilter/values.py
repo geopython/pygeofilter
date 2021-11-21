@@ -33,9 +33,6 @@ from typing import Union, Optional
 from pygeoif.geometry import as_shape
 
 
-LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
-
-
 @dataclass
 class Geometry:
     geometry: dict
@@ -62,3 +59,22 @@ class Envelope:
 class Interval:
     start: Optional[Union[date, datetime, timedelta]] = None
     end: Optional[Union[date, datetime, timedelta]] = None
+
+
+# used for handler declaration
+LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
+
+# used for type checking
+
+SpatialValueType = Union[Geometry, Envelope]
+
+TemporalValueType = Union[date, datetime, timedelta, Interval]
+
+ValueType = Union[
+    SpatialValueType,
+    TemporalValueType,
+    bool,
+    float,
+    int,
+    str,
+]

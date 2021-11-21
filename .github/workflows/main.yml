@@ -26,4 +26,5 @@ jobs:
       run: |
         pytest
         flake8 pygeofilter tests
+        mypy pygeofilter
 

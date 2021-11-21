@@ -32,15 +32,14 @@ https://github.com/tschaub/ogcapi-features/tree/json-array-expression/extensions
 
 from datetime import datetime
 import json
-from typing import Union
-
-from dateparser import parse as parse_datetime
+from typing import Any, Dict, List, Type, Union, cast
 
 from ... import ast
 from ... import values
+from ...util import parse_datetime
 
 
-COMPARISON_MAP = {
+COMPARISON_MAP: Dict[str, Type] = {
     '==': ast.Equal,
     '!=': ast.NotEqual,
     '<': ast.LessThan,
@@ -72,8 +71,19 @@ FUNCTION_MAP = {
     '^': 'pow',
 }
 
+ParseResult = Union[
+    ast.Node,
+    str,
+    float,
+    int,
+    datetime,
+    values.Geometry,
+    values.Interval,
+    Dict[Any, Any]  # TODO: for like wildcards.
+]
 
-def _parse_node(node: Union[list, dict]) -> ast.Node:
+
+def _parse_node(node: Union[list, dict]) -> ParseResult:
     if isinstance(node, (str, float, int)):
         return node
     elif isinstance(node, dict):
@@ -94,13 +104,10 @@ def _parse_node(node: Union[list, dict]) -> ast.Node:
 
     if op in ['all', 'any']:
         cls = ast.And if op == 'all' else ast.Or
-        parent = arguments[0]
-        for argument in arguments[1:]:
-            parent = cls(parent, argument)
-        return parent
+        return cls.from_items(*arguments)
 
     elif op == '!':
-        return ast.Not(*arguments)
+        return ast.Not(*cast(List[ast.Node], arguments))
 
     elif op in COMPARISON_MAP:
         return COMPARISON_MAP[op](*arguments)
@@ -108,47 +115,53 @@ def _parse_node(node: Union[list, dict]) -> ast.Node:
     elif op == 'like':
         wildcard = '%'
         if len(arguments) > 2:
-            wildcard = arguments[2].get('wildCard', '%')
+            wildcard = cast(dict, arguments[2]).get('wildCard', '%')
         return ast.Like(
-            arguments[0],
-            arguments[1],
+            cast(ast.Node, arguments[0]),
+            cast(str, arguments[1]),
             nocase=False,
             wildcard=wildcard,
-            singlechar=None,
-            escapechar=None,
+            singlechar='.',
+            escapechar='\\',
             not_=False,
         )
 
     elif op == 'in':
-        return ast.In(arguments[0], arguments[1:], not_=False)
+        assert isinstance(arguments[0], ast.Node)
+        return ast.In(
+            cast(ast.Node, arguments[0]),
+            cast(List[ast.AstType], arguments[1:]),
+            not_=False
+        )
 
     elif op in SPATIAL_PREDICATES_MAP:
-        cls = SPATIAL_PREDICATES_MAP[op]
-        return cls(*arguments)
+        return SPATIAL_PREDICATES_MAP[op](
+            *cast(List[ast.SpatialAstType], arguments)
+        )
 
     elif op in TEMPORAL_PREDICATES_MAP:
-        cls = TEMPORAL_PREDICATES_MAP[op]
-
         # parse strings to datetimes
-        arguments = [
+        dt_args = [
             parse_datetime(arg) if isinstance(arg, str) else arg
             for arg in arguments
         ]
         if len(arguments) == 3:
-            if isinstance(arguments[0], datetime) and \
-                    isinstance(arguments[1], datetime):
-                arguments = [
-                    values.Interval(arguments[0], arguments[1]),
-                    arguments[2],
+            if isinstance(dt_args[0], datetime) and \
+                    isinstance(dt_args[1], datetime):
+                dt_args = [
+                    values.Interval(dt_args[0], dt_args[1]),
+                    dt_args[2],
                 ]
-            if isinstance(arguments[1], datetime) and \
-                    isinstance(arguments[2], datetime):
-                arguments = [
-                    arguments[0],
-                    values.Interval(arguments[1], arguments[2]),
+            if isinstance(dt_args[1], datetime) and \
+                    isinstance(dt_args[2], datetime):
+                dt_args = [
+                    dt_args[0],
+                    values.Interval(dt_args[1], dt_args[2]),
                 ]
 
-        return cls(*arguments)
+        return TEMPORAL_PREDICATES_MAP[op](
+            *cast(List[ast.TemporalAstType], dt_args)
+        )
 
     # special property getters
     elif op in ['id', 'geometry']:
@@ -162,14 +175,16 @@ def _parse_node(node: Union[list, dict]) -> ast.Node:
         pass  # TODO
 
     elif op in ARITHMETIC_MAP:
-        cls = ARITHMETIC_MAP[op]
-        return cls(*arguments)
+        return ARITHMETIC_MAP[op](
+            *cast(List[ast.ScalarAstType], arguments)
+        )
 
     elif op in ['%', 'floor', 'ceil', 'abs', '^', 'min', 'max']:
-        return ast.Function(FUNCTION_MAP.get(op, op), arguments)
+        return ast.Function(
+            FUNCTION_MAP.get(op, op), cast(List[ast.AstType], arguments)
+        )
 
-    else:
-        raise ValueError(f'Invalid expression operation \'{op}\'')
+    raise ValueError(f'Invalid expression operation \'{op}\'')
 
 
 def parse(jfe: Union[str, list, dict]) -> ast.Node:
@@ -180,6 +195,8 @@ def parse(jfe: Union[str, list, dict]) -> ast.Node:
         https://github.com/tschaub/ogcapi-features/tree/json-array-expression/extensions/cql/jfe
     """
     if isinstance(jfe, str):
-        jfe = json.loads(jfe)
+        root = json.loads(jfe)
+    else:
+        root = jfe
 
-    return _parse_node(jfe)
+    return cast(ast.Node, _parse_node(root))

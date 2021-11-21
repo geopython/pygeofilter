@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Dict
+from typing import Dict, Optional
 
 import shapely.geometry
 
@@ -161,5 +161,5 @@ class SQLEvaluator(Evaluator):
 
 
 def to_sql_where(root: ast.Node, field_mapping: Dict[str, str],
-                 function_map: Dict[str, str] = None) -> str:
-    return SQLEvaluator(field_mapping, function_map).evaluate(root)
+                 function_map: Optional[Dict[str, str]] = None) -> str:
+    return SQLEvaluator(field_mapping, function_map or {}).evaluate(root)

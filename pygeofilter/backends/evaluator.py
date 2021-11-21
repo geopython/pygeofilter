@@ -26,12 +26,12 @@
 # ------------------------------------------------------------------------------
 
 from functools import wraps
-from typing import Any, Callable, List, Type
+from typing import Any, Callable, Dict, List, Type, cast
 
 from .. import ast
 
 
-def get_all_subclasses(*classes: List[Type]) -> List[Type]:
+def get_all_subclasses(*classes: Type) -> List[Type]:
     """ Utility function to get all the leaf-classes (classes that don't
         have any further sub-classes) from a given list of classes.
     """
@@ -50,7 +50,7 @@ def get_all_subclasses(*classes: List[Type]) -> List[Type]:
     return all_subclasses
 
 
-def handle(*node_classes: List[Type], subclasses: bool = False) -> Callable:
+def handle(*node_classes: Type, subclasses: bool = False) -> Callable:
     """ Function-decorator to mark a class function as a handler for a
         given node type.
     """
@@ -86,7 +86,9 @@ class Evaluator(metaclass=EvaluatorMeta):
     """ Base class for AST evaluators.
     """
 
-    def evaluate(self, node: ast.Node, adopt_result: bool = True) -> Any:
+    handler_map: Dict[Type, Callable]
+
+    def evaluate(self, node: ast.AstType, adopt_result: bool = True) -> Any:
         """ Recursive function to evaluate an abstract syntax tree.
             For every node in the walked syntax tree, its registered handler
             is called with the node as first parameter and all pre-evaluated
@@ -98,7 +100,7 @@ class Evaluator(metaclass=EvaluatorMeta):
         if hasattr(node, 'get_sub_nodes'):
             sub_args = [
                 self.evaluate(sub_node, False)
-                for sub_node in node.get_sub_nodes()
+                for sub_node in cast(ast.Node, node).get_sub_nodes()
             ]
         else:
             sub_args = []

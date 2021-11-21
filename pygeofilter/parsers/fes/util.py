@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, List, Union, Optional
+from typing import Callable, Optional, Union, Type
 
 from lxml import etree
 
@@ -14,7 +14,7 @@ class Missing:
     pass
 
 
-def handle(*tags: List[str], namespace: Optional[str] = Missing,
+def handle(*tags: str, namespace: Union[str, Type[Missing]] = Missing,
            subiter: bool = True) -> Callable:
     """ Function-decorator to mark a class function as a handler for a
         given node type.
@@ -87,7 +87,9 @@ ParseInput = Union[etree._Element, etree._ElementTree, str]
 
 
 class XMLParser(metaclass=XMLParserMeta):
-    namespace = None
+    namespace: Optional[str] = None
+    tag_map: dict
+    namespace_map: dict
 
     def parse(self, input_: ParseInput) -> ast.Node:
         if isinstance(input_, etree._Element):

@@ -1,10 +1,8 @@
 import base64
 import datetime
 
-from dateparser import parse as parse_datetime
-
 from ... import ast
-from ... import util
+from ...util import parse_datetime, parse_duration
 from .util import handle, ParseInput
 from .base import FESBaseParser
 
@@ -94,7 +92,7 @@ class FES20Parser(FESBaseParser):
         elif type_ == 'dateTime':
             return parse_datetime(value)
         elif type_ == 'duration':
-            return util.parse_duration(value)
+            return parse_duration(value)
 
         # return to string
         return value

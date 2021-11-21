@@ -93,7 +93,7 @@ ARITHMETIC_MAP = {
 }
 
 
-def walk_cql_json(node: dict) -> ast.Node:
+def walk_cql_json(node: dict) -> ast.AstType:
     if isinstance(node, (str, float, int, bool)):
         return node
 
@@ -228,6 +228,8 @@ def walk_cql_json(node: dict) -> ast.Node:
                 value['name'],
                 walk_cql_json(value['arguments']),
             )
+
+    raise ValueError(f'Unable to parse expression node {node!r}')
 
 
 def parse(cql: Union[str, dict]) -> ast.Node:
