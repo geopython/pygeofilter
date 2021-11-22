@@ -97,8 +97,8 @@ def test_string_like():
         'some%',
         nocase=False,
         wildcard='%',
-        singlechar=None,
-        escapechar=None,
+        singlechar='.',
+        escapechar='\\',
         not_=False,
     )
 
@@ -110,8 +110,8 @@ def test_string_like_wildcard():
         'some*',
         nocase=False,
         wildcard='*',
-        singlechar=None,
-        escapechar=None,
+        singlechar='.',
+        escapechar='\\',
         not_=False,
     )
 
