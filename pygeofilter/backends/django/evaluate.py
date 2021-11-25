@@ -121,16 +121,15 @@ class DjangoFilterEvaluator(Evaluator):
 
     @handle(ast.Relate)
     def spatial_pattern(self, node, lhs, rhs):
-        return filters.spatial(
+        return filters.spatial_relate(
             lhs,
             rhs,
-            'RELATE',
             pattern=node.pattern,
         )
 
     @handle(ast.SpatialDistancePredicate, subclasses=True)
     def spatial_distance(self, node, lhs, rhs):
-        return filters.spatial(
+        return filters.spatial_distance(
             lhs,
             rhs,
             node.op.value,

@@ -67,7 +67,7 @@ OP_TO_COMP = {
     "=": "exact"
 }
 
-INVERT_COMP = {
+INVERT_COMP: Dict[Optional[str], str] = {
     "lt": "gt",
     "lte": "gte",
     "gt": "lt",
@@ -76,7 +76,7 @@ INVERT_COMP = {
 
 
 def compare(lhs: Union[F, Value], rhs: Union[F, Value], op: str,
-            mapping_choices: Optional[Dict[str, str]] = None) -> Q:
+            mapping_choices: Optional[Dict[str, Dict[str, str]]] = None) -> Q:
     """ Compare a filter with an expression using a comparison operation
 
         :param lhs: the field to compare
@@ -144,7 +144,7 @@ def between(lhs: F, low: Union[F, Value], high: Union[F, Value],
 
 
 def like(lhs: F, pattern: str, nocase: bool = False, not_: bool = False,
-         mapping_choices: Optional[Dict[str, str]] = None) -> Q:
+         mapping_choices: Optional[Dict[str, Dict[str, str]]] = None) -> Q:
     """ Create a filter to filter elements according to a string attribute using
         wildcard expressions.
 
@@ -228,7 +228,7 @@ def like(lhs: F, pattern: str, nocase: bool = False, not_: bool = False,
 
 
 def contains(lhs: F, items: List[Union[F, Value]], not_: bool = False,
-             mapping_choices: Optional[Dict[str, str]] = None) -> Q:
+             mapping_choices: Optional[Dict[str, Dict[str, str]]] = None) -> Q:
     """ Create a filter to match elements attribute to be in a list of choices.
 
         :param lhs: the field to compare
@@ -245,19 +245,23 @@ def contains(lhs: F, items: List[Union[F, Value]], not_: bool = False,
         :rtype: :class:`django.db.models.Q`
     """
 
-    if mapping_choices and lhs.name in mapping_choices:
-        def map_value(item):
+    if mapping_choices is not None and lhs.name in mapping_choices:
+        def map_value(item: Union[str, Value],
+                      choices: Dict[str, str]) -> Union[str, Value]:
             try:
                 if isinstance(item, str):
-                    item = mapping_choices[lhs.name][item]
-                elif hasattr(item, 'value'):
-                    item = Value(mapping_choices[lhs.name][item.value])
+                    item = choices[item]
+                elif isinstance(item, Value):
+                    item = Value(choices[item.value])
 
             except KeyError as e:
                 raise AssertionError("Invalid field value %s" % e)
             return item
 
-        items = map(map_value, items)
+        items = [
+            map_value(item, mapping_choices[lhs.name])
+            for item in items
+        ]
 
     q = Q(**{"%s__in" % lhs.name: items})
     return ~q if not_ else q
@@ -417,11 +421,6 @@ def spatial(lhs: Union[F, Value], rhs: Union[F, Value], op: str,
         "INTERSECTS", "DISJOINT", "CONTAINS", "WITHIN", "TOUCHES", "CROSSES",
         "OVERLAPS", "EQUALS", "RELATE", "DWITHIN", "BEYOND"
     )
-    if op == "RELATE":
-        assert pattern
-    elif op in ("DWITHIN", "BEYOND"):
-        assert distance
-        assert units
 
     # if the left hand side is not a field reference, the comparison
     # can be be inverted to try if the right hand side is a field
@@ -434,18 +433,33 @@ def spatial(lhs: Union[F, Value], rhs: Union[F, Value], op: str,
     if not isinstance(lhs, F):
         raise ValueError(f'Unable to compare non-field {lhs}')
 
-    if op in (
-            "INTERSECTS", "DISJOINT", "CONTAINS", "WITHIN", "TOUCHES",
-            "CROSSES", "OVERLAPS", "EQUALS"):
-        return Q(**{"%s__%s" % (lhs.name, op.lower()): rhs})
-    elif op == "RELATE":
-        return Q(**{"%s__relate" % lhs.name: (rhs, pattern)})
-    elif op in ("DWITHIN", "BEYOND"):
-        # TODO: maybe use D.unit_attname(units)
-        d = D(**{UNITS_LOOKUP[units]: distance})
-        if op == "DWITHIN":
-            return Q(**{"%s__distance_lte" % lhs.name: (rhs, d, 'spheroid')})
-        return Q(**{"%s__distance_gte" % lhs.name: (rhs, d, 'spheroid')})
+    return Q(**{"%s__%s" % (lhs.name, op.lower()): rhs})
+
+
+def spatial_relate(lhs: Union[F, Value], rhs: Union[F, Value],
+                   pattern: str) -> Q:
+
+    if not isinstance(lhs, F):
+        # TODO: cannot yet invert pattern -> raise
+        raise ValueError(f'Unable to compare non-field {lhs}')
+
+    return Q(**{"%s__relate" % lhs.name: (rhs, pattern)})
+
+
+def spatial_distance(lhs: Union[F, Value], rhs: Union[F, Value], op: str,
+                     distance: float, units: str) -> Q:
+    if not isinstance(lhs, F):
+        lhs, rhs = rhs, lhs
+
+    # if neither lhs and rhs are fields, we have to fail here
+    if not isinstance(lhs, F):
+        raise ValueError(f'Unable to compare non-field {lhs}')
+
+    # TODO: maybe use D.unit_attname(units)
+    d = D(**{UNITS_LOOKUP[units]: distance})
+    if op == "DWITHIN":
+        return Q(**{"%s__distance_lte" % lhs.name: (rhs, d, 'spheroid')})
+    return Q(**{"%s__distance_gte" % lhs.name: (rhs, d, 'spheroid')})
 
 
 def bbox(lhs: F, minx: float, miny: float, maxx, maxy: float,
@@ -484,7 +498,6 @@ def attribute(name: str, field_mapping: Optional[Dict[str, str]] = None) -> F:
         :param name: the field filter name
         :type name: str
         :param field_mapping: the dictionary to use as a lookup.
-        :type mapping_choices: dict[str, str]
         :rtype: :class:`django.db.models.F`
     """
     if field_mapping:
