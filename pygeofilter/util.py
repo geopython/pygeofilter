@@ -76,10 +76,6 @@ def parse_duration(value: str) -> timedelta:
 def parse_date(value: str) -> date:
     """ Backport for `fromisoformat` for dates in Python 3.6
     """
-
-    if hasattr(date, 'fromisoformat'):
-        return date.fromisoformat(value)
-
     return date(*(int(part) for part in value.split('-')))
 
 
