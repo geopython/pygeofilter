@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Any, Dict, Callable, Tuple, Union
+from typing import Any, Dict, Callable, Optional, Tuple, Union
 
 from datetime import date, time, datetime, timedelta, timezone
 
@@ -294,7 +294,7 @@ class NativeEvaluator(Evaluator):
 
 
 MaybeInterval = Union[values.Interval, date, datetime, str, None]
-InternalInterval = Union[Tuple[datetime, datetime], Tuple[None, None]]
+InternalInterval = Tuple[Optional[datetime], Optional[datetime]]
 
 
 def to_interval(value: MaybeInterval) -> InternalInterval:
@@ -322,18 +322,24 @@ def to_interval(value: MaybeInterval) -> InternalInterval:
     if isinstance(value, values.Interval):
         low = value.start
         high = value.end
+
+        # convert low and high dates to their respective datetime
+        # by using 00:00 time for the low part and 23:59:59 for the high
+        # part
         if isinstance(low, date):
             low = datetime.combine(low, time.min, timezone.utc)
         if isinstance(high, date):
             high = datetime.combine(high, time.max, timezone.utc)
 
+        # low and high are now either datetimes, timedeltas or None
+
         if isinstance(low, timedelta):
-            if isinstance(high, (date, datetime)):
+            if isinstance(high, datetime):
                 low = high - low
             else:
                 raise ValueError(f'Cannot combine {low} with {high}')
         elif isinstance(high, timedelta):
-            if isinstance(high, (date, datetime)):
+            if isinstance(low, datetime):
                 high = low + high
             else:
                 raise ValueError(f'Cannot combine {low} with {high}')
