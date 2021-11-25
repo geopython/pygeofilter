@@ -91,7 +91,7 @@ class NativeEvaluator(Evaluator):
         self.attribute_map = attribute_map
         self.use_getattr = use_getattr
         self.allow_nested_attributes = allow_nested_attributes
-        self.locals = {}
+        self.locals: Dict[str, Any] = {}
         self.local_count = 0
 
     def _add_local(self, value: Any) -> str:
@@ -328,9 +328,15 @@ def to_interval(value: MaybeInterval) -> InternalInterval:
             high = datetime.combine(high, time.max, timezone.utc)
 
         if isinstance(low, timedelta):
-            low = high - low
+            if isinstance(high, (date, datetime)):
+                low = high - low
+            else:
+                raise ValueError(f'Cannot combine {low} with {high}')
         elif isinstance(high, timedelta):
-            high = low + high
+            if isinstance(high, (date, datetime)):
+                high = low + high
+            else:
+                raise ValueError(f'Cannot combine {low} with {high}')
 
         return (low, high)
 
@@ -356,7 +362,8 @@ def relate_intervals(lhs: InternalInterval,
     """
     ll, lh = lhs
     rl, rh = rhs
-    if None in (ll, lh, rl, rh):
+    if ll is None or lh is None or rl is None or rh is None:
+        # TODO: handle open ended intervals (None on either side)
         return ast.TemporalComparisonOp.DISJOINT
     elif lh < rl:
         return ast.TemporalComparisonOp.BEFORE
