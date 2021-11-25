@@ -1,8 +1,7 @@
 from lxml import etree
-from dateparser import parse as parse_datetime
 
 from ... import values
-from ... import util
+from ...util import parse_duration, parse_datetime
 
 
 def _parse_time_position(node, nsmap):
@@ -34,7 +33,7 @@ def _parse_valid_time(node, nsmap):
 
 
 def _parse_duration(node, nsmap):
-    return util.parse_duration(node.text)
+    return parse_duration(node.text)
 
 
 PARSER_MAP = {

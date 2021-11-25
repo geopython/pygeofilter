@@ -6,7 +6,6 @@ from django.conf import settings
 
 
 def pytest_configure():
-    print('configuring')
     settings.configure(
         SECRET_KEY="secret",
         INSTALLED_APPS=[

@@ -63,6 +63,14 @@ def test_id_eq():
 
 
 @pytest.mark.django_db
+def test_id_eq_2():
+    evaluate(
+        '\'A\' = identifier',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_id_ne():
     evaluate(
         'identifier <> \'B\'',
@@ -87,6 +95,14 @@ def test_float_le():
 
 
 @pytest.mark.django_db
+def test_float_le_inv():
+    evaluate(
+        '20 >= floatAttribute',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_float_gt():
     evaluate(
         'floatAttribute > 20',
@@ -95,9 +111,25 @@ def test_float_gt():
 
 
 @pytest.mark.django_db
+def test_float_gt_2():
+    evaluate(
+        '20 < floatAttribute',
+        ('B',)
+    )
+
+
+@pytest.mark.django_db
 def test_float_ge():
     evaluate(
         'floatAttribute >= 30',
+        ('B',)
+    )
+
+
+@pytest.mark.django_db
+def test_float_ge_inv():
+    evaluate(
+        '30 <= floatAttribute',
         ('B',)
     )
 
@@ -116,6 +148,14 @@ def test_float_between():
 def test_common_value_eq():
     evaluate(
         'strAttribute = \'AAA\'',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
+def test_common_value_eq_inv():
+    evaluate(
+        '\'AAA\' = strAttribute',
         ('A',)
     )
 
@@ -376,9 +416,25 @@ def test_intersects_point():
 
 
 @pytest.mark.django_db
+def test_intersects_point_inv():
+    evaluate(
+        'INTERSECTS(POINT(1 1.0), geometry)',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_intersects_mulitipoint_1():
     evaluate(
         'INTERSECTS(geometry, MULTIPOINT(0 0, 1 1))',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
+def test_intersects_mulitipoint_1_inv():
+    evaluate(
+        'INTERSECTS(MULTIPOINT(0 0, 1 1), geometry)',
         ('A',)
     )
 
@@ -392,9 +448,25 @@ def test_intersects_mulitipoint_2():
 
 
 @pytest.mark.django_db
+def test_intersects_mulitipoint_2_inv():
+    evaluate(
+        'INTERSECTS(MULTIPOINT((0 0), (1 1)), geometry)',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_intersects_linestring():
     evaluate(
         'INTERSECTS(geometry, LINESTRING(0 0, 1 1))',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
+def test_intersects_linestring__inv():
+    evaluate(
+        'INTERSECTS(LINESTRING(0 0, 1 1), geometry)',
         ('A',)
     )
 
@@ -408,10 +480,28 @@ def test_intersects_multilinestring():
 
 
 @pytest.mark.django_db
+def test_intersects_multilinestring_inv():
+    evaluate(
+        'INTERSECTS(MULTILINESTRING((0 0, 1 1), (2 1, 1 2)), geometry)',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_intersects_polygon():
     evaluate(
         'INTERSECTS(geometry, '
         'POLYGON((0 0, 3 0, 3 3, 0 3, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1)))',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
+def test_intersects_polygon_inv():
+    evaluate(
+        'INTERSECTS('
+        'POLYGON((0 0, 3 0, 3 3, 0 3, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1)), '
+        'geometry)',
         ('A',)
     )
 
@@ -427,9 +517,28 @@ def test_intersects_multipolygon():
 
 
 @pytest.mark.django_db
+def test_intersects_multipolygon_inv():
+    evaluate(
+        'INTERSECTS('
+        'MULTIPOLYGON(((0 0, 3 0, 3 3, 0 3, 0 0), '
+        '(1 1, 2 1, 2 2, 1 2, 1 1))), '
+        'geometry)',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_intersects_envelope():
     evaluate(
         'INTERSECTS(geometry, ENVELOPE(0 1.0 0 1.0))',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
+def test_intersects_envelope_inv():
+    evaluate(
+        'INTERSECTS(ENVELOPE(0 1.0 0 1.0), geometry)',
         ('A',)
     )
 
@@ -443,9 +552,25 @@ def test_dwithin():
 
 
 @pytest.mark.django_db
+def test_dwithin_inv():
+    evaluate(
+        'DWITHIN(POINT(0 0), geometry, 10, meters)',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_beyond():
     evaluate(
         'BEYOND(geometry, POINT(0 0), 10, meters)',
+        ('B',)
+    )
+
+
+@pytest.mark.django_db
+def test_beyond_inv():
+    evaluate(
+        'BEYOND(POINT(0 0), geometry, 10, meters)',
         ('B',)
     )
 
@@ -471,9 +596,25 @@ def test_arith_simple_plus():
 
 
 @pytest.mark.django_db
+def test_arith_simple_plus_inv():
+    evaluate(
+        '10 + 10 = intMetaAttribute',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
 def test_arith_field_plus_1():
     evaluate(
         'intMetaAttribute = floatMetaAttribute + 10',
+        ('A', 'B')
+    )
+
+
+@pytest.mark.django_db
+def test_arith_field_plus_1_inv():
+    evaluate(
+        'floatMetaAttribute + 10 = intMetaAttribute',
         ('A', 'B')
     )
 
@@ -487,10 +628,27 @@ def test_arith_field_plus_2():
 
 
 @pytest.mark.django_db
+def test_arith_field_plus_2_inv():
+    evaluate(
+        '10 + floatMetaAttribute = intMetaAttribute',
+        ('A', 'B')
+    )
+
+
+@pytest.mark.django_db
 def test_arith_field_plus_field():
     evaluate(
         'intMetaAttribute = '
         'floatMetaAttribute + intAttribute',
+        ('A',)
+    )
+
+
+@pytest.mark.django_db
+def test_arith_field_plus_field_inv():
+    evaluate(
+        'floatMetaAttribute + intAttribute'
+        '= intMetaAttribute',
         ('A',)
     )
 

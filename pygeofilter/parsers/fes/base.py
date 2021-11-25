@@ -9,11 +9,10 @@ from pygml.pre_v32 import (
 )
 from pygml.v33 import parse_v33_ce, NAMESPACE as NAMESPACE_33_CE
 from pygml.georss import NAMESPACE as NAMESPACE_GEORSS, parse_georss
-from dateparser import parse as parse_datetime
 
 from ... import ast
 from ... import values
-from ... import util
+from ...util import parse_datetime, parse_duration
 from .util import XMLParser, handle, handle_namespace
 from .gml import is_temporal, parse_temporal
 
@@ -160,7 +159,7 @@ class FESBaseParser(XMLParser):
         elif type_ == 'dateTime':
             return parse_datetime(value)
         elif type_ == 'duration':
-            return util.parse_duration(value)
+            return parse_duration(value)
 
         # return to string
         return value

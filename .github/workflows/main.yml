@@ -14,7 +14,7 @@ jobs:
       name: Setup Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install requirements 📦
+    - name: Install requirements
       run: |
         sudo apt-get update
         sudo apt-get install -y binutils libproj-dev gdal-bin libgdal-dev libsqlite3-mod-spatialite spatialite-bin
@@ -22,8 +22,12 @@ jobs:
         pip install -r requirements-dev.txt
         pip install pygdal=="`gdal-config --version`.*"
         pip install .
-    - name: Run unit tests ⚙️
+        mypy --install-types --non-interactive pygeofilter
+    - name: Run unit tests
       run: |
         pytest
         flake8 pygeofilter tests
+    - name: Run type checking
+      run: |
+        mypy pygeofilter
 
