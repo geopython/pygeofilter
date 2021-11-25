@@ -25,7 +25,8 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Union
+from datetime import date, datetime, timedelta
+from typing import Dict, List, Type, Union, cast
 import json
 
 from ... import ast
@@ -35,7 +36,7 @@ from ... util import parse_datetime, parse_date, parse_duration
 # https://github.com/opengeospatial/ogcapi-features/tree/master/cql2
 
 
-COMPARISON_MAP = {
+COMPARISON_MAP: Dict[str, Type[ast.Comparison]] = {
     'eq': ast.Equal,
     '=': ast.Equal,
     'ne': ast.NotEqual,
@@ -50,7 +51,7 @@ COMPARISON_MAP = {
     '>=': ast.GreaterEqual,
 }
 
-SPATIAL_PREDICATES_MAP = {
+SPATIAL_PREDICATES_MAP: Dict[str, Type[ast.SpatialComparisonPredicate]] = {
     's_intersects': ast.GeometryIntersects,
     's_equals': ast.GeometryEquals,
     's_disjoint': ast.GeometryDisjoint,
@@ -93,7 +94,10 @@ ARITHMETIC_MAP = {
 }
 
 
-def walk_cql_json(node: dict) -> ast.AstType:
+JsonType = Union[dict, list, str, float, int, bool, None]
+
+
+def walk_cql_json(node: JsonType) -> ast.AstType:
     if isinstance(node, (str, float, int, bool)):
         return node
 
@@ -121,9 +125,8 @@ def walk_cql_json(node: dict) -> ast.AstType:
         return parse_datetime(node['timestamp'])
 
     elif 'interval' in node:
-        parsed = []
+        parsed: List[Union[date, datetime, timedelta, None]] = []
         for value in node['interval']:
-            print(value)
             if value == '..':
                 parsed.append(None)
                 continue
@@ -143,39 +146,33 @@ def walk_cql_json(node: dict) -> ast.AstType:
     for name, value in node.items():
         if name in ('and', 'or'):
             sub_items = walk_cql_json(value)
-            last = sub_items[0]
-            for sub_item in sub_items[1:]:
-                last = (ast.And if name == 'and' else ast.Or)(
-                    last,
-                    sub_item,
-                )
-            return last
+            return (ast.And if name == 'and' else ast.Or).from_items(sub_items)
 
         elif name == 'not':
             # allow both arrays and objects, the standard is ambigous in
             # that regard
             if isinstance(value, list):
                 value = value[0]
-            return ast.Not(walk_cql_json(value))
+            return ast.Not(cast(ast.Node, walk_cql_json(value)))
 
         elif name in COMPARISON_MAP:
             return COMPARISON_MAP[name](
-                walk_cql_json(value[0]),
-                walk_cql_json(value[1]),
+                cast(ast.ScalarAstType, walk_cql_json(value[0])),
+                cast(ast.ScalarAstType, walk_cql_json(value[1])),
             )
 
         elif name == 'between':
             return ast.Between(
-                walk_cql_json(value['value']),
-                walk_cql_json(value['lower']),
-                walk_cql_json(value['upper']),
+                cast(ast.Node, walk_cql_json(value['value'])),
+                cast(ast.ScalarAstType, walk_cql_json(value['lower'])),
+                cast(ast.ScalarAstType, walk_cql_json(value['upper'])),
                 not_=False,
             )
 
         elif name == 'like':
             return ast.Like(
-                walk_cql_json(value[0]),
-                value[1],
+                cast(ast.Node, walk_cql_json(value[0])),
+                cast(str, value[1]),
                 nocase=False,
                 wildcard='%',
                 singlechar='.',
@@ -185,8 +182,8 @@ def walk_cql_json(node: dict) -> ast.AstType:
 
         elif name == 'in':
             return ast.In(
-                walk_cql_json(value['value']),
-                walk_cql_json(value['list']),
+                cast(ast.AstType, walk_cql_json(value['value'])),
+                cast(List[ast.AstType], walk_cql_json(value['list'])),
                 not_=False,
             )
 
@@ -198,26 +195,32 @@ def walk_cql_json(node: dict) -> ast.AstType:
 
         elif name in SPATIAL_PREDICATES_MAP:
             return SPATIAL_PREDICATES_MAP[name](
-                walk_cql_json(value[0]),
-                walk_cql_json(value[1]),
+                cast(ast.SpatialAstType, walk_cql_json(value[0])),
+                cast(ast.SpatialAstType, walk_cql_json(value[1])),
             )
 
         elif name in TEMPORAL_PREDICATES_MAP:
             return TEMPORAL_PREDICATES_MAP[name](
-                walk_cql_json(value[0]),
-                walk_cql_json(value[1]),
+                cast(
+                    ast.TemporalAstType,
+                    walk_cql_json(value[0])
+                ),
+                cast(
+                    ast.TemporalAstType,
+                    walk_cql_json(value[1])
+                ),
             )
 
         elif name in ARRAY_PREDICATES_MAP:
             return ARRAY_PREDICATES_MAP[name](
-                walk_cql_json(value[0]),
-                walk_cql_json(value[1]),
+                cast(ast.ArrayAstType, walk_cql_json(value[0])),
+                cast(ast.ArrayAstType, walk_cql_json(value[1])),
             )
 
         elif name in ARITHMETIC_MAP:
             return ARITHMETIC_MAP[name](
-                walk_cql_json(value[0]),
-                walk_cql_json(value[1]),
+                cast(ast.ScalarAstType, walk_cql_json(value[0])),
+                cast(ast.ScalarAstType, walk_cql_json(value[1])),
             )
 
         elif name == 'property':
@@ -226,14 +229,16 @@ def walk_cql_json(node: dict) -> ast.AstType:
         elif name == 'function':
             return ast.Function(
                 value['name'],
-                walk_cql_json(value['arguments']),
+                cast(List[ast.AstType], walk_cql_json(value['arguments'])),
             )
 
     raise ValueError(f'Unable to parse expression node {node!r}')
 
 
-def parse(cql: Union[str, dict]) -> ast.Node:
+def parse(cql: Union[str, dict]) -> ast.AstType:
     if isinstance(cql, str):
-        cql = json.loads(cql)
+        root = json.loads(cql)
+    else:
+        root = cql
 
-    return walk_cql_json(cql)
+    return walk_cql_json(root)
