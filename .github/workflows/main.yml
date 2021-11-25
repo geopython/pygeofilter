@@ -22,7 +22,7 @@ jobs:
         pip install -r requirements-dev.txt
         pip install pygdal=="`gdal-config --version`.*"
         pip install .
-        mypy --install-types pygeofilter
+        mypy --install-types --non-interactive pygeofilter
     - name: Run unit tests
       run: |
         pytest
