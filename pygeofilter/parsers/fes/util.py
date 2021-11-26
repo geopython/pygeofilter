@@ -6,6 +6,11 @@ from lxml import etree
 from ... import ast
 
 
+Element = etree._Element
+ElementTree = etree._ElementTree
+ParseInput = Union[etree._Element, etree._ElementTree, str]
+
+
 class NodeParsingError(ValueError):
     pass
 
@@ -83,18 +88,15 @@ class XMLParserMeta(type):
         cls.namespace_map = namespace_map
 
 
-ParseInput = Union[etree._Element, etree._ElementTree, str]
-
-
 class XMLParser(metaclass=XMLParserMeta):
     namespace: Optional[str] = None
     tag_map: dict
     namespace_map: dict
 
     def parse(self, input_: ParseInput) -> ast.Node:
-        if isinstance(input_, etree._Element):
+        if isinstance(input_, Element):
             root = input_
-        elif isinstance(input_, etree._ElementTree):
+        elif isinstance(input_, ElementTree):
             root = input_.getroot()
         else:
             root = etree.fromstring(input_)

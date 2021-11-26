@@ -1,25 +1,29 @@
 from ... import ast
 from .base import FESBaseParser
-from .util import handle, ParseInput
+from .util import handle, ParseInput, Element
 
 
 class FES11Parser(FESBaseParser):
     namespace = 'http://www.opengis.net/ogc'
 
     @handle('Add')
-    def add(self, node, lhs, rhs):
+    def add(self, node: Element, lhs: ast.ScalarAstType,
+            rhs: ast.ScalarAstType) -> ast.Node:
         return ast.Add(lhs, rhs)
 
     @handle('Sub')
-    def sub(self, node, lhs, rhs):
+    def sub(self, node: Element, lhs: ast.ScalarAstType,
+            rhs: ast.ScalarAstType) -> ast.Node:
         return ast.Sub(lhs, rhs)
 
     @handle('Mul')
-    def mul(self, node, lhs, rhs):
+    def mul(self, node: Element, lhs: ast.ScalarAstType,
+            rhs: ast.ScalarAstType) -> ast.Node:
         return ast.Mul(lhs, rhs)
 
     @handle('Div')
-    def div(self, node, lhs, rhs):
+    def div(self, node: Element, lhs: ast.ScalarAstType,
+            rhs: ast.ScalarAstType) -> ast.Node:
         return ast.Div(lhs, rhs)
 
 
