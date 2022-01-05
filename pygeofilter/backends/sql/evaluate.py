@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Dict
+from typing import Dict, Optional
 
 import shapely.geometry
 
@@ -64,7 +64,8 @@ SPATIAL_COMPARISON_OP_MAP = {
 
 
 class SQLEvaluator(Evaluator):
-    def __init__(self, attribute_map: Dict[str, str], function_map: Dict[str, str]):
+    def __init__(self, attribute_map: Dict[str, str],
+                 function_map: Dict[str, str]):
         self.attribute_map = attribute_map
         self.function_map = function_map
 
@@ -95,7 +96,10 @@ class SQLEvaluator(Evaluator):
             pattern = pattern.replace(node.singlechar, '_')
 
         # TODO: handle node.nocase
-        return f"{lhs} {'NOT ' if node.not_ else ''}LIKE '{pattern}' ESCAPE '{node.escapechar}'"
+        return (
+            f"{lhs} {'NOT ' if node.not_ else ''}LIKE "
+            f"'{pattern}' ESCAPE '{node.escapechar}'"
+        )
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
@@ -150,9 +154,12 @@ class SQLEvaluator(Evaluator):
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
-        wkb_hex = shapely.geometry.box(node.x1, node.y1, node.x2, node.y2).wkb_hex
+        wkb_hex = shapely.geometry.box(
+            node.x1, node.y1, node.x2, node.y2
+        ).wkb_hex
         return f"ST_GeomFromWKB(x'{wkb_hex}')"
 
 
-def to_sql_where(root: ast.Node, field_mapping: Dict[str, str], function_map: Dict[str, str]=None) -> str:
-    return SQLEvaluator(field_mapping, function_map).evaluate(root)
+def to_sql_where(root: ast.Node, field_mapping: Dict[str, str],
+                 function_map: Optional[Dict[str, str]] = None) -> str:
+    return SQLEvaluator(field_mapping, function_map or {}).evaluate(root)

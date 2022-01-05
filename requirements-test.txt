@@ -5,3 +5,7 @@ geopandas
 fiona
 pyproj
 rtree
+pygml
+dateparser
+pygeoif
+lark

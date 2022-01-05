@@ -26,12 +26,12 @@
 # ------------------------------------------------------------------------------
 
 from functools import wraps
-from typing import Any, Callable, List, Type
+from typing import Any, Callable, Dict, List, Type, cast
 
 from .. import ast
 
 
-def get_all_subclasses(*classes: List[Type]) -> List[Type]:
+def get_all_subclasses(*classes: Type) -> List[Type]:
     """ Utility function to get all the leaf-classes (classes that don't
         have any further sub-classes) from a given list of classes.
     """
@@ -50,7 +50,7 @@ def get_all_subclasses(*classes: List[Type]) -> List[Type]:
     return all_subclasses
 
 
-def handle(*node_classes: List[Type], subclasses: bool = False) -> Callable:
+def handle(*node_classes: Type, subclasses: bool = False) -> Callable:
     """ Function-decorator to mark a class function as a handler for a
         given node type.
     """
@@ -73,6 +73,9 @@ class EvaluatorMeta(type):
     """
     def __init__(cls, name, bases, dct):
         cls.handler_map = {}
+        for base in bases:
+            cls.handler_map.update(getattr(base, 'handler_map'))
+
         for value in dct.values():
             if hasattr(value, 'handles_classes'):
                 for handled_class in value.handles_classes:
@@ -83,7 +86,9 @@ class Evaluator(metaclass=EvaluatorMeta):
     """ Base class for AST evaluators.
     """
 
-    def evaluate(self, node: ast.Node) -> Any:
+    handler_map: Dict[Type, Callable]
+
+    def evaluate(self, node: ast.AstType, adopt_result: bool = True) -> Any:
         """ Recursive function to evaluate an abstract syntax tree.
             For every node in the walked syntax tree, its registered handler
             is called with the node as first parameter and all pre-evaluated
@@ -94,16 +99,22 @@ class Evaluator(metaclass=EvaluatorMeta):
         """
         if hasattr(node, 'get_sub_nodes'):
             sub_args = [
-                self.evaluate(sub_node)
-                for sub_node in node.get_sub_nodes()
+                self.evaluate(sub_node, False)
+                for sub_node in cast(ast.Node, node).get_sub_nodes()
             ]
         else:
             sub_args = []
 
-        node_type = type(node)
-        if node_type in self.handler_map:
-            return self.handler_map[node_type](self, node, *sub_args)
-        return self.adopt(node, *sub_args)
+        handler = self.handler_map.get(type(node))
+        if handler is not None:
+            result = handler(self, node, *sub_args)
+        else:
+            result = self.adopt(node, *sub_args)
+
+        if adopt_result:
+            return self.adopt_result(result)
+        else:
+            return result
 
     def adopt(self, node, *sub_args):
         """ Interface function for a last resort when trying to evaluate a node
@@ -112,3 +123,9 @@ class Evaluator(metaclass=EvaluatorMeta):
         raise NotImplementedError(
             f'Failed to evaluate node of type {type(node)}'
         )
+
+    def adopt_result(self, result: Any) -> Any:
+        """ Interface function for adopting the final evaluation result if necessary.
+            Default is no-op.
+        """
+        return result

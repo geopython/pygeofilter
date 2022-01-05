@@ -25,10 +25,9 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from dateparser import parse as parse_datetime
 from lark import Transformer, v_args
 
-from ..util import parse_duration
+from ..util import parse_duration, parse_datetime
 
 
 @v_args(inline=True)

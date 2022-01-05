@@ -1,4 +1,29 @@
-from datetime import date, datetime
+# ------------------------------------------------------------------------------
+#
+# Project: pygeofilter <https://github.com/geopython/pygeofilter>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>
+#
+# ------------------------------------------------------------------------------
+# Copyright (C) 2021 EOX IT Services GmbH
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# ------------------------------------------------------------------------------
 
 from pygeofilter.backends.sql import to_sql_where
 from pygeofilter.parsers.ecql import parse
@@ -8,6 +33,7 @@ import pytest
 
 
 ogr.UseExceptions()
+
 
 @pytest.fixture
 def data():
@@ -29,7 +55,6 @@ def data():
     layer.CreateField(date_attr)
     datetime_attr = ogr.FieldDefn("datetime_attr", ogr.OFTDateTime)
     layer.CreateField(datetime_attr)
-
 
     feature_def = layer.GetLayerDefn()
     feature = ogr.Feature(feature_def)
@@ -74,67 +99,82 @@ FUNCTION_MAP = {
     'sin': 'sin'
 }
 
+
 def filter_(ast, data):
     where = to_sql_where(ast, FIELD_MAPPING, FUNCTION_MAP)
     return data.ExecuteSQL(f"""
-        SELECT id, str_attr, maybe_str_attr, int_attr, float_attr, date_attr, datetime_attr, GEOMETRY
+        SELECT id, str_attr, maybe_str_attr, int_attr, float_attr,
+               date_attr, datetime_attr, GEOMETRY
         FROM layer
         WHERE {where}
     """, None, "SQLite")
 
 
-
 def test_comparison(data):
     result = filter_(parse('int_attr = 5'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('int_attr < 6'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('int_attr > 6'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
     result = filter_(parse('int_attr <= 5'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('int_attr >= 8'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
     result = filter_(parse('int_attr <> 5'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
 
 def test_combination(data):
     result = filter_(parse('int_attr = 5 AND float_attr < 6.0'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('int_attr = 5 AND float_attr < 6.0'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
 
 def test_between(data):
     result = filter_(parse('float_attr BETWEEN 4 AND 6'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('int_attr NOT BETWEEN 4 AND 6'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
 
 def test_like(data):
     result = filter_(parse('str_attr LIKE \'this is . test\''), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('str_attr LIKE \'this is % test\''), data)
     assert result.GetFeatureCount() == 2
 
     result = filter_(parse('str_attr NOT LIKE \'% another test\''), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('str_attr NOT LIKE \'this is . test\''), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
     result = filter_(parse('str_attr ILIKE \'THIS IS . TEST\''), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('str_attr ILIKE \'THIS IS % TEST\''), data)
     assert result.GetFeatureCount() == 2
@@ -142,18 +182,22 @@ def test_like(data):
 
 def test_in(data):
     result = filter_(parse('int_attr IN ( 1, 2, 3, 4, 5 )'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('int_attr NOT IN ( 1, 2, 3, 4, 5 )'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
 
 def test_null(data):
     result = filter_(parse('maybe_str_attr IS NULL'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(parse('maybe_str_attr IS NOT NULL'), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
 # TODO: possible?
 # def test_has_attr(data):
@@ -183,13 +227,15 @@ def test_spatial(data):
         parse('INTERSECTS(point_attr, ENVELOPE (0 1 0 1))'),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
     result = filter_(
         parse('EQUALS(point_attr, POINT(2 2))'),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 1
 
 
 def test_arithmetic(data):
@@ -203,7 +249,8 @@ def test_arithmetic(data):
         parse('int_attr = 5 + 20 / 2 - 10'),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0
 
 
 def test_function(data):
@@ -211,4 +258,5 @@ def test_function(data):
         parse('sin(float_attr) BETWEEN -0.75 AND -0.70'),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert result.GetFeatureCount() == 1 and \
+        result.GetFeature(0).GetField(0) == 0

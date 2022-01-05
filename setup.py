@@ -62,7 +62,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "dateparser",
-        "lark",
+        "lark<1.0",
         "pygeoif",
         "dataclasses;python_version<'3.7'",
     ] if not on_rtd else [],
@@ -70,6 +70,7 @@ setup(
         'backend-django': ['django'],
         'backend-sqlalchemy': ['geoalchemy2', 'sqlalchemy'],
         'backend-native': ['shapely'],
+        'fes': ['pygml>=0.2']
     },
     classifiers=[
         'Development Status :: 3 - Alpha',

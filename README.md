@@ -9,8 +9,9 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
 ## Features
 
 * Parsing of several filter encoding standards
-    * [CQL as defined in CSW 2.0](file:///Users/fabian/Downloads/07-006r1_OpenGIS_Catalogue_Services_Specification_V2.0.2.pdf)
+    * [CQL as defined in CSW 2.0](https://portal.ogc.org/files/?artifact_id=20555)
     * [CQL JSON as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-json-schema)
+    * [JSON Filter Expressions (JFE)](https://github.com/tschaub/ogcapi-features/tree/json-array-expression/extensions/cql/jfe)
     * Soon:
         * [CQL Text as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-bnf)
         * [FES](http://docs.opengeospatial.org/is/09-026r2/09-026r2.html)
@@ -179,26 +180,10 @@ pip install -r requirements-dev.txt
 pip install -r requirements-test.txt
 ```
 
-The basic functionality can be tested using `pytest`.
+The functionality can be tested using `pytest`.
 
 ```bash
 python -m pytest
-```
-
-Some backends require a bit more to be tested. This is how the Django backend is tested:
-
-```bash
-cd tests/django_test
-python manage.py test testapp
-cd -
-```
-
-Similarly the sqlalchemy backend must be tested in that way:
-
-```bash
-cd tests/sqlalchemy_test/
-python -m unittest
-cd -
 ```
 
 ### Docker

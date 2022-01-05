@@ -2,6 +2,7 @@ import re
 from datetime import timedelta
 from functools import reduce
 from inspect import signature
+from typing import Callable, Dict
 
 from sqlalchemy import and_, func, not_, or_
 from pygeoif.geometry import as_shape
@@ -29,7 +30,7 @@ def parse_geometry(geom):
 # ------------------------------------------------------------------------------
 class Operator:
 
-    OPERATORS = {
+    OPERATORS: Dict[str, Callable] = {
         "is_null": lambda f, a=None: f.is_(None),
         "is_not_null": lambda f, a=None: f.isnot(None),
         "==": lambda f, a: f == a,

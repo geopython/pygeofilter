@@ -29,6 +29,7 @@
 from operator import and_, or_, add, sub, mul, truediv
 from datetime import datetime, timedelta
 from functools import reduce
+from typing import Dict, List, Optional, Union
 
 from django.db.models import Q, F, Value
 from django.db.models.expressions import Expression
@@ -37,39 +38,23 @@ from django.contrib.gis.gdal import SpatialReference
 from django.contrib.gis.geos import Polygon
 from django.contrib.gis.measure import D
 
-ARITHMETIC_TYPES = (Expression, F, Value, int, float)
+ArithmeticType = Union[Expression, F, Value, int, float]
 
 # ------------------------------------------------------------------------------
 # Filters
 # ------------------------------------------------------------------------------
 
 
-def combine(sub_filters, combinator="AND"):
+def combine(sub_filters: List[Q], combinator: str = "AND") -> Q:
     """ Combine filters using a logical combinator
-
-        :param sub_filters: the filters to combine
-        :param combinator: a string: "AND" / "OR"
-        :type sub_filters: list[django.db.models.Q]
-        :return: the combined filter
-        :rtype: :class:`django.db.models.Q`
     """
-    for sub_filter in sub_filters:
-        assert isinstance(sub_filter, Q)
-
-    assert combinator in ("AND", "OR")
     op = and_ if combinator == "AND" else or_
     return reduce(lambda acc, q: op(acc, q) if acc else q, sub_filters)
 
 
-def negate(sub_filter):
+def negate(sub_filter: Q) -> Q:
     """ Negate a filter, opposing its meaning.
-
-        :param sub_filter: the filter to negate
-        :type sub_filter: :class:`django.db.models.Q`
-        :return: the negated filter
-        :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(sub_filter, Q)
     return ~sub_filter
 
 
@@ -82,8 +67,16 @@ OP_TO_COMP = {
     "=": "exact"
 }
 
+INVERT_COMP: Dict[Optional[str], str] = {
+    "lt": "gt",
+    "lte": "gte",
+    "gt": "lt",
+    "gte": "lte",
+}
 
-def compare(lhs, rhs, op, mapping_choices=None):
+
+def compare(lhs: Union[F, Value], rhs: Union[F, Value], op: str,
+            mapping_choices: Optional[Dict[str, Dict[str, str]]] = None) -> Q:
     """ Compare a filter with an expression using a comparison operation
 
         :param lhs: the field to compare
@@ -99,10 +92,18 @@ def compare(lhs, rhs, op, mapping_choices=None):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
-    # assert isinstance(rhs, Q)  # TODO!!
-    assert op in OP_TO_COMP
     comp = OP_TO_COMP[op]
+
+    # if the left hand side is not a field reference, the comparison
+    # can be be inverted to try if the right hand side is a field
+    # reference.
+    if not isinstance(lhs, F):
+        lhs, rhs = rhs, lhs
+        comp = INVERT_COMP.get(comp, comp)
+
+    # if neither lhs and rhs are fields, we have to fail here
+    if not isinstance(lhs, F):
+        raise ValueError(f'Unable to compare non-field {lhs}')
 
     field_name = lhs.name
 
@@ -121,7 +122,8 @@ def compare(lhs, rhs, op, mapping_choices=None):
     return ~Q(**{field_name: rhs})
 
 
-def between(lhs, low, high, not_=False):
+def between(lhs: F, low: Union[F, Value], high: Union[F, Value],
+            not_: bool = False) -> Q:
     """ Create a filter to match elements that have a value within a certain
         range.
 
@@ -137,15 +139,12 @@ def between(lhs, low, high, not_=False):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
-    # assert isinstance(low, BaseExpression)
-    # assert isinstance(high, BaseExpression)  # TODO
-
     q = Q(**{"%s__range" % lhs.name: (low, high)})
     return ~q if not_ else q
 
 
-def like(lhs, pattern, nocase=False, not_=False, mapping_choices=None):
+def like(lhs: F, pattern: str, nocase: bool = False, not_: bool = False,
+         mapping_choices: Optional[Dict[str, Dict[str, str]]] = None) -> Q:
     """ Create a filter to filter elements according to a string attribute using
         wildcard expressions.
 
@@ -165,9 +164,6 @@ def like(lhs, pattern, nocase=False, not_=False, mapping_choices=None):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
-    assert isinstance(pattern, str)
-
     parts = pattern.split("%")
     length = len(parts)
 
@@ -231,7 +227,8 @@ def like(lhs, pattern, nocase=False, not_=False, mapping_choices=None):
     return ~q if not_ else q
 
 
-def contains(lhs, items, not_=False, mapping_choices=None):
+def contains(lhs: F, items: List[Union[F, Value]], not_: bool = False,
+             mapping_choices: Optional[Dict[str, Dict[str, str]]] = None) -> Q:
     """ Create a filter to match elements attribute to be in a list of choices.
 
         :param lhs: the field to compare
@@ -247,29 +244,30 @@ def contains(lhs, items, not_=False, mapping_choices=None):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
-    # for item in items:
-    #     assert isinstance(item, BaseExpression)
 
-    if mapping_choices and lhs.name in mapping_choices:
-        def map_value(item):
+    if mapping_choices is not None and lhs.name in mapping_choices:
+        def map_value(item: Union[str, Value],
+                      choices: Dict[str, str]) -> Union[str, Value]:
             try:
                 if isinstance(item, str):
-                    item = mapping_choices[lhs.name][item]
-                elif hasattr(item, 'value'):
-                    item = Value(mapping_choices[lhs.name][item.value])
+                    item = choices[item]
+                elif isinstance(item, Value):
+                    item = Value(choices[item.value])
 
             except KeyError as e:
                 raise AssertionError("Invalid field value %s" % e)
             return item
 
-        items = map(map_value, items)
+        items = [
+            map_value(item, mapping_choices[lhs.name])
+            for item in items
+        ]
 
     q = Q(**{"%s__in" % lhs.name: items})
     return ~q if not_ else q
 
 
-def null(lhs, not_=False):
+def null(lhs: F, not_: bool = False) -> Q:
     """ Create a filter to match elements whose attribute is (not) null
 
         :param lhs: the field to compare
@@ -280,11 +278,10 @@ def null(lhs, not_=False):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
     return Q(**{"%s__isnull" % lhs.name: not not_})
 
 
-def temporal(lhs, time_or_period, op):
+def temporal(lhs: F, time_or_period: Value, op: str) -> Q:
     """ Create a temporal filter for the given temporal attribute.
 
         :param lhs: the field to compare
@@ -300,8 +297,6 @@ def temporal(lhs, time_or_period, op):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
-    assert isinstance(time_or_period, Value)
     assert op in (
         "BEFORE", "BEFORE OR DURING", "DURING", "DURING OR AFTER", "AFTER"
     )
@@ -331,8 +326,9 @@ def temporal(lhs, time_or_period, op):
         return Q(**{"%s__lte" % lhs.name: high})
 
 
-def time_interval(time_or_period, containment='overlaps',
-                  begin_time_field='begin_time', end_time_field='end_time'):
+def time_interval(time_or_period: Value, containment: str = 'overlaps',
+                  begin_time_field: str = 'begin_time',
+                  end_time_field: str = 'end_time') -> Q:
     """
     """
 
@@ -390,7 +386,15 @@ UNITS_LOOKUP = {
 }
 
 
-def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
+INVERT_SPATIAL_OP = {
+    "WITHIN": "CONTAINS",
+    "CONTAINS": "WITHIN",
+}
+
+
+def spatial(lhs: Union[F, Value], rhs: Union[F, Value], op: str,
+            pattern: Optional[str] = None, distance: Optional[float] = None,
+            units: Optional[str] = None) -> Q:
     """ Create a spatial filter for the given spatial attribute.
 
         :param lhs: the field to compare
@@ -412,34 +416,54 @@ def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
-    # assert isinstance(rhs, BaseExpression)  # TODO
 
     assert op in (
         "INTERSECTS", "DISJOINT", "CONTAINS", "WITHIN", "TOUCHES", "CROSSES",
         "OVERLAPS", "EQUALS", "RELATE", "DWITHIN", "BEYOND"
     )
-    if op == "RELATE":
-        assert pattern
-    elif op in ("DWITHIN", "BEYOND"):
-        assert distance
-        assert units
 
-    if op in (
-            "INTERSECTS", "DISJOINT", "CONTAINS", "WITHIN", "TOUCHES",
-            "CROSSES", "OVERLAPS", "EQUALS"):
-        return Q(**{"%s__%s" % (lhs.name, op.lower()): rhs})
-    elif op == "RELATE":
-        return Q(**{"%s__relate" % lhs.name: (rhs, pattern)})
-    elif op in ("DWITHIN", "BEYOND"):
-        # TODO: maybe use D.unit_attname(units)
-        d = D(**{UNITS_LOOKUP[units]: distance})
-        if op == "DWITHIN":
-            return Q(**{"%s__distance_lte" % lhs.name: (rhs, d, 'spheroid')})
-        return Q(**{"%s__distance_gte" % lhs.name: (rhs, d, 'spheroid')})
+    # if the left hand side is not a field reference, the comparison
+    # can be be inverted to try if the right hand side is a field
+    # reference.
+    if not isinstance(lhs, F):
+        lhs, rhs = rhs, lhs
+        op = INVERT_SPATIAL_OP.get(op, op)
+
+    # if neither lhs and rhs are fields, we have to fail here
+    if not isinstance(lhs, F):
+        raise ValueError(f'Unable to compare non-field {lhs}')
+
+    return Q(**{"%s__%s" % (lhs.name, op.lower()): rhs})
 
 
-def bbox(lhs, minx, miny, maxx, maxy, crs=None, bboverlaps=True):
+def spatial_relate(lhs: Union[F, Value], rhs: Union[F, Value],
+                   pattern: str) -> Q:
+
+    if not isinstance(lhs, F):
+        # TODO: cannot yet invert pattern -> raise
+        raise ValueError(f'Unable to compare non-field {lhs}')
+
+    return Q(**{"%s__relate" % lhs.name: (rhs, pattern)})
+
+
+def spatial_distance(lhs: Union[F, Value], rhs: Union[F, Value], op: str,
+                     distance: float, units: str) -> Q:
+    if not isinstance(lhs, F):
+        lhs, rhs = rhs, lhs
+
+    # if neither lhs and rhs are fields, we have to fail here
+    if not isinstance(lhs, F):
+        raise ValueError(f'Unable to compare non-field {lhs}')
+
+    # TODO: maybe use D.unit_attname(units)
+    d = D(**{UNITS_LOOKUP[units]: distance})
+    if op == "DWITHIN":
+        return Q(**{"%s__distance_lte" % lhs.name: (rhs, d, 'spheroid')})
+    return Q(**{"%s__distance_gte" % lhs.name: (rhs, d, 'spheroid')})
+
+
+def bbox(lhs: F, minx: float, miny: float, maxx, maxy: float,
+         crs: Optional[str] = None, bboverlaps: bool = True) -> Q:
     """ Create a bounding box filter for the given spatial attribute.
 
         :param lhs: the field to compare
@@ -457,7 +481,6 @@ def bbox(lhs, minx, miny, maxx, maxy, crs=None, bboverlaps=True):
         :return: a comparison expression object
         :rtype: :class:`django.db.models.Q`
     """
-    assert isinstance(lhs, F)
     box = Polygon.from_bbox((minx, miny, maxx, maxy))
 
     if crs:
@@ -469,13 +492,12 @@ def bbox(lhs, minx, miny, maxx, maxy, crs=None, bboverlaps=True):
     return Q(**{"%s__intersects" % lhs.name: box})
 
 
-def attribute(name, field_mapping=None):
+def attribute(name: str, field_mapping: Optional[Dict[str, str]] = None) -> F:
     """ Create an attribute lookup expression using a field mapping dictionary.
 
         :param name: the field filter name
         :type name: str
         :param field_mapping: the dictionary to use as a lookup.
-        :type mapping_choices: dict[str, str]
         :rtype: :class:`django.db.models.F`
     """
     if field_mapping:
@@ -485,7 +507,7 @@ def attribute(name, field_mapping=None):
     return F(field)
 
 
-def literal(value):
+def literal(value) -> Value:
     return Value(value)
 
 
@@ -497,7 +519,8 @@ OP_TO_FUNC = {
 }
 
 
-def arithmetic(lhs, rhs, op):
+def arithmetic(lhs: ArithmeticType, rhs: ArithmeticType,
+               op: str) -> ArithmeticType:
     """ Create an arithmetic filter
 
         :param lhs: left hand side of the arithmetic expression. either a
@@ -507,9 +530,5 @@ def arithmetic(lhs, rhs, op):
                    ``"/"``
         :rtype: :class:`django.db.models.F`
     """
-
-    assert isinstance(lhs, ARITHMETIC_TYPES), f'{lhs} is not a compatible type'
-    assert isinstance(rhs, ARITHMETIC_TYPES), f'{rhs} is not a compatible type'
-    assert op in OP_TO_FUNC
     func = OP_TO_FUNC[op]
     return func(lhs, rhs)

@@ -26,7 +26,13 @@
 # ------------------------------------------------------------------------------
 
 import re
-from datetime import timedelta
+from datetime import timedelta, date, datetime
+from dateparser import parse as _parse_datetime
+
+__all__ = [
+    'parse_datetime', 'RE_ISO_8601', 'parse_duration',
+    'like_pattern_to_re_pattern', 'like_pattern_to_re'
+]
 
 RE_ISO_8601 = re.compile(
     r"^(?P<sign>[+-])?P"
@@ -54,17 +60,30 @@ def parse_duration(value: str) -> timedelta:
         raise ValueError(
             "Could not parse ISO 8601 duration from '%s'." % value
         )
-    match = match.groupdict()
+    parts = match.groupdict()
 
-    sign = -1 if "-" == match['sign'] else 1
-    days = float(match['days'] or 0)
-    days += float(match['months'] or 0) * 30  # ?!
-    days += float(match['years'] or 0) * 365  # ?!
-    fsec = float(match['seconds'] or 0)
-    fsec += float(match['minutes'] or 0) * 60
-    fsec += float(match['hours'] or 0) * 3600
+    sign = -1 if "-" == parts['sign'] else 1
+    days = float(parts['days'] or 0)
+    days += float(parts['months'] or 0) * 30  # ?!
+    days += float(parts['years'] or 0) * 365  # ?!
+    fsec = float(parts['seconds'] or 0)
+    fsec += float(parts['minutes'] or 0) * 60
+    fsec += float(parts['hours'] or 0) * 3600
 
     return sign * timedelta(days, fsec)
+
+
+def parse_date(value: str) -> date:
+    """ Backport for `fromisoformat` for dates in Python 3.6
+    """
+    return date(*(int(part) for part in value.split('-')))
+
+
+def parse_datetime(value: str) -> datetime:
+    parsed = _parse_datetime(value)
+    if parsed is None:
+        raise ValueError(value)
+    return parsed
 
 
 def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):

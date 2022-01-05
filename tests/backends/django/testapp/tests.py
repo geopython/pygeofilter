@@ -13,8 +13,8 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies of this Software or works derived from this Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies of this Software or works derived from this Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -26,9 +26,6 @@
 # ------------------------------------------------------------------------------
 
 from django.test import TransactionTestCase
-from django.db.models import ForeignKey
-from django.contrib.gis.geos import Polygon, MultiPolygon, GEOSGeometry
-from django.utils.dateparse import parse_datetime
 
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.django.evaluate import to_filter

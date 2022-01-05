@@ -67,7 +67,7 @@
 ?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate
                   | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                    -> relate_spatial_predicate
                   | _distance_spatial_predicate_func "(" expression "," expression "," number "," distance_units ")" -> distance_spatial_predicate
-                  | "BBOX" "(" expression "," number "," number "," number "," number [ ","  SINGLE_QUOTED] ")"     -> bbox_spatial_predicate
+                  | "BBOX" "(" expression "," full_number "," full_number "," full_number "," full_number [ ","  SINGLE_QUOTED] ")" -> bbox_spatial_predicate
 !_binary_spatial_predicate_func: "INTERSECTS" | "DISJOINT" | "CONTAINS" | "WITHIN" | "TOUCHES" | "CROSSES" | "OVERLAPS" | "EQUALS"
 !_distance_spatial_predicate_func: "DWITHIN" | "BEYOND"
 !distance_units: "feet" | "meters" | "statute miles" | "nautical miles" | "kilometers"                              -> distance_units
@@ -96,6 +96,9 @@ attribute: NAME
         | SINGLE_QUOTED
         | ewkt_geometry                                                     -> geometry
         | envelope
+
+?full_number: number
+            | "-" number                                                    -> neg
 
 ?number: FLOAT | INT
 

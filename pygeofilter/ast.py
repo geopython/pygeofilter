@@ -30,15 +30,24 @@
 
 from enum import Enum
 from dataclasses import dataclass
-from typing import List, Optional, ClassVar
+from typing import List, Optional, ClassVar, Union
+
+from . import values
+
+
+AstType = Union['Node', values.ValueType, list]
+ScalarAstType = Union['Node', int, float]
+SpatialAstType = Union['Node', values.SpatialValueType]
+TemporalAstType = Union['Node', values.TemporalValueType]
+ArrayAstType = Union['Node', List[AstType]]
 
 
 class Node:
     """ The base class for all other nodes to display the AST of CQL.
     """
-    inline = False
+    inline: bool = False
 
-    def get_sub_nodes(self) -> List['Node']:
+    def get_sub_nodes(self) -> List[AstType]:
         """ Get a list of sub-node of this node.
 
             :return: a list of all sub-nodes
@@ -85,14 +94,14 @@ class Not(Condition):
     :type sub_node: Node
     """
 
-    def __init__(self, sub_node):
+    def __init__(self, sub_node: Node):
         self.sub_node = sub_node
 
-    def get_sub_nodes(self) -> List[Node]:
+    def get_sub_nodes(self) -> List[AstType]:
         """ Returns the sub-node for the negated condition. """
         return [self.sub_node]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return "NOT {}"
 
 
@@ -109,13 +118,20 @@ class Combination(Condition):
 
     lhs: Node
     rhs: Node
-    op: ClassVar[CombinationOp] = None
+    op: ClassVar[CombinationOp]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} {self.op.name} {{}}"
+
+    @classmethod
+    def from_items(cls, first, *rest) -> Node:
+        result = first
+        for item in rest:
+            result = cls(result, item)
+        return result
 
 
 @dataclass
@@ -149,14 +165,14 @@ class Comparison(Predicate):
         expressions using a comparison operation.
     """
 
-    lhs: Node
-    rhs: Node
-    op: ClassVar[ComparisonOp] = None
+    lhs: ScalarAstType
+    rhs: ScalarAstType
+    op: ClassVar[ComparisonOp]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} {self.op.value} {{}}"
 
 
@@ -197,14 +213,14 @@ class Between(Predicate):
     """
 
     lhs: Node
-    low: Node
-    high: Node
+    low: ScalarAstType
+    high: ScalarAstType
     not_: bool
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.low, self.high]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} {'NOT ' if self.not_ else ''}BETWEEN {{}} AND {{}}"
 
 
@@ -221,10 +237,10 @@ class Like(Predicate):
     escapechar: str
     not_: bool
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return (
             f"{{}} {'NOT ' if self.not_ else ''}"
             f"{'I' if self.nocase else ''}LIKE '{self.pattern}'"
@@ -236,14 +252,14 @@ class Like(Predicate):
 class In(Predicate):
     """ Node class to represent list checking predicate.
     """
-    lhs: Node
-    sub_nodes: List[Node]
+    lhs: AstType
+    sub_nodes: List[AstType]
     not_: bool
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs] + list(self.sub_nodes)
 
-    def get_template(self):
+    def get_template(self) -> str:
         return (
             f"{{}} {'NOT ' if self.not_ else ''}IN "
             f"{', '.join(['{}'] * len(self.sub_nodes))}"
@@ -255,25 +271,25 @@ class IsNull(Predicate):
     """ Node class to represent null check predicate.
     """
 
-    lhs: Node
+    lhs: AstType
     not_: bool
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} IS {('NOT ' if self.not_ else '')}NULL"
 
 
 @dataclass
 class Exists(Predicate):
-    lhs: Node
+    lhs: AstType
     not_: bool
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} {('DOES-NOT-EXIST' if self.not_ else 'EXISTS')}"
 
 
@@ -281,7 +297,7 @@ class Exists(Predicate):
 class Include(Predicate):
     not_: bool
 
-    def get_template(self):
+    def get_template(self) -> str:
         return 'EXCLUDE' if self.not_ else 'INCLUDE'
 
 
@@ -294,12 +310,17 @@ class Include(Predicate):
 # DURING            <---------------------->    TCONTAINS
 # TENDS             <---------->                ENDEDBY
 # TEQUALS               <------>                TEQUALS
+# DISJOINT: If a proper interval T1 is intervalDisjoint another proper
+#   interval T2,then the beginning of T1 is after the end of T2, or the end of
+#   T1 is before the beginning of T2, i.e. the intervals do not overlap in any
+#   way, but their ordering relationship is not known.
 
 # https://github.com/geotools/geotools/blob/main/modules/library/cql/ECQL.md#temporal-predicate
 # BEFORE_OR_DURING  <----->
 # DURING_OR_AFTER           <----->
 
 class TemporalComparisonOp(Enum):
+    DISJOINT = 'DISJOINT'
     AFTER = 'AFTER'
     BEFORE = 'BEFORE'
     BEGINS = 'BEGINS'
@@ -323,14 +344,14 @@ class TemporalPredicate(Predicate):
     """ Node class to represent temporal predicate.
     """
 
-    lhs: Node
-    rhs: Node
-    op: ClassVar[TemporalComparisonOp] = None
+    lhs: TemporalAstType
+    rhs: TemporalAstType
+    op: ClassVar[TemporalComparisonOp]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} {self.op} {{}}"
 
 
@@ -421,14 +442,14 @@ class ArrayPredicate(Predicate):
     """ Node class to represent array predicates.
     """
 
-    lhs: Node
-    rhs: Node
-    op: ClassVar[ArrayComparisonOp] = None
+    lhs: ArrayAstType
+    rhs: ArrayAstType
+    op: ClassVar[ArrayComparisonOp]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} {self.op} {{}}"
 
 
@@ -452,10 +473,6 @@ class ArrayOverlaps(ArrayPredicate):
     op: ClassVar[ArrayComparisonOp] = ArrayComparisonOp.AOVERLAPS
 
 
-class SpatialdPredicate(Predicate):
-    pass
-
-
 class SpatialComparisonOp(Enum):
     INTERSECTS = 'INTERSECTS'
     DISJOINT = 'DISJOINT'
@@ -472,14 +489,14 @@ class SpatialComparisonPredicate(Predicate):
     """ Node class to represent spatial relation predicate.
     """
 
-    lhs: Node
-    rhs: Node
-    op: ClassVar[SpatialComparisonOp] = None
+    lhs: SpatialAstType
+    rhs: SpatialAstType
+    op: ClassVar[SpatialComparisonOp]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{self.op.name}({{}}, {{}})"
 
 
@@ -528,14 +545,14 @@ class Relate(Predicate):
     """ Node class to represent spatial relation predicate.
     """
 
-    lhs: Node
-    rhs: Node
+    lhs: SpatialAstType
+    rhs: SpatialAstType
     pattern: str
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"RELATE({{}}, {{}}, '{self.pattern}')"
 
 
@@ -549,16 +566,16 @@ class SpatialDistancePredicate(Predicate):
     """ Node class to represent spatial relation predicate.
     """
 
-    lhs: Node
-    rhs: Node
+    lhs: SpatialAstType
+    rhs: SpatialAstType
     distance: float
     units: str
-    op: ClassVar[SpatialDistanceOp] = None
+    op: ClassVar[SpatialDistanceOp]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{self.op.name}({{}}, {{}}, {self.distance}, '{self.units}')"
 
 
@@ -577,17 +594,17 @@ class BBox(Predicate):
     """ Node class to represent a bounding box predicate.
     """
 
-    lhs: Node
+    lhs: SpatialAstType
     minx: float
     miny: float
     maxx: float
     maxy: float
     crs: Optional[str] = None
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return (
             f"BBOX({{}}, {self.minx}, {self.miny}, {self.maxx}, "
             f"{self.maxy}, {repr(self.crs)})"
@@ -628,14 +645,14 @@ class Arithmetic(Expression):
         sub-expressions and an operator.
     """
 
-    lhs: Node
-    rhs: Node
-    op: ClassVar[ArithmeticOp] = None
+    lhs: ScalarAstType
+    rhs: ScalarAstType
+    op: ClassVar[ArithmeticOp]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return [self.lhs, self.rhs]
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{{}} {self.op.value} {{}}"
 
 
@@ -665,12 +682,12 @@ class Function(Expression):
     """
 
     name: str
-    arguments: List[Node]
+    arguments: List[AstType]
 
-    def get_sub_nodes(self):
+    def get_sub_nodes(self) -> List[AstType]:
         return self.arguments
 
-    def get_template(self):
+    def get_template(self) -> str:
         return f"{self.name} ({', '.join(['{}'] * len(self.arguments))})"
 
 
