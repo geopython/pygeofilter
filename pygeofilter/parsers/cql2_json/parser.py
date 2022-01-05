@@ -98,6 +98,7 @@ JsonType = Union[dict, list, str, float, int, bool, None]
 
 
 def walk_cql_json(node: JsonType) -> ast.AstType:
+    print(f"NODE: {node} {type(node)}")
     if isinstance(node, (str, float, int, bool)):
         return node
 
@@ -141,38 +142,44 @@ def walk_cql_json(node: JsonType) -> ast.AstType:
                     parsed.append(parse_datetime(value))
 
         return values.Interval(*parsed)
+    elif 'op' in node:
+        op = node['op']
+        args = walk_cql_json(node['args'])
 
-    # decode all other nodes
-    for name, value in node.items():
-        if name in ('and', 'or'):
-            sub_items = walk_cql_json(value)
-            return (ast.And if name == 'and' else ast.Or).from_items(sub_items)
+        if op in ('and', 'or'):
+            return (ast.And if op == 'and' else ast.Or).from_items(args)
 
-        elif name == 'not':
-            # allow both arrays and objects, the standard is ambigous in
-            # that regard
-            if isinstance(value, list):
-                value = value[0]
-            return ast.Not(cast(ast.Node, walk_cql_json(value)))
-
-        elif name in COMPARISON_MAP:
-            return COMPARISON_MAP[name](
-                cast(ast.ScalarAstType, walk_cql_json(value[0])),
-                cast(ast.ScalarAstType, walk_cql_json(value[1])),
+        elif op in COMPARISON_MAP:
+            return COMPARISON_MAP[op](
+                cast(ast.ScalarAstType, walk_cql_json(args[0])),
+                cast(ast.ScalarAstType, walk_cql_json(args[1])),
             )
 
-        elif name == 'between':
+        elif op == 'not':
+            # allow both arrays and objects, the standard is ambigous in
+            # that regard
+            if isinstance(args, list):
+                args = args[0]
+            return ast.Not(cast(ast.Node, walk_cql_json(args)))
+
+        elif op in COMPARISON_MAP:
+            return COMPARISON_MAP[op](
+                cast(ast.ScalarAstType, walk_cql_json(args[0])),
+                cast(ast.ScalarAstType, walk_cql_json(args[1])),
+            )
+
+        elif op == 'between':
             return ast.Between(
-                cast(ast.Node, walk_cql_json(value['value'])),
-                cast(ast.ScalarAstType, walk_cql_json(value['lower'])),
-                cast(ast.ScalarAstType, walk_cql_json(value['upper'])),
+                cast(ast.Node, walk_cql_json(args['args'])),
+                cast(ast.ScalarAstType, walk_cql_json(args['lower'])),
+                cast(ast.ScalarAstType, walk_cql_json(args['upper'])),
                 not_=False,
             )
 
-        elif name == 'like':
+        elif op == 'like':
             return ast.Like(
-                cast(ast.Node, walk_cql_json(value[0])),
-                cast(str, value[1]),
+                cast(ast.Node, walk_cql_json(args[0])),
+                cast(str, args[1]),
                 nocase=False,
                 wildcard='%',
                 singlechar='.',
@@ -180,57 +187,58 @@ def walk_cql_json(node: JsonType) -> ast.AstType:
                 not_=False,
             )
 
-        elif name == 'in':
+        elif op == 'in':
             return ast.In(
-                cast(ast.AstType, walk_cql_json(value['value'])),
-                cast(List[ast.AstType], walk_cql_json(value['list'])),
+                cast(ast.AstType, walk_cql_json(args['args'])),
+                cast(List[ast.AstType], walk_cql_json(args['list'])),
                 not_=False,
             )
 
-        elif name == 'isNull':
+        elif op == 'isNull':
             return ast.IsNull(
-                walk_cql_json(value),
+                walk_cql_json(args),
                 not_=False,
             )
 
-        elif name in SPATIAL_PREDICATES_MAP:
-            return SPATIAL_PREDICATES_MAP[name](
-                cast(ast.SpatialAstType, walk_cql_json(value[0])),
-                cast(ast.SpatialAstType, walk_cql_json(value[1])),
+        elif op in SPATIAL_PREDICATES_MAP:
+            return SPATIAL_PREDICATES_MAP[op](
+                cast(ast.SpatialAstType, walk_cql_json(args[0])),
+                cast(ast.SpatialAstType, walk_cql_json(args[1])),
             )
 
-        elif name in TEMPORAL_PREDICATES_MAP:
-            return TEMPORAL_PREDICATES_MAP[name](
+        elif op in TEMPORAL_PREDICATES_MAP:
+            return TEMPORAL_PREDICATES_MAP[op](
                 cast(
                     ast.TemporalAstType,
-                    walk_cql_json(value[0])
+                    walk_cql_json(args[0])
                 ),
                 cast(
                     ast.TemporalAstType,
-                    walk_cql_json(value[1])
+                    walk_cql_json(args[1])
                 ),
             )
 
-        elif name in ARRAY_PREDICATES_MAP:
-            return ARRAY_PREDICATES_MAP[name](
-                cast(ast.ArrayAstType, walk_cql_json(value[0])),
-                cast(ast.ArrayAstType, walk_cql_json(value[1])),
+        elif op in ARRAY_PREDICATES_MAP:
+            return ARRAY_PREDICATES_MAP[op](
+                cast(ast.ArrayAstType, walk_cql_json(args[0])),
+                cast(ast.ArrayAstType, walk_cql_json(args[1])),
             )
 
-        elif name in ARITHMETIC_MAP:
-            return ARITHMETIC_MAP[name](
-                cast(ast.ScalarAstType, walk_cql_json(value[0])),
-                cast(ast.ScalarAstType, walk_cql_json(value[1])),
+        elif op in ARITHMETIC_MAP:
+            return ARITHMETIC_MAP[op](
+                cast(ast.ScalarAstType, walk_cql_json(args[0])),
+                cast(ast.ScalarAstType, walk_cql_json(args[1])),
             )
 
-        elif name == 'property':
-            return ast.Attribute(value)
+    elif 'property' in node:
+        # return ast.Attribute(node['property'])
+        return node['property']
 
-        elif name == 'function':
-            return ast.Function(
-                value['name'],
-                cast(List[ast.AstType], walk_cql_json(value['arguments'])),
-            )
+    elif 'function' in node:
+        return ast.Function(
+            node['function']['name'],
+            cast(List[ast.AstType], walk_cql_json(node['function']['arguments'])),
+        )
 
     raise ValueError(f'Unable to parse expression node {node!r}')
 
