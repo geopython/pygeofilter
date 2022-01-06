@@ -26,6 +26,7 @@
 # ------------------------------------------------------------------------------
 
 from typing import Dict
+from datetime import datetime
 
 import shapely.geometry
 
@@ -35,22 +36,10 @@ from ... import values
 
 from ...parsers.cql2_json import parser
 
-COMPARISON_OP_MAP = {v: k for k, v in parser.COMPARISON_MAP.items()}
-ARITHMETIC_OP_MAP = {v: k for k, v in parser.ARITHMETIC_MAP.items()}
-SPATIAL_COMPARISON_OP_MAP = {
-    v: k for k, v in parser.SPATIAL_PREDICATES_MAP.items()
-}
-TEMPORAL_COMPARISON_OP_MAP = {
-    v: k for k, v in parser.TEMPORAL_PREDICATES_MAP.items()
-}
-ARRAY_COMPARISON_OP_MAP = {
-    v: k for k, v in parser.ARRAY_PREDICATES_MAP.items()
-}
-
 
 def baseop(map, node, *args):
     if map is None:
-        return {"op": node.op.value, "args": [*args]}
+        return {"op": node.op.value.lower(), "args": [*args]}
     else:
         for k, v in map.items():
             if isinstance(node, v):
@@ -82,51 +71,40 @@ class CQL2Evaluator(Evaluator):
         return baseop(parser.SPATIAL_PREDICATES_MAP, node, *args)
 
     @handle(ast.ArithmeticOp, subclasses=True)
-    def spatial(self, node, *args):
+    def arithmetic(self, node, *args):
         return baseop(parser.ARRAY_PREDICATES_MAP, node, *args)
 
     @handle(ast.ArrayComparisonOp, subclasses=True)
-    def spatial(self, node, *args):
+    def array(self, node, *args):
         return baseop(parser.ARRAY_PREDICATES_MAP, node, *args)
 
-    # @handle(ast.Between)
-    # def between(self, node, lhs, low, high):
-    #     return {"between": ["value": lhs, "lower": low, "upper": high]}
-    #     return f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN {low} AND {high})"
+    @handle(ast.Between)
+    def between(self, node, lhs, low, high):
+        return {"op": "between", "args":[lhs,[low,high]]}
 
-    # @handle(ast.Like)
-    # def like(self, node, lhs):
-    #     pattern = node.pattern
-    #     if node.wildcard != "%":
-    #         # TODO: not preceded by escapechar
-    #         pattern = pattern.replace(node.wildcard, "%")
-    #     if node.singlechar != "_":
-    #         # TODO: not preceded by escapechar
-    #         pattern = pattern.replace(node.singlechar, "_")
-
-    #     # TODO: handle node.nocase
-    #     return {"like": [lhs, pattern]}
-    #     return f"{lhs} {'NOT ' if node.not_ else ''}LIKE '{pattern}' ESCAPE '{node.escapechar}'"
-
-    # @handle(ast.In)
-    # def in_(self, node, lhs, *options):
-    #     return {"in": {"value": lhs, "list": options}}
+    @handle(ast.In)
+    def in_(self, node, lhs, *options):
+        return {"in": {"value": lhs, "list": options}}
 
     @handle(ast.IsNull)
     def null(self, node, lhs):
         return {"op":"isNull", "args": lhs}
 
-
-    # @handle(ast.BBox)
-    # def bbox(self, node, lhs):
-    #     func = SPATIAL_COMPARISON_OP_MAP[ast.SpatialComparisonOp.INTERSECTS]
-    #     # TODO: create BBox geometry
-    #     return {func: [lhs, rhs]}
-
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
         return {"property": node.name}
 
+    @handle(values.Interval)
+    def interval(self, node: ast.Attribute):
+        return {"interval": [node.start, node.end]}
+
+    @handle(datetime)
+    def datetime(self, node: ast.Attribute):
+        return {"datetime": node.name}
+
+    @handle(ast.Like)
+    def like(self, node: ast.Attribute, *args):
+        return {"op": "like", "args": [node.lhs, node.pattern]}
 
     @handle(*values.LITERALS)
     def literal(self, node):
