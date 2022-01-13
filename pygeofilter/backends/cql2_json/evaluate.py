@@ -32,19 +32,10 @@ import shapely.geometry
 
 from ..evaluator import Evaluator, handle
 from ... import ast
+from ...cql2 import get_op
 from ... import values
 
 from ...parsers.cql2_json import parser
-
-
-def baseop(map, node, *args):
-    if map is None:
-        return {"op": node.op.value.lower(), "args": [*args]}
-    else:
-        for k, v in map.items():
-            if isinstance(node, v):
-                return {"op": k, "args": [*args]}
-    raise Exception("No op found")
 
 
 class CQL2Evaluator(Evaluator):
@@ -54,41 +45,43 @@ class CQL2Evaluator(Evaluator):
         self.attribute_map = attribute_map
         self.function_map = function_map
 
-    @handle(ast.Not, ast.And, ast.Or)
-    def nomap(self, node, *args):
-        return baseop(None, node, *args)
-
-    @handle(ast.Comparison, subclasses=True)
+    @handle(
+        ast.Condition,
+        ast.Comparison,
+        ast.TemporalPredicate,
+        ast.SpatialComparisonPredicate,
+        ast.Arithmetic,
+        ast.ArrayPredicate,
+        subclasses=True,
+    )
     def comparison(self, node, *args):
-        return baseop(parser.COMPARISON_MAP, node, *args)
-
-    @handle(ast.TemporalPredicate, subclasses=True)
-    def temporal(self, node, *args):
-        return baseop(parser.TEMPORAL_PREDICATES_MAP, node, *args)
-
-    @handle(ast.SpatialComparisonPredicate, subclasses=True)
-    def spatial(self, node, *args):
-        return baseop(parser.SPATIAL_PREDICATES_MAP, node, *args)
-
-    @handle(ast.ArithmeticOp, subclasses=True)
-    def arithmetic(self, node, *args):
-        return baseop(parser.ARRAY_PREDICATES_MAP, node, *args)
-
-    @handle(ast.ArrayComparisonOp, subclasses=True)
-    def array(self, node, *args):
-        return baseop(parser.ARRAY_PREDICATES_MAP, node, *args)
+        op = get_op(node)
+        return {"op": op, "args": [*args]}
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        return {"op": "between", "args":[lhs,[low,high]]}
+        return {"op": "between", "args": [lhs, [low, high]]}
+
+    @handle(ast.Like)
+    def like(self, node, *subargs):
+        return {"op": "like", "args": [node.lhs, node.pattern]}
+
+    @handle(ast.IsNull)
+    def isnull(self, node, arg):
+        return {"op": "isNull", "args": arg}
+
+    @handle(ast.Function)
+    def function(self, node, *args):
+        name = node.name.lower()
+        if name == 'lower':
+            ret = {"lower": args[0]}
+        else:
+            ret = {"function": name, "args": [*args]}
+        return ret
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
         return {"in": {"value": lhs, "list": options}}
-
-    @handle(ast.IsNull)
-    def null(self, node, lhs):
-        return {"op":"isNull", "args": lhs}
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
@@ -100,11 +93,7 @@ class CQL2Evaluator(Evaluator):
 
     @handle(datetime)
     def datetime(self, node: ast.Attribute):
-        return {"datetime": node.name}
-
-    @handle(ast.Like)
-    def like(self, node: ast.Attribute, *args):
-        return {"op": "like", "args": [node.lhs, node.pattern]}
+        return {"timestamp": node.name}
 
     @handle(*values.LITERALS)
     def literal(self, node):

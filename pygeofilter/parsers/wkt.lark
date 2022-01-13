@@ -53,5 +53,6 @@ coordinate_lists: "(" coordinate_list ")" ( "," "(" coordinate_list ")" )*
                 | coordinate                                            -> coordinate_list_start
 coordinate: NUMBER NUMBER [ NUMBER [ NUMBER ] ]
 
-%import common.NUMBER
+NUMBER: /-?\d+\.?\d+/
+// %import common.NUMBER
 %import common.INT

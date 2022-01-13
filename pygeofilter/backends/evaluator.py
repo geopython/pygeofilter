@@ -97,13 +97,20 @@ class Evaluator(metaclass=EvaluatorMeta):
             is called with the node and its arguments, which by default raises
             an ``NotImplementedError``.
         """
+        sub_args = []
         if hasattr(node, 'get_sub_nodes'):
-            sub_args = [
-                self.evaluate(sub_node, False)
-                for sub_node in cast(ast.Node, node).get_sub_nodes()
-            ]
-        else:
-            sub_args = []
+            subnodes =  cast(ast.Node, node).get_sub_nodes()
+            if subnodes:
+                if isinstance(subnodes, list):
+                    sub_args = [
+                        self.evaluate(sub_node, False)
+                        for sub_node in subnodes
+                    ]
+                else:
+                    sub_args = [
+                        self.evaluate(subnodes, False)
+                    ]
+
 
         handler = self.handler_map.get(type(node))
         if handler is not None:

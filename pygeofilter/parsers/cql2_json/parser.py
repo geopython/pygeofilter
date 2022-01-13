@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 #
 # Project: pygeofilter <https://github.com/geopython/pygeofilter>
-# Authors: Fabian Schindler <fabian.schindler@eox.at>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>, David Bitner <bitner@dbspatial.com>
 #
 # ------------------------------------------------------------------------------
 # Copyright (C) 2021 EOX IT Services GmbH
@@ -32,75 +32,16 @@ import json
 from ... import ast
 from ... import values
 from ...util import parse_datetime, parse_date, parse_duration
+from ...cql2 import BINARY_OP_PREDICATES_MAP
 
 # https://github.com/opengeospatial/ogcapi-features/tree/master/cql2
-
-
-COMPARISON_MAP: Dict[str, Type[ast.Comparison]] = {
-    "eq": ast.Equal,
-    "=": ast.Equal,
-    "ne": ast.NotEqual,
-    "<>": ast.NotEqual,
-    "!=": ast.NotEqual,
-    "lt": ast.LessThan,
-    "<": ast.LessThan,
-    "lte": ast.LessEqual,
-    "<=": ast.LessEqual,
-    "gt": ast.GreaterThan,
-    ">": ast.GreaterThan,
-    "gte": ast.GreaterEqual,
-    ">=": ast.GreaterEqual,
-}
-
-SPATIAL_PREDICATES_MAP: Dict[str, Type[ast.SpatialComparisonPredicate]] = {
-    "s_intersects": ast.GeometryIntersects,
-    "s_equals": ast.GeometryEquals,
-    "s_disjoint": ast.GeometryDisjoint,
-    "s_touches": ast.GeometryTouches,
-    "s_within": ast.GeometryWithin,
-    "s_overlaps": ast.GeometryOverlaps,
-    "s_crosses": ast.GeometryCrosses,
-    "s_contains": ast.GeometryContains,
-}
-
-TEMPORAL_PREDICATES_MAP = {
-    "t_before": ast.TimeBefore,
-    "t_after": ast.TimeAfter,
-    "t_meets": ast.TimeMeets,
-    "t_metby": ast.TimeMetBy,
-    "t_overlaps": ast.TimeOverlaps,
-    "t_overlappedby": ast.TimeOverlappedBy,
-    "t_begins": ast.TimeBegins,
-    "t_begunby": ast.TimeBegunBy,
-    "t_during": ast.TimeDuring,
-    "t_contains": ast.TimeContains,
-    "t_ends": ast.TimeEnds,
-    "t_endedby": ast.TimeEndedBy,
-    "t_equals": ast.TimeEquals,
-    "t_intersects": ast.TimeOverlaps,
-}
-
-
-ARRAY_PREDICATES_MAP = {
-    "a_equals": ast.ArrayEquals,
-    "a_contains": ast.ArrayContains,
-    "a_containedBy": ast.ArrayContainedBy,
-    "a_overlaps": ast.ArrayOverlaps,
-}
-
-ARITHMETIC_MAP = {
-    "+": ast.Add,
-    "-": ast.Sub,
-    "*": ast.Mul,
-    "/": ast.Div,
-}
 
 
 JsonType = Union[dict, list, str, float, int, bool, None]
 
 
-def walk_cql_json(node: JsonType) -> ast.AstType:
-    if isinstance(node, (str, float, int, bool, datetime, values.Geometry, values.Interval)):
+def walk_cql_json(node: JsonType):
+    if isinstance(node, (str, float, int, bool, datetime, values.Geometry, values.Interval, ast.Node)):
         return node
 
     if isinstance(node, list):
@@ -146,8 +87,7 @@ def walk_cql_json(node: JsonType) -> ast.AstType:
         return values.Interval(*parsed)
 
     elif "property" in node:
-        # return ast.Attribute(node['property'])
-        return node["property"]
+        return ast.Attribute(node['property'])
 
     elif "function" in node:
         return ast.Function(
@@ -156,6 +96,9 @@ def walk_cql_json(node: JsonType) -> ast.AstType:
                 List[ast.AstType], walk_cql_json(node["function"]["arguments"])
             ),
         )
+
+    elif "lower" in node:
+        return ast.Function('lower', [cast(ast.Node, walk_cql_json(node['lower']))])
 
     elif "op" in node:
         op = node["op"]
@@ -171,11 +114,8 @@ def walk_cql_json(node: JsonType) -> ast.AstType:
                 args = args[0]
             return ast.Not(cast(ast.Node, walk_cql_json(args)))
 
-        elif op in COMPARISON_MAP:
-            return COMPARISON_MAP[op](
-                cast(ast.Node, walk_cql_json(args[0])),
-                cast(ast.Node, walk_cql_json(args[1])),
-            )
+        elif op == "isNull":
+            return ast.IsNull(cast(ast.Node, walk_cql_json(args)), False)
 
         elif op == "between":
             return ast.Between(
@@ -209,29 +149,12 @@ def walk_cql_json(node: JsonType) -> ast.AstType:
                 not_=False,
             )
 
-        elif op in SPATIAL_PREDICATES_MAP:
-            return SPATIAL_PREDICATES_MAP[op](
-                cast(ast.SpatialAstType, walk_cql_json(args[0])),
-                cast(ast.SpatialAstType, walk_cql_json(args[1])),
+        elif op in BINARY_OP_PREDICATES_MAP:
+            return BINARY_OP_PREDICATES_MAP[op](
+                cast(ast.Node, walk_cql_json(args[0])),
+                cast(ast.Node, walk_cql_json(args[1])),
             )
 
-        elif op in TEMPORAL_PREDICATES_MAP:
-            return TEMPORAL_PREDICATES_MAP[op](
-                cast(ast.TemporalAstType, walk_cql_json(args[0])),
-                cast(ast.TemporalAstType, walk_cql_json(args[1])),
-            )
-
-        elif op in ARRAY_PREDICATES_MAP:
-            return ARRAY_PREDICATES_MAP[op](
-                cast(ast.ArrayAstType, walk_cql_json(args[0])),
-                cast(ast.ArrayAstType, walk_cql_json(args[1])),
-            )
-
-        elif op in ARITHMETIC_MAP:
-            return ARITHMETIC_MAP[op](
-                cast(ast.ScalarAstType, walk_cql_json(args[0])),
-                cast(ast.ScalarAstType, walk_cql_json(args[1])),
-            )
 
     raise ValueError(f"Unable to parse expression node {node!r}")
 
