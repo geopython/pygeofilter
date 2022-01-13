@@ -1,7 +1,8 @@
 # ------------------------------------------------------------------------------
 #
 # Project: pygeofilter <https://github.com/geopython/pygeofilter>
-# Authors: Fabian Schindler <fabian.schindler@eox.at>, David Bitner <bitner@dbspatial.com>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>,
+# David Bitner <bitner@dbspatial.com>
 #
 # ------------------------------------------------------------------------------
 # Copyright (C) 2021 EOX IT Services GmbH
@@ -26,7 +27,7 @@
 # ------------------------------------------------------------------------------
 
 from datetime import date, datetime, timedelta
-from typing import Dict, List, Type, Union, cast
+from typing import List, Union, cast
 import json
 
 from ... import ast
@@ -41,7 +42,19 @@ JsonType = Union[dict, list, str, float, int, bool, None]
 
 
 def walk_cql_json(node: JsonType):
-    if isinstance(node, (str, float, int, bool, datetime, values.Geometry, values.Interval, ast.Node)):
+    if isinstance(
+        node,
+        (
+            str,
+            float,
+            int,
+            bool,
+            datetime,
+            values.Geometry,
+            values.Interval,
+            ast.Node,
+        ),
+    ):
         return node
 
     if isinstance(node, list):
@@ -87,7 +100,7 @@ def walk_cql_json(node: JsonType):
         return values.Interval(*parsed)
 
     elif "property" in node:
-        return ast.Attribute(node['property'])
+        return ast.Attribute(node["property"])
 
     elif "function" in node:
         return ast.Function(
@@ -98,7 +111,9 @@ def walk_cql_json(node: JsonType):
         )
 
     elif "lower" in node:
-        return ast.Function('lower', [cast(ast.Node, walk_cql_json(node['lower']))])
+        return ast.Function(
+            "lower", [cast(ast.Node, walk_cql_json(node["lower"]))]
+        )
 
     elif "op" in node:
         op = node["op"]
@@ -128,7 +143,7 @@ def walk_cql_json(node: JsonType):
         elif op == "like":
             return ast.Like(
                 cast(ast.Node, walk_cql_json(args[0])),
-                cast(str, args[1]),
+                pattern=cast(str, args[1]),
                 nocase=False,
                 wildcard="%",
                 singlechar=".",
@@ -138,8 +153,8 @@ def walk_cql_json(node: JsonType):
 
         elif op == "in":
             return ast.In(
-                cast(ast.AstType, walk_cql_json(args["args"])),
-                cast(List[ast.AstType], walk_cql_json(args["list"])),
+                cast(ast.AstType, walk_cql_json(args[0])),
+                cast(List[ast.AstType], walk_cql_json(args[1])),
                 not_=False,
             )
 
@@ -150,11 +165,12 @@ def walk_cql_json(node: JsonType):
             )
 
         elif op in BINARY_OP_PREDICATES_MAP:
+            args = [
+                cast(ast.Node, walk_cql_json(arg)) for arg in args
+            ]
             return BINARY_OP_PREDICATES_MAP[op](
-                cast(ast.Node, walk_cql_json(args[0])),
-                cast(ast.Node, walk_cql_json(args[1])),
+                *args
             )
-
 
     raise ValueError(f"Unable to parse expression node {node!r}")
 

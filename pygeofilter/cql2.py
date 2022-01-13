@@ -1,17 +1,11 @@
 # Common configurations for cql2 parsers and evaluators.
-from datetime import date, datetime, timedelta
-from typing import Dict, List, Type, Union, cast
-import json
-from dataclasses import dataclass, Field
-from textwrap import dedent
+from typing import Dict, Type, Union
 from . import ast
-from . import values
-from .util import parse_datetime, parse_date, parse_duration
 
 # https://github.com/opengeospatial/ogcapi-features/tree/master/cql2
 
 
-COMPARISON_MAP: Dict[str, Type[ast.Comparison]] = {
+COMPARISON_MAP: Dict[str, Type[ast.Node]] = {
     "=": ast.Equal,
     "eq": ast.Equal,
     "<>": ast.NotEqual,
@@ -71,14 +65,24 @@ ARITHMETIC_MAP: Dict[str, Type[ast.Arithmetic]] = {
     "/": ast.Div,
 }
 
-CONDITION_MAP: Dict[str, Type[ast.Condition]] = {
+CONDITION_MAP: Dict[str, Type[ast.Node]] = {
     "and": ast.And,
     "or": ast.Or,
     "not": ast.Not,
     "isNull": ast.IsNull,
 }
 
-BINARY_OP_PREDICATES_MAP: Dict[str, Type[ast.Node]] = {
+BINARY_OP_PREDICATES_MAP: Dict[
+    str,
+    Union[
+        Type[ast.Node],
+        Type[ast.Comparison],
+        Type[ast.SpatialComparisonPredicate],
+        Type[ast.TemporalPredicate],
+        Type[ast.ArrayPredicate],
+        Type[ast.Arithmetic],
+    ],
+] = {
     **COMPARISON_MAP,
     **SPATIAL_PREDICATES_MAP,
     **TEMPORAL_PREDICATES_MAP,
@@ -88,8 +92,9 @@ BINARY_OP_PREDICATES_MAP: Dict[str, Type[ast.Node]] = {
 }
 
 
-def get_op(node: ast.Node) -> str:
+def get_op(node: ast.Node) -> Union[str, None]:
     # Get the cql2 operator string from a node.
     for k, v in BINARY_OP_PREDICATES_MAP.items():
         if isinstance(node, v):
             return k
+    return None

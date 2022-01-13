@@ -101,5 +101,8 @@ class WKTTransformer(Transformer):
     def wkt__coordinate(self, *components):
         return components
 
+    def wkt__SIGNED_NUMBER(self, value):
+        return float(value)
+
     def wkt__NUMBER(self, value):
         return float(value)

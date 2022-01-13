@@ -1,7 +1,8 @@
 # ------------------------------------------------------------------------------
 #
 # Project: pygeofilter <https://github.com/geopython/pygeofilter>
-# Authors: Fabian Schindler <fabian.schindler@eox.at>, David Bitner <bitner@dbspatial.com>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>,
+# David Bitner <bitner@dbspatial.com>
 #
 # ------------------------------------------------------------------------------
 # Copyright (C) 2021 EOX IT Services GmbH
@@ -125,11 +126,11 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
         return ast.TimeAfter(node, dt)
 
     def binary_spatial_predicate(self, op, lhs, rhs):
-        op=op.lower()
+        op = op.lower()
         return SPATIAL_PREDICATES_MAP[op](lhs, rhs)
 
     def binary_temporal_predicate(self, lhs, op, rhs):
-        op=op.lower()
+        op = op.lower()
         return TEMPORAL_PREDICATES_MAP[op](lhs, rhs)
 
     def relate_spatial_predicate(self, lhs, rhs, pattern):
@@ -147,8 +148,8 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
 
     def function(self, func_name, *expressions):
         name = func_name.name.lower()
-        if  name == 'casei':
-            name = 'lower'
+        if name == "casei":
+            name = "lower"
         return ast.Function(name, list(expressions))
 
     def add(self, lhs, rhs):
@@ -195,7 +196,6 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
 
     def interval(self, start, end):
         return values.Interval(start, end)
-
 
 
 parser = Lark.open(

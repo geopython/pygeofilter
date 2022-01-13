@@ -1,7 +1,8 @@
 # ------------------------------------------------------------------------------
 #
 # Project: pygeofilter <https://github.com/geopython/pygeofilter>
-# Authors: Fabian Schindler <fabian.schindler@eox.at>, David Bitner <bitner@dbspatial.com>
+# Authors: Fabian Schindler <fabian.schindler@eox.at>,
+# David Bitner <bitner@dbspatial.com>
 #
 # ------------------------------------------------------------------------------
 # Copyright (C) 2021 EOX IT Services GmbH
@@ -25,7 +26,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime
 
 import shapely.geometry
@@ -35,12 +36,12 @@ from ... import ast
 from ...cql2 import get_op
 from ... import values
 
-from ...parsers.cql2_json import parser
-
 
 class CQL2Evaluator(Evaluator):
     def __init__(
-        self, attribute_map: Dict[str, str], function_map: Dict[str, str]
+        self,
+        attribute_map: Optional[Dict[str, str]],
+        function_map: Optional[Dict[str, str]],
     ):
         self.attribute_map = attribute_map
         self.function_map = function_map
@@ -73,7 +74,7 @@ class CQL2Evaluator(Evaluator):
     @handle(ast.Function)
     def function(self, node, *args):
         name = node.name.lower()
-        if name == 'lower':
+        if name == "lower":
             ret = {"lower": args[0]}
         else:
             ret = {"function": name, "args": [*args]}
@@ -88,7 +89,7 @@ class CQL2Evaluator(Evaluator):
         return {"property": node.name}
 
     @handle(values.Interval)
-    def interval(self, node: ast.Attribute):
+    def interval(self, node: values.Interval):
         return {"interval": [node.start, node.end]}
 
     @handle(datetime)
@@ -112,7 +113,7 @@ class CQL2Evaluator(Evaluator):
 
 def to_cql2(
     root: ast.Node,
-    field_mapping: Dict[str, str] = None,
-    function_map: Dict[str, str] = None,
+    field_mapping: Optional[Dict[str, str]] = None,
+    function_map: Optional[Dict[str, str]] = None,
 ) -> str:
     return CQL2Evaluator(field_mapping, function_map).evaluate(root)

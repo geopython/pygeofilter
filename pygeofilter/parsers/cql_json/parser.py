@@ -32,6 +32,7 @@ from ...util import parse_duration, parse_datetime
 from ...values import Envelope, Geometry
 from ... import ast
 from ... import values
+from datetime import datetime
 
 # https://portal.ogc.org/files/96288
 
@@ -109,7 +110,7 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
 
     if isinstance(node, list):
         result = [
-            walk_cql_json(sub_node, is_temporal)
+            cast(datetime, walk_cql_json(sub_node, is_temporal))
             for sub_node in node
         ]
         if is_temporal:
