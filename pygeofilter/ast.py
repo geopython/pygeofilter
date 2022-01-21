@@ -25,9 +25,6 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-"""
-"""
-
 from enum import Enum
 from dataclasses import dataclass
 from typing import List, Optional, ClassVar, Union
@@ -693,7 +690,7 @@ class Function(Expression):
 
 def indent(text: str, amount: int, ch: str = ' ') -> str:
     padding = amount * ch
-    return ''.join(padding+line for line in text.splitlines(True))
+    return ''.join(padding + line for line in text.splitlines(True))
 
 
 def get_repr(node: Node, indent_amount: int = 0, indent_incr: int = 4) -> str:

@@ -51,7 +51,9 @@ coordinate_lists: "(" coordinate_list ")" ( "," "(" coordinate_list ")" )*
 
 ?coordinate_list: coordinate_list "," coordinate
                 | coordinate                                            -> coordinate_list_start
-coordinate: NUMBER NUMBER [ NUMBER [ NUMBER ] ]
+coordinate: SIGNED_NUMBER SIGNED_NUMBER [ SIGNED_NUMBER [ SIGNED_NUMBER ] ]
 
+// NUMBER: /-?\d+\.?\d+/
 %import common.NUMBER
+%import common.SIGNED_NUMBER
 %import common.INT

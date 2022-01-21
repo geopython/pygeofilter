@@ -37,100 +37,65 @@ from pygeofilter import values
 
 
 def normalize_geom(geometry):
-    if hasattr(geometry, '__geo_interface__'):
+    if hasattr(geometry, "__geo_interface__"):
         geometry = geometry.__geo_interface__
     return json.loads(json.dumps(geometry))
 
 
 def test_attribute_eq_literal():
-    result = parse('{ "eq": [{ "property": "attr" }, "A"]}')
+    result = parse('{ "op": "eq", "args":[{ "property": "attr" }, "A"]}')
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        'A',
+        ast.Attribute("attr"),
+        "A",
     )
 
 
 def test_attribute_lt_literal():
-    result = parse('{ "lt": [{ "property": "attr" }, 5]}')
+    result = parse('{"op": "lt", "args": [{ "property": "attr" }, 5]}')
     assert result == ast.LessThan(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         5.0,
     )
 
 
 def test_attribute_lte_literal():
-    result = parse('{ "lte": [{ "property": "attr" }, 5]}')
+    result = parse('{ "op": "lte", "args": [{ "property": "attr" }, 5]}')
     assert result == ast.LessEqual(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         5.0,
     )
 
 
 def test_attribute_gt_literal():
-    result = parse('{ "gt": [{ "property": "attr" }, 5]}')
+    result = parse('{ "op": "gt", "args": [{ "property": "attr" }, 5]}')
     assert result == ast.GreaterThan(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         5.0,
     )
 
 
 def test_attribute_gte_literal():
-    result = parse('{ "gte": [{ "property": "attr" }, 5]}')
+    result = parse('{"op": "gte", "args":[{ "property": "attr" }, 5]}')
     assert result == ast.GreaterEqual(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         5.0,
     )
 
 
-# def test_attribute_ne_literal():
-#     result = parse('attr <> 5')
-#     assert result == ast.ComparisonPredicateNode(
-#         ast.Attribute('attr'),
-#         5,
-#         ast.ComparisonOp('<>'),
-#     )
-
-
 def test_attribute_between():
-    result = parse({
-        "between": {
-            "value": {
-                "property": "attr"
-            },
-            "lower": 2,
-            "upper": 5,
-        }
-    })
+    result = parse({"op": "between", "args": [{"property": "attr"}, [2, 5]]})
     assert result == ast.Between(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         2,
         5,
         False,
     )
 
 
-# def test_attribute_not_between():
-#     result = parse('attr NOT BETWEEN 2 AND 5')
-#     assert result == ast.BetweenPredicateNode(
-#         ast.Attribute('attr'),
-#         2,
-#         5,
-#         True,
-#     )
-
-
 def test_attribute_between_negative_positive():
-    result = parse({
-        "between": {
-            "value": {
-                "property": "attr"
-            },
-            "lower": -1,
-            "upper": 1,
-        }
-    })
+    result = parse({"op": "between", "args": [{"property": "attr"}, [-1, 1]]})
     assert result == ast.Between(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         -1,
         1,
         False,
@@ -138,149 +103,108 @@ def test_attribute_between_negative_positive():
 
 
 def test_string_like():
-    result = parse({
-        "like": [
-            {"property": "attr"},
-            "some%",
-        ]
-    })
+    result = parse(
+        {
+            "op": "like",
+            "args": [
+                {"property": "attr"},
+                "some%",
+            ],
+        }
+    )
     assert result == ast.Like(
-        ast.Attribute('attr'),
-        'some%',
+        ast.Attribute("attr"),
+        "some%",
         nocase=False,
         not_=False,
-        wildcard='%',
-        singlechar='.',
-        escapechar='\\',
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
     )
-
-# def test_string_not_like():
-#     result = parse('attr NOT LIKE "some%"')
-#     assert result == ast.LikePredicateNode(
-#         ast.Attribute('attr'),
-#         'some%',
-#         nocase=False,
-#         not_=True,
-#         wildcard='%',
-#         singlechar='.',
-#         escapechar=None,
-#     )
-
-
-# def test_string_not_ilike():
-#     result = parse('attr NOT ILIKE "some%"')
-#     assert result == ast.LikePredicateNode(
-#         ast.Attribute('attr'),
-#         'some%',
-#         nocase=True,
-#         not_=True,
-#         wildcard='%',
-#         singlechar='.',
-#         escapechar=None,
-#     )
 
 
 def test_attribute_in_list():
-    result = parse({
-        "in": {
-            "value": {"property": "attr"},
-            "list": [1, 2, 3, 4],
+    result = parse(
+        {
+            "op": "in",
+            "args": [
+                {"property": "attr"},
+                [1, 2, 3, 4],
+            ],
         }
-    })
+    )
     assert result == ast.In(
-        ast.Attribute('attr'), [
+        ast.Attribute("attr"),
+        [
             1,
             2,
             3,
             4,
         ],
-        False
+        False,
     )
-
-
-# def test_attribute_not_in_list():
-#     result = parse('attr NOT IN ("A", "B", \'C\', \'D\')')
-#     assert result == ast.InPredicateNode(
-#         ast.Attribute('attr'), [
-#             "A",
-#             "B",
-#             "C",
-#             "D",
-#         ],
-#         True
-#     )
 
 
 def test_attribute_is_null():
-    result = parse({
-        "isNull": {"property": "attr"}
-    })
-    assert result == ast.IsNull(
-        ast.Attribute('attr'), False
-    )
-
-
-# def test_attribute_is_not_null():
-#     result = parse('attr IS NOT NULL')
-#     assert result == ast.NullPredicateNode(
-#         ast.Attribute('attr'), True
-#     )
-
-# # Temporal predicate
+    result = parse({"op": "isNull", "args": {"property": "attr"}})
+    assert result == ast.IsNull(ast.Attribute("attr"), False)
 
 
 def test_attribute_before():
-    result = parse({
-        "t_before": [
-            {"property": "attr"},
-            {"timestamp": "2000-01-01T00:00:01Z"},
-        ]
-    })
+    result = parse(
+        {
+            "op": "t_before",
+            "args": [
+                {"property": "attr"},
+                {"timestamp": "2000-01-01T00:00:01Z"},
+            ],
+        }
+    )
     assert result == ast.TimeBefore(
-        ast.Attribute('attr'),
-        datetime(
-            2000, 1, 1, 0, 0, 1,
-            tzinfo=StaticTzInfo('Z', timedelta(0))
-        ),
+        ast.Attribute("attr"),
+        datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
     )
 
 
 def test_attribute_after_dt_dt():
-    result = parse({
-        "t_after": [
-            {"property": "attr"},
-            {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "t_after",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]},
+            ],
+        }
+    )
 
     assert result == ast.TimeAfter(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         values.Interval(
             datetime(
-                2000, 1, 1, 0, 0, 0,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
             datetime(
-                2000, 1, 1, 0, 0, 1,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
         ),
     )
 
 
 def test_meets_dt_dr():
-    result = parse({
-        "t_meets": [
-            {"property": "attr"},
-            {"interval": ["2000-01-01T00:00:00Z", "PT4S"]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "t_meets",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["2000-01-01T00:00:00Z", "PT4S"]},
+            ],
+        }
+    )
     assert result == ast.TimeMeets(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         values.Interval(
             datetime(
-                2000, 1, 1, 0, 0, 0,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
             timedelta(seconds=4),
         ),
@@ -288,56 +212,62 @@ def test_meets_dt_dr():
 
 
 def test_attribute_metby_dr_dt():
-    result = parse({
-        "t_metby": [
-            {"property": "attr"},
-            {"interval": ["PT4S", "2000-01-01T00:00:03Z"]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "t_metby",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["PT4S", "2000-01-01T00:00:03Z"]},
+            ],
+        }
+    )
     assert result == ast.TimeMetBy(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         values.Interval(
             timedelta(seconds=4),
             datetime(
-                2000, 1, 1, 0, 0, 3,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
         ),
     )
 
 
 def test_attribute_toverlaps_open_dt():
-    result = parse({
-        "t_overlaps": [
-            {"property": "attr"},
-            {"interval": ["..", "2000-01-01T00:00:03Z"]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "t_overlaps",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["..", "2000-01-01T00:00:03Z"]},
+            ],
+        }
+    )
     assert result == ast.TimeOverlaps(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         values.Interval(
             None,
             datetime(
-                2000, 1, 1, 0, 0, 3,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
         ),
     )
 
 
 def test_attribute_overlappedby_dt_open():
-    result = parse({
-        "t_overlappedby": [
-            {"property": "attr"},
-            {"interval": ["2000-01-01T00:00:03Z", ".."]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "t_overlappedby",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["2000-01-01T00:00:03Z", ".."]},
+            ],
+        }
+    )
     assert result == ast.TimeOverlappedBy(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         values.Interval(
             datetime(
-                2000, 1, 1, 0, 0, 3,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
             None,
         ),
@@ -348,53 +278,41 @@ def test_attribute_overlappedby_dt_open():
 
 
 def test_attribute_aequals():
-    result = parse({
-        "a_equals": [
-            {"property": "arrayattr"},
-            [1, 2, 3]
-        ]
-    })
+    result = parse(
+        {"op": "a_equals", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
+    )
     assert result == ast.ArrayEquals(
-        ast.Attribute('arrayattr'),
+        ast.Attribute("arrayattr"),
         [1, 2, 3],
     )
 
 
 def test_attribute_aoverlaps():
-    result = parse({
-        "a_overlaps": [
-            {"property": "arrayattr"},
-            [1, 2, 3]
-        ]
-    })
+    result = parse(
+        {"op": "a_overlaps", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
+    )
     assert result == ast.ArrayOverlaps(
-        ast.Attribute('arrayattr'),
+        ast.Attribute("arrayattr"),
         [1, 2, 3],
     )
 
 
 def test_attribute_acontains():
-    result = parse({
-        "a_contains": [
-            {"property": "arrayattr"},
-            [1, 2, 3]
-        ]
-    })
+    result = parse(
+        {"op": "a_contains", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
+    )
     assert result == ast.ArrayContains(
-        ast.Attribute('arrayattr'),
+        ast.Attribute("arrayattr"),
         [1, 2, 3],
     )
 
 
 def test_attribute_acontainedby():
-    result = parse({
-        "a_containedBy": [
-            {"property": "arrayattr"},
-            [1, 2, 3]
-        ]
-    })
+    result = parse(
+        {"op": "a_containedby", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
+    )
     assert result == ast.ArrayContainedBy(
-        ast.Attribute('arrayattr'),
+        ast.Attribute("arrayattr"),
         [1, 2, 3],
     )
 
@@ -403,61 +321,66 @@ def test_attribute_acontainedby():
 
 
 def test_intersects_attr_point():
-    result = parse({
-        "s_intersects": [
-            {"property": "geometry"},
-            {
-                "type": "Point",
-                "coordinates": [1, 1],
-            }
-        ]
-    })
+    result = parse(
+        {
+            "op": "s_intersects",
+            "args": [
+                {"property": "geometry"},
+                {
+                    "type": "Point",
+                    "coordinates": [1, 1],
+                },
+            ],
+        }
+    )
     assert result == ast.GeometryIntersects(
-        ast.Attribute('geometry'),
+        ast.Attribute("geometry"),
         values.Geometry(
-            normalize_geom(
-                geometry.Point(1, 1).__geo_interface__
-            )
+            normalize_geom(geometry.Point(1, 1).__geo_interface__)
         ),
     )
 
 
 def test_disjoint_linestring_attr():
-    result = parse({
-        "s_disjoint": [
-            {
-                "type": "LineString",
-                "coordinates": [[1, 1], [2, 2]],
-                "bbox": [1.0, 1.0, 2.0, 2.0]
-            },
-            {"property": "geometry"},
-        ]
-    })
+    result = parse(
+        {
+            "op": "s_disjoint",
+            "args": [
+                {
+                    "type": "LineString",
+                    "coordinates": [[1, 1], [2, 2]],
+                    "bbox": [1.0, 1.0, 2.0, 2.0],
+                },
+                {"property": "geometry"},
+            ],
+        }
+    )
     assert result == ast.GeometryDisjoint(
         values.Geometry(
             normalize_geom(
                 geometry.LineString([(1, 1), (2, 2)]).__geo_interface__
             ),
         ),
-        ast.Attribute('geometry'),
+        ast.Attribute("geometry"),
     )
 
 
 def test_contains_attr_polygon():
-    result = parse({
-        "s_contains": [
-            {"property": "geometry"},
-            {
-                "type": "Polygon",
-                "coordinates": [
-                    [[1, 1], [2, 2], [0, 3], [1, 1]]
-                ],
-                'bbox': [0.0, 1.0, 2.0, 3.0]
-            },
-        ]
-    })
+    result = parse(
+        {
+            "op": "s_contains",
+            "args": [
+                {"property": "geometry"},
+                {
+                    "type": "Polygon",
+                    "coordinates": [[[1, 1], [2, 2], [0, 3], [1, 1]]],
+                    "bbox": [0.0, 1.0, 2.0, 3.0],
+                },
+            ],
+        }
+    )
     assert result == ast.GeometryContains(
-        ast.Attribute('geometry'),
+        ast.Attribute("geometry"),
         values.Geometry(
             normalize_geom(
                 geometry.Polygon(
@@ -469,203 +392,127 @@ def test_contains_attr_polygon():
 
 
 def test_within_multipolygon_attr():
-    result = parse({
-        "s_within": [
-            {
-                "type": "MultiPolygon",
-                "coordinates": [
-                    [[[1, 1], [2, 2], [0, 3], [1, 1]]]
-                ],
-                'bbox': [0.0, 1.0, 2.0, 3.0]
-            },
-            {"property": "geometry"},
-        ]
-    })
+    result = parse(
+        {
+            "op": "s_within",
+            "args": [
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [[[[1, 1], [2, 2], [0, 3], [1, 1]]]],
+                    "bbox": [0.0, 1.0, 2.0, 3.0],
+                },
+                {"property": "geometry"},
+            ],
+        }
+    )
     assert result == ast.GeometryWithin(
         values.Geometry(
             normalize_geom(
-                geometry.MultiPolygon([
-                    geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-                ]).__geo_interface__
+                geometry.MultiPolygon(
+                    [geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])]
+                ).__geo_interface__
             ),
         ),
-        ast.Attribute('geometry'),
+        ast.Attribute("geometry"),
     )
 
 
 def test_touches_attr_multilinestring():
-    result = parse({
-        "s_touches": [
-            {"property": "geometry"},
-            {
-                "type": "MultiLineString",
-                "coordinates": [[[1, 1], [2, 2]], [[0, 3], [1, 1]]],
-                "bbox": [0.0, 1.0, 2.0, 3.0]
-            },
-        ]
-    })
+    result = parse(
+        {
+            "op": "s_touches",
+            "args": [
+                {"property": "geometry"},
+                {
+                    "type": "MultiLineString",
+                    "coordinates": [[[1, 1], [2, 2]], [[0, 3], [1, 1]]],
+                    "bbox": [0.0, 1.0, 2.0, 3.0],
+                },
+            ],
+        }
+    )
     assert result == ast.GeometryTouches(
-        ast.Attribute('geometry'),
+        ast.Attribute("geometry"),
         values.Geometry(
             normalize_geom(
-                geometry.MultiLineString([
-                    geometry.LineString([(1, 1), (2, 2)]),
-                    geometry.LineString([(0, 3), (1, 1)]),
-                ]).__geo_interface__
+                geometry.MultiLineString(
+                    [
+                        geometry.LineString([(1, 1), (2, 2)]),
+                        geometry.LineString([(0, 3), (1, 1)]),
+                    ]
+                ).__geo_interface__
             ),
         ),
     )
 
 
 def test_crosses_attr_multilinestring():
-    result = parse({
-        "s_crosses": [
-            {"property": "geometry"},
-            {
-                "type": "MultiLineString",
-                "coordinates": [[[1, 1], [2, 2]], [[0, 3], [1, 1]]],
-                "bbox": [0.0, 1.0, 2.0, 3.0]
-            },
-        ]
-    })
+    result = parse(
+        {
+            "op": "s_crosses",
+            "args": [
+                {"property": "geometry"},
+                {
+                    "type": "MultiLineString",
+                    "coordinates": [[[1, 1], [2, 2]], [[0, 3], [1, 1]]],
+                    "bbox": [0.0, 1.0, 2.0, 3.0],
+                },
+            ],
+        }
+    )
     assert result == ast.GeometryCrosses(
-        ast.Attribute('geometry'),
+        ast.Attribute("geometry"),
         values.Geometry(
             normalize_geom(
-                geometry.MultiLineString([
-                    geometry.LineString([(1, 1), (2, 2)]),
-                    geometry.LineString([(0, 3), (1, 1)]),
-                ]).__geo_interface__
+                geometry.MultiLineString(
+                    [
+                        geometry.LineString([(1, 1), (2, 2)]),
+                        geometry.LineString([(0, 3), (1, 1)]),
+                    ]
+                ).__geo_interface__
             )
         ),
     )
 
 
 def test_overlaps_attr_multilinestring():
-    result = parse({
-        "s_overlaps": [
-            {"property": "geometry"},
-            {
-                "type": "MultiLineString",
-                "coordinates": [[[1, 1], [2, 2]], [[0, 3], [1, 1]]],
-                "bbox": [0.0, 1.0, 2.0, 3.0]
-            },
-        ]
-    })
+    result = parse(
+        {
+            "op": "s_overlaps",
+            "args": [
+                {"property": "geometry"},
+                {
+                    "type": "MultiLineString",
+                    "coordinates": [[[1, 1], [2, 2]], [[0, 3], [1, 1]]],
+                    "bbox": [0.0, 1.0, 2.0, 3.0],
+                },
+            ],
+        }
+    )
     assert result == ast.GeometryOverlaps(
-        ast.Attribute('geometry'),
+        ast.Attribute("geometry"),
         values.Geometry(
             normalize_geom(
-                geometry.MultiLineString([
-                    geometry.LineString([(1, 1), (2, 2)]),
-                    geometry.LineString([(0, 3), (1, 1)]),
-                ]).__geo_interface__
+                geometry.MultiLineString(
+                    [
+                        geometry.LineString([(1, 1), (2, 2)]),
+                        geometry.LineString([(0, 3), (1, 1)]),
+                    ]
+                ).__geo_interface__
             ),
         ),
     )
 
 
-# POINT(1 1)
-# LINESTRING(1 1,2 2)
-# MULTIPOLYGON(((1 1,2 2,0 3,1 1))
-# MULTILINESTRING((1 1,2 2),(0 3,1 1))
-# POLYGON((1 1,2 2,0 3,1 1))
-
-# def test_equals_attr_geometrycollection():
-#     result = parse('OVERLAPS(geometry, )')
-#     assert result == ast.SpatialPredicateNode(
-#         ast.Attribute('geometry'),
-#         ast.LiteralExpression(
-#             geometry.MultiLineString([
-#                 geometry.LineString([(1, 1), (2, 2)]),
-#                 geometry.LineString([(0, 3), (1, 1)]),
-#             ])
-#         ),
-#         'OVERLAPS'
-#     )
-
-
-# relate
-
-# def test_relate_attr_polygon():
-#     result = parse('RELATE(geometry, POLYGON((1 1,2 2,0 3,1 1)),
-#          "1*T***T**")')
-#     assert result == ast.SpatialPatternPredicateNode(
-#         ast.Attribute('geometry'),
-#         ast.LiteralExpression(
-#             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-#         ),
-#         pattern='1*T***T**',
-#     )
-
-
-# # dwithin/beyond
-
-# def test_dwithin_attr_polygon():
-#     result = parse('DWITHIN(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, feet)')
-#     print(get_repr(result))
-#     assert result == ast.SpatialDistancePredicateNode(
-#         ast.Attribute('geometry'),
-#         ast.LiteralExpression(
-#             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-#         ),
-#         ast.SpatialDistanceOp('DWITHIN'),
-#         distance=5,
-#         units='feet',
-#     )
-
-
-# def test_beyond_attr_polygon():
-#     result = parse(
-#         'BEYOND(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, nautical miles)'
-#     )
-#     print(get_repr(result))
-#     assert result == ast.SpatialDistancePredicateNode(
-#         ast.Attribute('geometry'),
-#         ast.LiteralExpression(
-#             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-#         ),
-#         ast.SpatialDistanceOp('BEYOND'),
-#         distance=5,
-#         units='nautical miles',
-#     )
-
-
-# BBox prediacte
-
-
-# def test_bbox_simple():
-#     result = parse('BBOX(geometry, 1, 2, 3, 4)')
-#     assert result == ast.BBoxPredicateNode(
-#         ast.Attribute('geometry'),
-#         ast.LiteralExpression(1),
-#         ast.LiteralExpression(2),
-#         ast.LiteralExpression(3),
-#         ast.LiteralExpression(4),
-#     )
-
-
-# def test_bbox_crs():
-#     result = parse('BBOX(geometry, 1, 2, 3, 4, "EPSG:3875")')
-#     assert result == ast.BBoxPredicateNode(
-#         ast.Attribute('geometry'),
-#         ast.LiteralExpression(1),
-#         ast.LiteralExpression(2),
-#         ast.LiteralExpression(3),
-#         ast.LiteralExpression(4),
-#         'EPSG:3875',
-#     )
-
-
 def test_attribute_arithmetic_add():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {"+": [5, 2]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [{"property": "attr"}, {"op": "+", "args": [5, 2]}],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Add(
             5,
             2,
@@ -674,14 +521,14 @@ def test_attribute_arithmetic_add():
 
 
 def test_attribute_arithmetic_sub():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {"-": [5, 2]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [{"property": "attr"}, {"op": "-", "args": [5, 2]}],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Sub(
             5,
             2,
@@ -690,14 +537,14 @@ def test_attribute_arithmetic_sub():
 
 
 def test_attribute_arithmetic_mul():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {"*": [5, 2]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [{"property": "attr"}, {"op": "*", "args": [5, 2]}],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Mul(
             5,
             2,
@@ -706,14 +553,14 @@ def test_attribute_arithmetic_mul():
 
 
 def test_attribute_arithmetic_div():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {"/": [5, 2]}
-        ]
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [{"property": "attr"}, {"op": "/", "args": [5, 2]}],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Div(
             5,
             2,
@@ -722,17 +569,23 @@ def test_attribute_arithmetic_div():
 
 
 def test_attribute_arithmetic_add_mul():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {"+": [
-                3,
-                {"*": [5, 2]},
-            ]},
-        ],
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [
+                {"property": "attr"},
+                {
+                    "op": "+",
+                    "args": [
+                        3,
+                        {"op": "*", "args": [5, 2]},
+                    ],
+                },
+            ],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Add(
             3,
             ast.Mul(
@@ -744,17 +597,23 @@ def test_attribute_arithmetic_add_mul():
 
 
 def test_attribute_arithmetic_div_sub():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {"-": [
-                {"/": [3, 5]},
-                2,
-            ]},
-        ],
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [
+                {"property": "attr"},
+                {
+                    "op": "-",
+                    "args": [
+                        {"op": "/", "args": [3, 5]},
+                        2,
+                    ],
+                },
+            ],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Sub(
             ast.Div(
                 3,
@@ -766,17 +625,23 @@ def test_attribute_arithmetic_div_sub():
 
 
 def test_attribute_arithmetic_div_sub_bracketted():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {"/": [
-                3,
-                {"-": [5, 2]},
-            ]},
-        ],
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [
+                {"property": "attr"},
+                {
+                    "op": "/",
+                    "args": [
+                        3,
+                        {"op": "-", "args": [5, 2]},
+                    ],
+                },
+            ],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Div(
             3,
             ast.Sub(
@@ -786,72 +651,67 @@ def test_attribute_arithmetic_div_sub_bracketted():
         ),
     )
 
+
 # test function expression parsing
 
 
 def test_function_no_arg():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {
-                "function": {
-                    "name": "myfunc",
-                    "arguments": []
-                }
-            }
-        ]
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [
+                {"property": "attr"},
+                {"function": {"name": "myfunc", "arguments": []}},
+            ],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        ast.Function(
-            'myfunc', [
-            ]
-        ),
+        ast.Attribute("attr"),
+        ast.Function("myfunc", []),
     )
 
 
 def test_function_single_arg():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {
-                "function": {
-                    "name": "myfunc",
-                    "arguments": [1]
-                }
-            }
-        ]
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [
+                {"property": "attr"},
+                {"function": {"name": "myfunc", "arguments": [1]}},
+            ],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Function(
-            'myfunc',
+            "myfunc",
             [1],
         ),
     )
 
 
 def test_function_attr_string_arg():
-    result = parse({
-        "eq": [
-            {"property": "attr"},
-            {
-                "function": {
-                    "name": "myfunc",
-                    "arguments": [
-                        {"property": "other_attr"},
-                        "abc"
-                    ]
-                }
-            }
-        ]
-    })
+    result = parse(
+        {
+            "op": "eq",
+            "args": [
+                {"property": "attr"},
+                {
+                    "function": {
+                        "name": "myfunc",
+                        "arguments": [{"property": "other_attr"}, "abc"],
+                    }
+                },
+            ],
+        }
+    )
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Function(
-            'myfunc', [
-                ast.Attribute('other_attr'),
+            "myfunc",
+            [
+                ast.Attribute("other_attr"),
                 "abc",
-            ]
+            ],
         ),
     )

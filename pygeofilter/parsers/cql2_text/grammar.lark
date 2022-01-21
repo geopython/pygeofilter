@@ -1,0 +1,151 @@
+// ------------------------------------------------------------------------------
+//
+// Project: pygeofilter <https://github.com/geopython/pygeofilter>
+// Authors: Fabian Schindler <fabian.schindler@eox.at>, David Bitner <bitner@dbspatial.com>
+//
+// ------------------------------------------------------------------------------
+// Copyright (C) 2021 EOX IT Services GmbH
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies of this Software or works derived from this Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+// ------------------------------------------------------------------------------
+
+?start: condition
+
+?condition: condition_1
+          | condition "AND"i condition_1                                 -> and_
+          | condition "OR"i condition_1                                   -> or_
+
+?condition_1: predicate
+            | "NOT"i predicate                                               -> not_
+            | "(" condition ")"
+
+
+?predicate: expression "=" expression                                       -> eq
+          | expression "eq"i expression                                      -> eq
+          | expression "<>" expression                                      -> ne
+          | expression "ne"i expression                                      -> ne
+          | expression "!=" expression                                      -> ne
+          | expression "<" expression                                       -> lt
+          | expression "lt"i expression                                       -> lt
+          | expression "<=" expression                                      -> lte
+          | expression "lte"i expression                                      -> lte
+          | expression ">" expression                                       -> gt
+          | expression "gt"i expression                                       -> gt
+          | expression ">=" expression                                      -> gte
+          | expression "gte"i expression                                      -> gte
+          | expression "BETWEEN"i expression "AND"i expression                -> between
+          | expression "LIKE"i SINGLE_QUOTED                                 -> like
+          | expression "IN"i "(" expression ( "," expression )* ")"          -> in_
+          | expression "IS"i "NULL"i                                         -> null
+          | "INCLUDE"i                                                       -> include
+          | "EXCLUDE"i                                                       -> exclude
+          | spatial_predicate
+          | temporal_predicate
+
+
+
+?temporal_predicate: expression _binary_temporal_predicate_func expression -> binary_temporal_predicate
+
+!_binary_temporal_predicate_func: "T_BEFORE"i
+                        | "T_AFTER"i
+                        | "T_MEETS"i
+                        | "T_METBY"i
+                        | "T_OVERLAPS"i
+                        | "T_OVERLAPPEDBY"i
+                        | "T_BEGINS"i
+                        | "T_BEGUNBY"i
+                        | "T_DURING"i
+                        | "T_CONTAINS"i
+                        | "T_ENDS"i
+                        | "T_ENDEDBY"i
+                        | "T_EQUALS"i
+                        | "T_INTERSECTS"i
+
+
+?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate
+                  | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                    -> relate_spatial_predicate
+                  | "BBOX" "(" expression "," full_number "," full_number "," full_number "," full_number [ ","  SINGLE_QUOTED] ")" -> bbox_spatial_predicate
+
+!_binary_spatial_predicate_func: "S_INTERSECTS"i
+                               | "S_DISJOINT"i
+                               | "S_CONTAINS"i
+                               | "S_WITHIN"i
+                               | "S_TOUCHES"i
+                               | "S_CROSSES"i
+                               | "S_OVERLAPS"i
+                               | "S_EQUALS"i
+
+
+?expression: sum
+
+?sum: product
+    | sum "+" product                                                       -> add
+    | sum "-" product                                                       -> sub
+
+?product: atom
+        | product "*" atom                                                  -> mul
+        | product "/" atom                                                  -> div
+
+?atom: func
+     | attribute
+     | literal
+     | "-" atom                                                             -> neg
+     | "(" expression ")"
+
+func.2: attribute "(" expression ("," expression)* ")" -> function
+
+
+?literal: timestamp
+        | interval
+        | number
+        | BOOLEAN
+        | SINGLE_QUOTED
+        | ewkt_geometry                                                     -> geometry
+        | envelope
+
+?full_number: number
+            | "-" number                                                    -> neg
+
+?number: FLOAT | INT
+
+envelope: "ENVELOPE"i "(" number number number number ")"
+
+BOOLEAN: ( "TRUE" | "FALSE" )
+
+DOUBLE_QUOTED: "\"" /.*?/ "\""
+SINGLE_QUOTED: "'" /.*?/ "'"
+
+DATETIME: /[0-9]{4}-?[0-1][0-9]-?[0-3][0-9][T ][0-2][0-9]:?[0-5][0-9]:?[0-5][0-9](\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})?/
+?timestamp: "TIMESTAMP" "(" "'" DATETIME "'" ")"
+?interval: "INTERVAL" "("  "'" DATETIME "'" "," "'" DATETIME "'" ")"
+
+
+
+attribute: /[a-zA-Z][a-zA-Z_:0-9]+/
+         | DOUBLE_QUOTED
+
+
+// NAME: /[a-z_]+/
+%import .wkt.ewkt_geometry
+
+// %import common.CNAME -> NAME
+%import common.INT
+%import common.FLOAT
+%import common.WS_INLINE
+%ignore WS_INLINE
