@@ -27,14 +27,21 @@
 # ------------------------------------------------------------------------------
 
 from typing import Dict, Optional
-from datetime import datetime
-
-import shapely.geometry
+from datetime import datetime, date
 
 from ..evaluator import Evaluator, handle
 from ... import ast
 from ...cql2 import get_op
 from ... import values
+import json
+
+
+def json_serializer(obj):
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if hasattr(obj, "name"):
+        return obj.name
+    raise TypeError(f"{obj} with type {type(obj)} is not serializable.")
 
 
 class CQL2Evaluator(Evaluator):
@@ -102,13 +109,11 @@ class CQL2Evaluator(Evaluator):
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
-        return shapely.geometry.shape(node).__geo_interface__
+        return node.__geo_interface__
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
-        return shapely.geometry.box(
-            node.x1, node.y1, node.x2, node.y2
-        ).__geo_interface__
+        return node.__geo_interface__
 
 
 def to_cql2(
@@ -116,4 +121,7 @@ def to_cql2(
     field_mapping: Optional[Dict[str, str]] = None,
     function_map: Optional[Dict[str, str]] = None,
 ) -> str:
-    return CQL2Evaluator(field_mapping, function_map).evaluate(root)
+    return json.dumps(
+        CQL2Evaluator(field_mapping, function_map).evaluate(root),
+        default=json_serializer,
+    )
