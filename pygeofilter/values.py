@@ -54,6 +54,28 @@ class Envelope:
     y1: float
     y2: float
 
+    @property
+    def geometry(self):
+        return {
+            "type": "Polygon",
+            "coordinates": [[
+                [self.x1, self.y1],
+                [self.x1, self.y2],
+                [self.x2, self.y2],
+                [self.x2, self.y1],
+                [self.x1, self.y1]
+            ]]
+        }
+
+    @property
+    def __geo_interface__(self):
+        return self.geometry
+
+    def __eq__(self, o: object) -> bool:
+        return (
+            as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
+        )
+
 
 @dataclass
 class Interval:
