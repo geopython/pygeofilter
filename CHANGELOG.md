@@ -1,5 +1,19 @@
 # Changelog
 
+### [0.1.1](https://www.github.com/geopython/pygeofilter/compare/v0.1.0...v0.1.1) (2022-02-08)
+
+
+### Bug Fixes
+
+* Fixing compatibility issues with Python 3.6 type checking ([ad7ddd7](https://www.github.com/geopython/pygeofilter/commit/ad7ddd7a332f838fa284e1493f0d3cc15036ad95))
+* Improved typing ([2272b3b](https://www.github.com/geopython/pygeofilter/commit/2272b3b9371ff90fe5cbc9b8f84cbf6bb5cca76a))
+* Improving structure of CI for type checking ([fb755a3](https://www.github.com/geopython/pygeofilter/commit/fb755a3859baf3a07f57938da2259b5c3fb74575))
+* Improving typing ([6c3584b](https://www.github.com/geopython/pygeofilter/commit/6c3584b3961fe90cc07f08f6cc8f2256112850f3))
+* Improving typing on CQL2 JSON ([e0747aa](https://www.github.com/geopython/pygeofilter/commit/e0747aa2d0dbcaedd49bd9bcf30e702da68aaa37))
+* more concise type checking ([87e46a2](https://www.github.com/geopython/pygeofilter/commit/87e46a2c325fb5f1c1c92408369efdf263f387db))
+* mypy dependency installation (using --non-interactive) ([84a1175](https://www.github.com/geopython/pygeofilter/commit/84a11752c48773650a063a767eb97a1fa149b0ac))
+* Split up Django spatial filters ([484e0b3](https://www.github.com/geopython/pygeofilter/commit/484e0b3db483db76b6456593a33ee8598f72813d))
+
 ## [0.1.0](https://www.github.com/geopython/pygeofilter/compare/v0.1.0...v0.1.0) (2021-11-18)
 
 
