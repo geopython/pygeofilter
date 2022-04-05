@@ -253,9 +253,8 @@ class NativeEvaluator(Evaluator):
         return key
 
     @handle(values.Interval)
-    def interval(self, node):
-        key = self._add_local(node)
-        return key
+    def interval(self, node, low, high):
+        return f'values.Interval({low}, {high})'
 
     @handle(values.Geometry)
     def geometry(self, node):
@@ -281,8 +280,13 @@ class NativeEvaluator(Evaluator):
             'to_interval': to_interval,
             'ensure_spatial': ensure_spatial,
             'ast': ast,
+            'values': values,
         }
-        assert set(globals_).isdisjoint(set(self.function_map))
+        if not set(globals_).isdisjoint(set(self.function_map)):
+            raise ValueError(
+                f"globals collision {list(globals_)} and "
+                f"{list(self.function_map)}"
+            )
 
         globals_.update(self.function_map)
         globals_.update(self.locals)

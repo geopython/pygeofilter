@@ -28,7 +28,7 @@
 
 from dataclasses import dataclass
 from datetime import date, time, datetime, timedelta
-from typing import Union, Optional
+from typing import Any, List, Union, Optional
 
 from pygeoif.geometry import as_shape
 
@@ -81,6 +81,9 @@ class Envelope:
 class Interval:
     start: Optional[Union[date, datetime, timedelta]] = None
     end: Optional[Union[date, datetime, timedelta]] = None
+
+    def get_sub_nodes(self) -> List[Any]:  # TODO: find way to type this
+        return [self.start, self.end]
 
 
 # used for handler declaration
