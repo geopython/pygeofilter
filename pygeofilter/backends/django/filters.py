@@ -301,8 +301,8 @@ def temporal(lhs: F, time_or_period: Value, op: str) -> Q:
         "BEFORE", "BEFORE OR DURING", "DURING", "DURING OR AFTER", "AFTER"
     )
     time_or_period = time_or_period.value
-    low = None
-    high = None
+    low: Union[datetime, timedelta, None] = None
+    high: Union[datetime, timedelta, None] = None
     if op in ("BEFORE", "AFTER"):
         assert isinstance(time_or_period, datetime)
         if op == "BEFORE":
