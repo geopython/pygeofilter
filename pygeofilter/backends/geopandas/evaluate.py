@@ -146,8 +146,8 @@ class GeoPandasEvaluator(Evaluator):
         return node
 
     @handle(values.Interval)
-    def interval(self, node):
-        return (node.start, node.end)
+    def interval(self, node, start, end):
+        return (start, end)
 
     @handle(values.Geometry)
     def geometry(self, node):

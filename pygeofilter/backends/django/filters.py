@@ -311,11 +311,13 @@ def temporal(lhs: F, time_or_period: Value, op: str) -> Q:
             low = time_or_period
     else:
         low, high = time_or_period
+        low = low.value if isinstance(low, Value) else low
+        high = high.value if isinstance(high, Value) else high
         assert isinstance(low, datetime) or isinstance(high, datetime)
 
-        if isinstance(low, timedelta):
+        if isinstance(low, timedelta) and isinstance(high, datetime):
             low = high - low
-        if isinstance(high, timedelta):
+        if isinstance(low, datetime) and isinstance(high, timedelta):
             high = low + high
 
     if low and high:

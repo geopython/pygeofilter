@@ -96,8 +96,8 @@ class CQL2Evaluator(Evaluator):
         return {"property": node.name}
 
     @handle(values.Interval)
-    def interval(self, node: values.Interval):
-        return {"interval": [node.start, node.end]}
+    def interval(self, node: values.Interval, start, end):
+        return {"interval": [start, end]}
 
     @handle(datetime)
     def datetime(self, node: ast.Attribute):

@@ -148,8 +148,8 @@ class SQLAlchemyFilterEvaluator(Evaluator):
         return filters.literal(node)
 
     @handle(values.Interval)
-    def interval(self, node):
-        return filters.literal((node.start, node.end))
+    def interval(self, node, start, end):
+        return filters.literal((start, end))
 
     @handle(values.Geometry)
     def geometry(self, node):
