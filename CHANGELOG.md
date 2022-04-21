@@ -5,7 +5,7 @@
 
 ### Bug Fixes
 
-* try release ([8778e4d](https://www.github.com/geopython/pygeofilter/commit/8778e4d1a614dc855bff4b01eec09ee1af89b436))
+* Allowing intervals to actually contain subnodes ([83b7c63](https://www.github.com/geopython/pygeofilter/commit/83b7c63ad9233a9ed600f061d3b8e074291dcb8c))
 
 ### [0.1.1](https://www.github.com/geopython/pygeofilter/compare/v0.1.0...v0.1.1) (2022-02-08)
 
