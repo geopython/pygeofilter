@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.2](https://www.github.com/geopython/pygeofilter/compare/v0.1.1...v0.1.2) (2022-04-21)
+
+
+### Bug Fixes
+
+* try release ([8778e4d](https://www.github.com/geopython/pygeofilter/commit/8778e4d1a614dc855bff4b01eec09ee1af89b436))
+
 ### [0.1.1](https://www.github.com/geopython/pygeofilter/compare/v0.1.0...v0.1.1) (2022-02-08)
 
 
