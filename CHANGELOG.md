@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.2](https://www.github.com/geopython/pygeofilter/compare/v0.1.1...v0.1.2) (2022-04-21)
+
+
+### Bug Fixes
+
+* Allowing intervals to actually contain subnodes ([83b7c63](https://www.github.com/geopython/pygeofilter/commit/83b7c63ad9233a9ed600f061d3b8e074291dcb8c))
+
 ### [0.1.1](https://www.github.com/geopython/pygeofilter/compare/v0.1.0...v0.1.1) (2022-02-08)
 
 
