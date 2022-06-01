@@ -25,10 +25,11 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 import shapely.geometry
 from elasticsearch_dsl import Q
+from elasticsearch_dsl.query import Query
 
 from ..evaluator import Evaluator, handle
 from ... import ast
@@ -112,20 +113,26 @@ class ElasticSearchDSLEvaluator(Evaluator):
 
     @handle(ast.IsNull)
     def null(self, node: ast.IsNull, lhs):
-        q = Q("exists", field=lhs)
+        q = cast(Query, Q("exists", field=lhs))
         if not node.not_:
             q = ~q
         return q
-        # return Q("must_not", exists={"field": lhs})
 
     # @handle(ast.TemporalPredicate, subclasses=True)
     # def temporal(self, node, lhs, rhs):
     #     pass
 
-    # @handle(ast.SpatialComparisonPredicate, subclasses=True)
-    # def spatial_operation(self, node, lhs, rhs):
-    #     func = SPATIAL_COMPARISON_OP_MAP[node.op]
-    #     return f"{func}({lhs},{rhs})"
+    @handle(
+        ast.GeometryIntersects, ast.GeometryDisjoint,
+        ast.GeometryContains, ast.GeometryContains, subclasses=True
+    )
+    def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs, rhs):
+        return Q("geo_shape", **{
+            lhs: {
+                "shape": rhs
+            },
+            "relation": node.op.value.lower()
+        })
 
     # @handle(ast.BBox)
     # def bbox(self, node, lhs):
@@ -154,18 +161,19 @@ class ElasticSearchDSLEvaluator(Evaluator):
     def literal(self, node):
         return node
 
-    # @handle(values.Geometry)
-    # def geometry(self, node: values.Geometry):
-    #     wkb_hex = shapely.geometry.shape(node).wkb_hex
-    #     return f"ST_GeomFromWKB(x'{wkb_hex}')"
+    @handle(values.Geometry)
+    def geometry(self, node: values.Geometry):
+        return node.geometry
 
-    # @handle(values.Envelope)
-    # def envelope(self, node: values.Envelope):
-    #     wkb_hex = shapely.geometry.box(
-    #         node.x1, node.y1, node.x2, node.y2
-    #     ).wkb_hex
-    #     return f"ST_GeomFromWKB(x'{wkb_hex}')"
-
+    @handle(values.Envelope)
+    def envelope(self, node: values.Envelope):
+        return {
+            "type": "envelope",
+            "coordinates": [
+                [node.x1, node.y1],
+                [node.x2, node.y2],
+            ]
+        }
 
 # def to_sql_where(root: ast.Node, field_mapping: Dict[str, str],
 #                  function_map: Optional[Dict[str, str]] = None) -> str:
