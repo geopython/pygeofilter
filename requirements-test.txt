@@ -9,3 +9,5 @@ pygml
 dateparser
 pygeoif
 lark
+elasticsearch
+elasticsearch-dsl
