@@ -1,3 +1,5 @@
+import ssl
+
 from elasticsearch_dsl import (
     connections,
     Index,
@@ -44,7 +46,7 @@ class Record(Document):
 @pytest.fixture(scope="session")
 def data():
     connections.create_connection(
-        hosts=['https://user:secret@localhost:9200'],
+        hosts=['https://localhost:9200'],
         verify_certs=False,
     )
     # connections.create_connection(alias='my_new_connection', hosts=['localhost'], timeout=60)
@@ -87,7 +89,6 @@ def data():
 def filter_(ast):
     query = to_filter(ast)
     print(query)
-    breakpoint()
     result = Record.search().query(query).execute()
     print([r.identifier for r in result])
     return result
@@ -226,19 +227,19 @@ def test_temporal(data):
 
 def test_spatial(data):
     result = filter_(
-        parse('INTERSECTS(point_attr, ENVELOPE (0 1 0 1))'),
+        parse('INTERSECTS(point_attribute, ENVELOPE (0 1 0 1))'),
     )
-    assert len(result) == 1 and result[0] is data[0]
+    assert len(result) == 1 and result[0].identifier is data[0].identifier
 
     result = filter_(
-        parse('EQUALS(point_attr, POINT(2 2))'),
+        parse('EQUALS(point_attribute, POINT(2 2))'),
     )
-    assert len(result) == 1 and result[0] is data[1]
+    assert len(result) == 1 and result[0].identifier is data[1].identifier
 
     result = filter_(
-        parse('BBOX(point_attr, 0.5, 0.5, 1.5, 1.5)'),
+        parse('BBOX(point_attribute, 0.5, 0.5, 1.5, 1.5)'),
     )
-    assert len(result) == 1 and result[0] is data[0]
+    assert len(result) == 1 and result[0].identifier is data[0].identifier
 
 
 def test_arithmetic():
