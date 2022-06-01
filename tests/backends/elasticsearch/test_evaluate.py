@@ -45,11 +45,11 @@ class Record(Document):
 
 @pytest.fixture(scope="session")
 def data():
+    """ Fixture to add initial data to the search index.
+    """
     connections.create_connection(
-        hosts=['https://localhost:9200'],
-        verify_certs=False,
+        hosts=['http://localhost:9200'],
     )
-    # connections.create_connection(alias='my_new_connection', hosts=['localhost'], timeout=60)
     Record.init()
 
     record_a = Record(
