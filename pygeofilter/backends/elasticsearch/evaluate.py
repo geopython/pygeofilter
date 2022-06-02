@@ -140,12 +140,20 @@ class ElasticSearchDSLEvaluator(Evaluator):
             }
         )
 
-    # @handle(ast.BBox)
-    # def bbox(self, node, lhs):
-    #     func = SPATIAL_COMPARISON_OP_MAP[ast.SpatialComparisonOp.INTERSECTS]
-    #     # TODO: create BBox geometry
-    #     rhs = ""
-    #     return f"{func}({lhs},{rhs})"
+    @handle(ast.BBox)
+    def bbox(self, node: ast.BBox, lhs):
+        # TODO: handle node.crs
+        return Q(
+            "geo_shape",
+            **{
+                lhs: {
+                    "shape": self.envelope(
+                        values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
+                    ),
+                    "relation": "intersects",
+                },
+            }
+        )
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
