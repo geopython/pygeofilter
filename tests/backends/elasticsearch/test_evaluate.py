@@ -86,8 +86,8 @@ def data():
     record_index.delete()
 
 
-def filter_(ast):
-    query = to_filter(ast)
+def filter_(ast_):
+    query = to_filter(ast_)
     print(query)
     result = Record.search().query(query).execute()
     print([r.identifier for r in result])
@@ -132,7 +132,7 @@ def test_between(data):
 
 
 def test_like(data):
-    result = filter_(parse('str_attribute LIKE \'this is . test\''))
+    result = filter_(parse('str_attribute LIKE \'this is a test\''))
     assert len(result) == 1 and result[0] is data[0]
 
     result = filter_(parse('str_attribute LIKE \'this is % test\''))
@@ -227,17 +227,14 @@ def test_temporal(data):
 
 def test_spatial(data):
     result = filter_(
-        parse('INTERSECTS(point_attribute, ENVELOPE (0 1 0 1))'),
+        parse('INTERSECTS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))'),
     )
     assert len(result) == 1 and result[0].identifier is data[0].identifier
 
-    result = filter_(
-        parse('EQUALS(point_attribute, POINT(2 2))'),
-    )
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    # TODO: test more spatial queries
 
     result = filter_(
-        parse('BBOX(point_attribute, 0.5, 0.5, 1.5, 1.5)'),
+        parse('BBOX(center, 2, 2, 3, 3)'),
     )
     assert len(result) == 1 and result[0].identifier is data[0].identifier
 
