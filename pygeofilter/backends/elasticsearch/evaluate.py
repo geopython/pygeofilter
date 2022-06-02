@@ -123,16 +123,22 @@ class ElasticSearchDSLEvaluator(Evaluator):
     #     pass
 
     @handle(
-        ast.GeometryIntersects, ast.GeometryDisjoint,
-        ast.GeometryContains, ast.GeometryContains, subclasses=True
+        ast.GeometryIntersects,
+        ast.GeometryDisjoint,
+        ast.GeometryContains,
+        ast.GeometryContains,
+        subclasses=True,
     )
     def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs, rhs):
-        return Q("geo_shape", **{
+        return Q(
+            "geo_shape",
+            **{
             lhs: {
-                "shape": rhs
+                    "shape": rhs,
+                    "relation": node.op.value.lower(),
             },
-            "relation": node.op.value.lower()
-        })
+            }
+        )
 
     # @handle(ast.BBox)
     # def bbox(self, node, lhs):
@@ -170,9 +176,15 @@ class ElasticSearchDSLEvaluator(Evaluator):
         return {
             "type": "envelope",
             "coordinates": [
-                [node.x1, node.y1],
-                [node.x2, node.y2],
-            ]
+                [
+                    min(node.x1, node.x2),
+                    max(node.y1, node.y2),
+                ],
+                [
+                    max(node.x1, node.x2),
+                    min(node.y1, node.y2),
+                ],
+            ],
         }
 
 # def to_sql_where(root: ast.Node, field_mapping: Dict[str, str],
