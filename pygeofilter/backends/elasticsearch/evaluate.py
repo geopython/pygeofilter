@@ -35,7 +35,7 @@ Uses elasticsearch-dsl package to create filter objects.
 # pylint: disable=E1130,C0103,W0223
 
 from datetime import date, datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from packaging.version import Version
 from elasticsearch_dsl import Q
@@ -121,7 +121,7 @@ class ElasticSearchDSLEvaluator(Evaluator):
         pattern = like_to_wildcard(
             node.pattern, node.wildcard, node.singlechar, node.escapechar
         )
-        expr = {
+        expr: Dict[str, Union[str, bool]] = {
             "value": pattern,
         }
         if self.version >= VERSION_7_10_0:
