@@ -23,7 +23,6 @@ jobs:
         pip install -r requirements-dev.txt
         pip install pygdal=="`gdal-config --version`.*"
         pip install .
-        mypy --install-types --non-interactive pygeofilter
     - name: Configure sysctl limits
       run: |
         sudo swapoff -a
@@ -45,4 +44,4 @@ jobs:
         flake8 pygeofilter tests
     - name: Run type checking
       run: |
-        mypy pygeofilter
+        mypy --install-types --non-interactive pygeofilter
