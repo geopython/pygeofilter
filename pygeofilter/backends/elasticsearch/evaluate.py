@@ -142,7 +142,9 @@ class ElasticSearchDSLEvaluator(Evaluator):
 
     @handle(ast.IsNull)
     def null(self, node: ast.IsNull, lhs):
-        """Performs a null check, by using the `exists` query on the given field"""
+        """Performs a null check, by using the `exists` query on the given
+        field.
+        """
         q = Q("exists", field=lhs)
         if not node.not_:
             q = ~q
@@ -150,7 +152,9 @@ class ElasticSearchDSLEvaluator(Evaluator):
 
     @handle(ast.Exists)
     def exists(self, node: ast.Exists, lhs):
-        """Performs an existense check, by using the `exists` query on the given field"""
+        """Performs an existense check, by using the `exists` query on the
+        given field
+        """
         q = Q("exists", field=lhs)
         if node.not_:
             q = ~q
@@ -166,7 +170,7 @@ class ElasticSearchDSLEvaluator(Evaluator):
             low, high = rhs
 
         if op == ast.TemporalComparisonOp.DISJOINT:
-            return Q("bool", must_not=Q("range", **{lhs: {"gte": low, "lte": high}}))
+            return ~Q("range", **{lhs: {"gte": low, "lte": high}})
         elif op == ast.TemporalComparisonOp.AFTER:
             predicate = {"lt": low}
         elif op == ast.TemporalComparisonOp.BEFORE:
@@ -205,8 +209,12 @@ class ElasticSearchDSLEvaluator(Evaluator):
         ast.GeometryWithin,
         ast.GeometryContains,
     )
-    def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs: str, rhs):
-        """Creates a geo_shape query for the give spatial comparison predicate."""
+    def spatial_comparison(
+        self, node: ast.SpatialComparisonPredicate, lhs: str, rhs
+    ):
+        """Creates a geo_shape query for the give spatial comparison
+        predicate.
+        """
         return Q(
             "geo_shape",
             **{
@@ -227,7 +235,9 @@ class ElasticSearchDSLEvaluator(Evaluator):
             **{
                 lhs: {
                     "shape": self.envelope(
-                        values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
+                        values.Envelope(
+                            node.minx, node.maxx, node.miny, node.maxy
+                        )
                     ),
                     "relation": "intersects",
                 },
@@ -284,9 +294,13 @@ class ElasticSearchDSLEvaluator(Evaluator):
 
 
 def to_filter(
-    root, attribute_map: Optional[Dict[str, str]] = None, version: Optional[str] = None
+    root,
+    attribute_map: Optional[Dict[str, str]] = None,
+    version: Optional[str] = None,
 ):
-    """Shorthand function to convert a pygeofilter AST to an Elasticsearch filter structure."""
+    """Shorthand function to convert a pygeofilter AST to an Elasticsearch
+    filter structure.
+    """
     return ElasticSearchDSLEvaluator(
         attribute_map, Version(version) if version else None
     ).evaluate(root)
