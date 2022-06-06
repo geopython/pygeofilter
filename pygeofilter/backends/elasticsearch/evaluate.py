@@ -161,9 +161,9 @@ class ElasticSearchDSLEvaluator(Evaluator):
         """Creates a filter to match the given temporal predicate"""
         op = node.op
         if isinstance(rhs, (date, datetime)):
-            low, high = rhs
-        else:
             low = high = rhs
+        else:
+            low, high = rhs
 
         if op == ast.TemporalComparisonOp.DISJOINT:
             return Q("bool", must_not=Q("range", **{lhs: {"gte": low, "lte": high}}))
