@@ -4,7 +4,7 @@
 # Authors: Fabian Schindler <fabian.schindler@eox.at>
 #
 # ------------------------------------------------------------------------------
-# Copyright (C) 2021 EOX IT Services GmbH
+# Copyright (C) 2022 EOX IT Services GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,20 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Dict, Optional, cast
+"""
+Elasticsearch filter evaluator.
 
-import shapely.geometry
+Uses elasticsearch-dsl package to create filter objects.
+"""
+
+
+# pylint: disable=E1130,C0103,W0223
+
+from datetime import date, datetime
+from typing import Dict, Optional
+
+from packaging.version import Version
 from elasticsearch_dsl import Q
-from elasticsearch_dsl.query import Query
 
 from ..evaluator import Evaluator, handle
 from ... import ast
@@ -37,51 +46,54 @@ from ... import values
 from .util import like_to_wildcard
 
 
+VERSION_7_10_0 = Version("7.10.0")
+
+
 COMPARISON_OP_MAP = {
-    ast.ComparisonOp.LT: 'lt',
-    ast.ComparisonOp.LE: 'lte',
-    ast.ComparisonOp.GT: 'gt',
-    ast.ComparisonOp.GE: 'gte',
+    ast.ComparisonOp.LT: "lt",
+    ast.ComparisonOp.LE: "lte",
+    ast.ComparisonOp.GT: "gt",
+    ast.ComparisonOp.GE: "gte",
 }
 
 
 ARITHMETIC_OP_MAP = {
-    ast.ArithmeticOp.ADD: '+',
-    ast.ArithmeticOp.SUB: '-',
-    ast.ArithmeticOp.MUL: '*',
-    ast.ArithmeticOp.DIV: '/',
-}
-
-SPATIAL_COMPARISON_OP_MAP = {
-    ast.SpatialComparisonOp.INTERSECTS: 'ST_Intersects',
-    ast.SpatialComparisonOp.DISJOINT: 'ST_Disjoint',
-    ast.SpatialComparisonOp.CONTAINS: 'ST_Contains',
-    ast.SpatialComparisonOp.WITHIN: 'ST_Within',
-    ast.SpatialComparisonOp.TOUCHES: 'ST_Touches',
-    ast.SpatialComparisonOp.CROSSES: 'ST_Crosses',
-    ast.SpatialComparisonOp.OVERLAPS: 'ST_Overlaps',
-    ast.SpatialComparisonOp.EQUALS: 'ST_Equals',
+    ast.ArithmeticOp.ADD: "+",
+    ast.ArithmeticOp.SUB: "-",
+    ast.ArithmeticOp.MUL: "*",
+    ast.ArithmeticOp.DIV: "/",
 }
 
 
 class ElasticSearchDSLEvaluator(Evaluator):
-    def __init__(self, attribute_map: Optional[Dict[str, str]] = None):
+    """A filter evaluator for Elasticsearch DSL."""
+
+    def __init__(
+        self,
+        attribute_map: Optional[Dict[str, str]] = None,
+        version: Optional[Version] = None,
+    ):
         self.attribute_map = attribute_map
+        self.version = version or Version("7.1.0")
 
     @handle(ast.Not)
-    def not_(self, node, sub):
+    def not_(self, _, sub):
+        """Inverts a filter object."""
         return ~sub
 
     @handle(ast.And)
-    def and_(self, node, lhs, rhs):
+    def and_(self, _, lhs, rhs):
+        """Joins two filter objects with an `and` operator."""
         return lhs & rhs
 
     @handle(ast.Or)
-    def or_(self, node, lhs, rhs):
+    def or_(self, _, lhs, rhs):
+        """Joins two filter objects with an `or` operator."""
         return lhs | rhs
 
     @handle(ast.Equal, ast.NotEqual)
     def equality(self, node, lhs, rhs):
+        """Creates a match filter."""
         q = Q("match", **{lhs: rhs})
         if node.op == ast.ComparisonOp.NE:
             q = ~q
@@ -89,60 +101,127 @@ class ElasticSearchDSLEvaluator(Evaluator):
 
     @handle(ast.LessThan, ast.LessEqual, ast.GreaterThan, ast.GreaterEqual)
     def comparison(self, node, lhs, rhs):
+        """Creates a `range` filter."""
         return Q("range", **{lhs: {COMPARISON_OP_MAP[node.op]: rhs}})
 
     @handle(ast.Between)
-    def between(self, node, lhs, low, high):
-        return Q("range", **{lhs: {"gte": low, "lte": high}})
+    def between(self, node: ast.Between, lhs, low, high):
+        """Creates a `range` filter."""
+        q = Q("range", **{lhs: {"gte": low, "lte": high}})
+        if node.not_:
+            q = ~q
+        return q
 
     @handle(ast.Like)
     def like(self, node: ast.Like, lhs):
-        pattern = like_to_wildcard(node.pattern, node.wildcard, node.singlechar, node.escapechar)
+        """Transforms the provided LIKE pattern to an Elasticsearch wildcard
+        pattern. Thus, this only works properly on "wildcard" fields.
+        Ignores case-sensitivity when Elasticsearch version is below 7.10.0.
+        """
+        pattern = like_to_wildcard(
+            node.pattern, node.wildcard, node.singlechar, node.escapechar
+        )
+        expr = {
+            "value": pattern,
+        }
+        if self.version >= VERSION_7_10_0:
+            expr["case_insensitive"] = node.nocase
 
-        # TODO: does not seem to work
-        return Q("wildcard", **{
-            lhs: {
-                "value": pattern,
-                "case_insensitive": node.nocase
-            }
-        })
+        q = Q("wildcard", **{lhs: expr})
+        if node.not_:
+            q = ~q
+        return q
 
-    # @handle(ast.In)
-    # def in_(self, node, lhs, *options):
-    #     return f"{lhs} {'NOT ' if node.not_ else ''}IN ({', '.join(options)})"
+    @handle(ast.In)
+    def in_(self, node, lhs, *options):
+        """Creates a `terms` filter."""
+        q = Q("terms", **{lhs: options})
+        if node.not_:
+            q = ~q
+        return q
 
     @handle(ast.IsNull)
     def null(self, node: ast.IsNull, lhs):
-        q = cast(Query, Q("exists", field=lhs))
+        """Performs a null check, by using the `exists` query on the given field"""
+        q = Q("exists", field=lhs)
         if not node.not_:
             q = ~q
         return q
 
-    # @handle(ast.TemporalPredicate, subclasses=True)
-    # def temporal(self, node, lhs, rhs):
-    #     pass
+    @handle(ast.Exists)
+    def exists(self, node: ast.Exists, lhs):
+        """Performs an existense check, by using the `exists` query on the given field"""
+        q = Q("exists", field=lhs)
+        if node.not_:
+            q = ~q
+        return q
+
+    @handle(ast.TemporalPredicate, subclasses=True)
+    def temporal(self, node: ast.TemporalPredicate, lhs, rhs):
+        """Creates a filter to match the given temporal predicate"""
+        op = node.op
+        if isinstance(rhs, (date, datetime)):
+            low, high = rhs
+        else:
+            low = high = rhs
+
+        if op == ast.TemporalComparisonOp.DISJOINT:
+            return Q("bool", must_not=Q("range", **{lhs: {"gte": low, "lte": high}}))
+        elif op == ast.TemporalComparisonOp.AFTER:
+            predicate = {"lt": low}
+        elif op == ast.TemporalComparisonOp.BEFORE:
+            predicate = {"gt": high}
+
+        elif op == ast.TemporalComparisonOp.TOVERLAPS:
+            pass
+        elif op == ast.TemporalComparisonOp.OVERLAPPEDBY:
+            pass
+        elif op == ast.TemporalComparisonOp.BEGINS:
+            pass
+        elif op == ast.TemporalComparisonOp.BEGUNBY:
+            pass
+        elif op == ast.TemporalComparisonOp.DURING:
+            pass
+        elif op == ast.TemporalComparisonOp.TCONTAINS:
+            pass
+        elif op == ast.TemporalComparisonOp.ENDS:
+            pass
+        elif op == ast.TemporalComparisonOp.ENDEDBY:
+            pass
+        elif op == ast.TemporalComparisonOp.TEQUALS:
+            pass
+        elif op == ast.TemporalComparisonOp.BEFORE_OR_DURING:
+            pass
+        elif op == ast.TemporalComparisonOp.DURING_OR_AFTER:
+            pass
+        return Q(
+            "range",
+            **{lhs: predicate},
+        )
 
     @handle(
         ast.GeometryIntersects,
         ast.GeometryDisjoint,
+        ast.GeometryWithin,
         ast.GeometryContains,
-        ast.GeometryContains,
-        subclasses=True,
     )
-    def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs, rhs):
+    def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs: str, rhs):
+        """Creates a geo_shape query for the give spatial comparison predicate."""
         return Q(
             "geo_shape",
             **{
-            lhs: {
+                lhs: {
                     "shape": rhs,
                     "relation": node.op.value.lower(),
+                },
             },
-            }
         )
 
     @handle(ast.BBox)
     def bbox(self, node: ast.BBox, lhs):
-        # TODO: handle node.crs
+        """Performs a geo_shape query for the given bounding box.
+        Ignores CRS parameter, as it is not supported by Elasticsearch.
+        """
         return Q(
             "geo_shape",
             **{
@@ -152,11 +231,15 @@ class ElasticSearchDSLEvaluator(Evaluator):
                     ),
                     "relation": "intersects",
                 },
-            }
+            },
         )
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
+        """Attribute mapping from filter fields to elasticsearch fields.
+        If an attribute mapping is provided, it is used to look up the
+        field name from there.
+        """
         if self.attribute_map is not None:
             return self.attribute_map[node.name]
         return node.name
@@ -173,14 +256,18 @@ class ElasticSearchDSLEvaluator(Evaluator):
 
     @handle(*values.LITERALS)
     def literal(self, node):
+        """Literal values are directly passed to elasticsearch-dsl"""
         return node
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
+        """Geometry values are converted to a GeoJSON object"""
         return node.geometry
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
+        """Envelope values are converted to an GeoJSON Elasticsearch
+        extension object."""
         return {
             "type": "envelope",
             "coordinates": [
@@ -195,10 +282,11 @@ class ElasticSearchDSLEvaluator(Evaluator):
             ],
         }
 
-# def to_sql_where(root: ast.Node, field_mapping: Dict[str, str],
-#                  function_map: Optional[Dict[str, str]] = None) -> str:
-#     return SQLEvaluator(field_mapping, function_map or {}).evaluate(root)
 
-
-def to_filter(root, attribute_map: Optional[Dict[str, str]] = None):
-    return ElasticSearchDSLEvaluator(attribute_map).evaluate(root)
+def to_filter(
+    root, attribute_map: Optional[Dict[str, str]] = None, version: Optional[str] = None
+):
+    """Shorthand function to convert a pygeofilter AST to an Elasticsearch filter structure."""
+    return ElasticSearchDSLEvaluator(
+        attribute_map, Version(version) if version else None
+    ).evaluate(root)
