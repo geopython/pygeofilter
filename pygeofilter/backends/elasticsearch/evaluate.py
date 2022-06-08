@@ -171,6 +171,7 @@ class ElasticSearchDSLEvaluator(Evaluator):
 
         query = "range"
         not_ = False
+        predicate: Dict[str, Union[date, datetime, str]]
         if op == ast.TemporalComparisonOp.DISJOINT:
             not_ = True
             predicate = {"gte": low, "lte": high}
