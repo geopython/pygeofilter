@@ -7,7 +7,9 @@ import re
 def like_to_wildcard(
     value: str, wildcard: str, single_char: str, escape_char: str = "\\"
 ) -> str:
-    """Adapts a "LIKE" pattern to create an elasticsearch "wildcard" pattern."""
+    """Adapts a "LIKE" pattern to create an elasticsearch "wildcard"
+    pattern.
+    """
 
     x_wildcard = re.escape(wildcard)
     x_single_char = re.escape(single_char)

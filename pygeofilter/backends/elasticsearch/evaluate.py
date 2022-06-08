@@ -169,39 +169,50 @@ class ElasticSearchDSLEvaluator(Evaluator):
         else:
             low, high = rhs
 
+        query = "range"
+        not_ = False
         if op == ast.TemporalComparisonOp.DISJOINT:
-            return ~Q("range", **{lhs: {"gte": low, "lte": high}})
+            not_ = True
+            predicate = {"gte": low, "lte": high}
         elif op == ast.TemporalComparisonOp.AFTER:
-            predicate = {"lt": low}
-        elif op == ast.TemporalComparisonOp.BEFORE:
             predicate = {"gt": high}
-
-        elif op == ast.TemporalComparisonOp.TOVERLAPS:
-            pass
-        elif op == ast.TemporalComparisonOp.OVERLAPPEDBY:
-            pass
+        elif op == ast.TemporalComparisonOp.BEFORE:
+            predicate = {"lt": low}
+        elif (
+            op == ast.TemporalComparisonOp.TOVERLAPS
+            or op == ast.TemporalComparisonOp.OVERLAPPEDBY
+        ):
+            predicate = {"gte": low, "lte": high}
         elif op == ast.TemporalComparisonOp.BEGINS:
-            pass
+            query = "term"
+            predicate = {"value": low}
         elif op == ast.TemporalComparisonOp.BEGUNBY:
-            pass
+            query = "term"
+            predicate = {"value": high}
         elif op == ast.TemporalComparisonOp.DURING:
-            pass
+            predicate = {"gt": low, "lt": high, "relation": "WITHIN"}
         elif op == ast.TemporalComparisonOp.TCONTAINS:
-            pass
-        elif op == ast.TemporalComparisonOp.ENDS:
-            pass
-        elif op == ast.TemporalComparisonOp.ENDEDBY:
-            pass
-        elif op == ast.TemporalComparisonOp.TEQUALS:
-            pass
-        elif op == ast.TemporalComparisonOp.BEFORE_OR_DURING:
-            pass
-        elif op == ast.TemporalComparisonOp.DURING_OR_AFTER:
-            pass
-        return Q(
-            "range",
+            predicate = {"gt": low, "lt": high, "relation": "CONTAINS"}
+        # elif op == ast.TemporalComparisonOp.ENDS:
+        #     pass
+        # elif op == ast.TemporalComparisonOp.ENDEDBY:
+        #     pass
+        # elif op == ast.TemporalComparisonOp.TEQUALS:
+        #     pass
+        # elif op == ast.TemporalComparisonOp.BEFORE_OR_DURING:
+        #     pass
+        # elif op == ast.TemporalComparisonOp.DURING_OR_AFTER:
+        #     pass
+        else:
+            raise NotImplementedError(f"Unsupported temporal operator: {op}")
+
+        q = Q(
+            query,
             **{lhs: predicate},
         )
+        if not_:
+            q = ~q
+        return q
 
     @handle(
         ast.GeometryIntersects,
