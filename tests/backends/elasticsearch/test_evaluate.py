@@ -48,15 +48,25 @@ class Record(Document):
         name = "record"
 
 
-@pytest.fixture(scope="session")
-def data():
-    """ Fixture to add initial data to the search index.
-    """
+@pytest.fixture(autouse=True, scope="session")
+def connection():
     connections.create_connection(
         hosts=['http://localhost:9200'],
     )
-    Record.init()
 
+
+@pytest.fixture(autouse=True, scope="session")
+def index(connection):
+    Record.init()
+    index = Index(Record.Index.name)
+    yield index
+    index.delete()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def data(index):
+    """ Fixture to add initial data to the search index.
+    """
     record_a = Record(
         identifier="A",
         geometry="MULTIPOLYGON(((0 0, 0 5, 5 5,5 0,0 0)))",
@@ -83,17 +93,12 @@ def data():
         maybe_str_attribute="some value",
         datetime_attribute=parse_datetime("2000-01-01T00:00:10Z"),
         daterange_attribute=Range(
-            gte=parse_datetime("2000-01-03T00:00:00Z"),
-            lte=parse_datetime("2000-01-04T00:00:00Z")
+            gte=parse_datetime("2000-01-04T00:00:00Z"),
+            lte=parse_datetime("2000-01-05T00:00:00Z")
         )
     )
     record_b.save()
-
-    record_index = Index(Record.Index.name)
-    record_index.refresh()
-
-    print([
-        r.int_attribute for r in Record.search().execute()])
+    index.refresh()
 
     yield [record_a, record_b]
     record_index.delete()
