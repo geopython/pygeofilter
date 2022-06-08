@@ -1,3 +1,5 @@
+# pylint: disable=W0621,C0114,C0115,C0116
+
 from elasticsearch_dsl import (
     connections,
     Index,
@@ -15,6 +17,7 @@ from elasticsearch_dsl import (
     Range,
 )
 import pytest
+from pygeofilter import ast
 
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
@@ -101,7 +104,6 @@ def data(index):
     index.refresh()
 
     yield [record_a, record_b]
-    record_index.delete()
 
 
 def filter_(ast_):
@@ -184,22 +186,33 @@ def test_null(data):
     assert len(result) == 1 and result[0].identifier is data[1].identifier
 
 
-def test_has_attr(data):
+def test_has_attr():
     result = filter_(parse('extra_attr EXISTS'))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 0
 
     result = filter_(parse('extra_attr DOES-NOT-EXIST'))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 2
 
 
 def test_temporal(data):
+    result = filter_(
+        ast.TimeDisjoint(
+            ast.Attribute("datetime_attribute"),
+            [
+                parse_datetime("2000-01-01T00:00:05.00Z"),
+                parse_datetime("2000-01-01T00:00:15.00Z"),
+            ]
+        )
+    )
+    assert len(result) == 1 and result[0].identifier is data[0].identifier
+
     result = filter_(
         parse('datetime_attribute BEFORE 2000-01-01T00:00:05.00Z'),
     )
     assert len(result) == 1 and result[0].identifier is data[0].identifier
 
     result = filter_(
-        parse('datetime_attribute AFTER 2000-01-01T00:00:05.00+01:00'),
+        parse('datetime_attribute AFTER 2000-01-01T00:00:05.00Z'),
     )
     assert len(result) == 1 and result[0].identifier is data[1].identifier
 
