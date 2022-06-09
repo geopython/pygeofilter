@@ -298,7 +298,7 @@ class Include(Predicate):
         return 'EXCLUDE' if self.not_ else 'INCLUDE'
 
 
-# http://docs.opengeospatial.org/DRAFTS/19-079.html#enhanced-temporal-operators
+# https://portal.ogc.org/files/96288#enhanced-temporal-operators
 
 # BEFORE                <======>     <----->    AFTER
 # MEETS                         <---------->    METBY
@@ -350,6 +350,11 @@ class TemporalPredicate(Predicate):
 
     def get_template(self) -> str:
         return f"{{}} {self.op} {{}}"
+
+
+@dataclass
+class TimeDisjoint(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.DISJOINT
 
 
 @dataclass
