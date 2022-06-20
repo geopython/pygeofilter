@@ -122,7 +122,8 @@ class MongoDBEvaluator(Evaluator):
 
     @handle(ast.Like)
     def like(self, node: ast.Like, lhs):
-        """"""
+        """ Creates a regex query for a given like filter
+        """
         re_pattern = like_pattern_to_re_pattern(
             node.pattern,
             node.wildcard,
@@ -141,7 +142,8 @@ class MongoDBEvaluator(Evaluator):
 
     @handle(ast.In)
     def in_(self, node: ast.In, lhs, *options):
-        """"""
+        """ Creates a `$in`/`$nin` query for the given `in` filter.
+        """
         return {
             lhs: {
                 "$nin" if node.not_ else "$in": list(options)
@@ -234,7 +236,8 @@ class MongoDBEvaluator(Evaluator):
 
     @handle(ast.DistanceWithin, ast.DistanceBeyond)
     def distance(self, node: ast.SpatialDistancePredicate, lhs, rhs):
-        """
+        """ Creates a `$near` query for the given spatial distance
+        predicate.
         """
         distance = to_meters(node.distance, node.units)
         return {
@@ -248,7 +251,8 @@ class MongoDBEvaluator(Evaluator):
 
     @handle(ast.BBox)
     def bbox(self, node: ast.BBox, lhs):
-        """
+        """ Creates a `$geoIntersects` query with the given bbox as
+        a `$box`. Ignores the `crs` parameter of the BBox.
         """
         return {
             lhs: {
@@ -260,7 +264,7 @@ class MongoDBEvaluator(Evaluator):
 
     @handle(ast.ArrayOverlaps, ast.ArrayContains)
     def array(self, node: ast.ArrayPredicate, lhs, rhs):
-        """
+        """ Creates the according query for the given array predicate.
         """
         if node.op == ast.ArrayComparisonOp.AOVERLAPS:
             return {lhs: rhs}
