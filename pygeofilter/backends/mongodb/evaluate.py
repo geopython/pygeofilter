@@ -258,6 +258,19 @@ class MongoDBEvaluator(Evaluator):
             }
         }
 
+    @handle(ast.ArrayOverlaps, ast.ArrayContains)
+    def array(self, node: ast.ArrayPredicate, lhs, rhs):
+        """
+        """
+        if node.op == ast.ArrayComparisonOp.AOVERLAPS:
+            return {lhs: rhs}
+        elif node.op == ast.ArrayComparisonOp.ACONTAINS:
+            return {
+                lhs: {
+                    "$all": rhs
+                }
+            }
+
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
         """Attribute mapping from filter fields to elasticsearch fields.
