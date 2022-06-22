@@ -263,13 +263,9 @@ class MongoDBEvaluator(Evaluator):
         """ Creates the according query for the given array predicate.
         """
         if node.op == ast.ArrayComparisonOp.AOVERLAPS:
-            return {lhs: rhs}
+            return {lhs: {"$in": rhs}}
         elif node.op == ast.ArrayComparisonOp.ACONTAINS:
-            return {
-                lhs: {
-                    "$all": rhs
-                }
-            }
+            return {lhs: {"$all": rhs}}
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):

@@ -83,6 +83,7 @@ def data(collection):
 def evaluate(collection, data):
     def inner(ast_, expected_ids=None):
         query = to_filter(ast_)
+        print(query)
         result = list(collection.find(query))
         if expected_ids is not None:
             assert expected_ids == [r["identifier"] for r in result]
@@ -159,7 +160,7 @@ def test_has_attr(evaluate):
 def test_array(evaluate):
     evaluate(
         ast.ArrayOverlaps(
-            ast.Attribute('array_attr'),
+            ast.Attribute("array_attribute"),
             [2, 3, 4],
         ),
         ["A", "B"]
@@ -167,7 +168,7 @@ def test_array(evaluate):
 
     evaluate(
         ast.ArrayContains(
-            ast.Attribute('array_attr'),
+            ast.Attribute("array_attribute"),
             [1, 2, 3, 4],
         ),
         ["B"]
