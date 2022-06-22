@@ -11,3 +11,4 @@ pygeoif
 lark
 elasticsearch
 elasticsearch-dsl
+pymongo
