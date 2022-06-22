@@ -32,6 +32,8 @@ MongoDB filter evaluator.
 
 # pylint: disable=E1130,C0103,W0223
 
+from dataclasses import dataclass
+from functools import wraps
 from typing import Dict, Optional
 
 from pygeofilter.util import like_pattern_to_re_pattern
@@ -48,6 +50,16 @@ COMPARISON_OP_MAP = {
     ast.ComparisonOp.LE: "$lte",
     ast.ComparisonOp.GT: "$gt",
     ast.ComparisonOp.GE: "$gte",
+}
+
+
+SWAP_COMPARISON_OP_MAP = {
+    ast.ComparisonOp.EQ: ast.Equal,
+    ast.ComparisonOp.NE: ast.NotEqual,
+    ast.ComparisonOp.LT: ast.GreaterThan,
+    ast.ComparisonOp.GT: ast.LessThan,
+    ast.ComparisonOp.LE: ast.GreaterEqual,
+    ast.ComparisonOp.GE: ast.LessEqual,
 }
 
 
@@ -76,6 +88,57 @@ def to_meters(distance: float, units: str):
     return distance * factor
 
 
+def swap_comparison(node: ast.Comparison, lhs, rhs):
+    """Swaps comparison nodes"""
+    return SWAP_COMPARISON_OP_MAP[node.op](node.rhs, node.lhs), rhs, lhs
+
+
+def swap_spatial_comparison(node: ast.SpatialComparisonPredicate, lhs, rhs):
+    """Swaps spatial comparison nodes"""
+    if node.op == ast.SpatialComparisonOp.INTERSECTS:
+        return ast.GeometryIntersects(node.rhs, node.lhs), rhs, lhs
+
+    raise Exception(f"Cannot swap spatial comparison predicate {node.op}")
+
+
+def swap_distance_comparison(node: ast.SpatialDistancePredicate, lhs, rhs):
+    """Swaps distance comparison nodes"""
+    return type(node)(node.rhs, node.lhs, node.distance, node.units), rhs, lhs
+
+
+def swap_array_comparison(node: ast.ArrayPredicate, lhs, rhs):
+    """Swaps array comparison nodes"""
+    if node.op == ast.ArrayComparisonOp.AEQUALS:
+        return ast.ArrayEquals(node.rhs, node.lhs), rhs, lhs
+
+
+@dataclass(slots=True)
+class AttributeWrapper:
+    "Wrapper for attribute access"
+    name: str
+
+
+def ensure_lhs_attribute(swapper=None):
+    """Decorator to ensure that the left hand side is always an attribute.
+    If a `swapper` is provided, it will swap `lhs` with `rhs`
+    """
+
+    def inner(handler):
+        @wraps(handler)
+        def wrapper(self, node, lhs, *args, **kwargs):
+            print(handler, self, node, lhs)
+            if isinstance(lhs, AttributeWrapper):
+                return handler(self, node, lhs.name, *args, **kwargs)
+            if swapper and isinstance(args[0], AttributeWrapper):
+                node, lhs, rhs = swapper(node, lhs, args[0].name)
+                return handler(self, node, lhs, rhs, *args[1:], **kwargs)
+            raise Exception()
+
+        return wrapper
+
+    return inner
+
+
 class MongoDBEvaluator(Evaluator):
     """A filter evaluator for Elasticsearch DSL."""
 
@@ -99,15 +162,13 @@ class MongoDBEvaluator(Evaluator):
         return {op: lhs_subs + rhs_subs}
 
     @handle(ast.Comparison, subclasses=True)
+    @ensure_lhs_attribute(swap_comparison)
     def comparison(self, node: ast.Comparison, lhs, rhs):
         """Creates a comparison filter."""
-        return {
-            lhs: {
-                COMPARISON_OP_MAP[node.op]: rhs
-            }
-        }
+        return {lhs: {COMPARISON_OP_MAP[node.op]: rhs}}
 
     @handle(ast.Between)
+    @ensure_lhs_attribute()
     def between(self, node: ast.Between, lhs, low, high):
         """Creates an expression with `$lte`/`$gte` for the `between` node."""
         expr = {
@@ -119,34 +180,25 @@ class MongoDBEvaluator(Evaluator):
         return {lhs: expr}
 
     @handle(ast.Like)
+    @ensure_lhs_attribute()
     def like(self, node: ast.Like, lhs):
-        """ Creates a regex query for a given like filter
-        """
+        """Creates a regex query for a given like filter"""
         re_pattern = like_pattern_to_re_pattern(
-            node.pattern,
-            node.wildcard,
-            node.singlechar,
-            node.escapechar
+            node.pattern, node.wildcard, node.singlechar, node.escapechar
         )
-        expr = {
-            "$regex": re_pattern,
-            "$options": "i" if node.nocase else ""
-        }
+        expr = {"$regex": re_pattern, "$options": "i" if node.nocase else ""}
         if node.not_:
             expr = self.not_(None, expr)
         return {lhs: expr}
 
     @handle(ast.In)
+    @ensure_lhs_attribute()
     def in_(self, node: ast.In, lhs, *options):
-        """ Creates a `$in`/`$nin` query for the given `in` filter.
-        """
-        return {
-            lhs: {
-                "$nin" if node.not_ else "$in": list(options)
-            }
-        }
+        """Creates a `$in`/`$nin` query for the given `in` filter."""
+        return {lhs: {"$nin" if node.not_ else "$in": list(options)}}
 
     @handle(ast.IsNull)
+    @ensure_lhs_attribute()
     def null(self, node: ast.IsNull, lhs):
         """Performs a null check, by using the `$type` query on the given
         field.
@@ -157,6 +209,7 @@ class MongoDBEvaluator(Evaluator):
         return {lhs: expr}
 
     @handle(ast.Exists)
+    @ensure_lhs_attribute()
     def exists(self, node: ast.Exists, lhs):
         """Performs an existense check, by using the `$exists` query on the
         given field
@@ -219,20 +272,17 @@ class MongoDBEvaluator(Evaluator):
     #     return q
 
     @handle(ast.GeometryIntersects, ast.GeometryWithin)
+    @ensure_lhs_attribute(swap_spatial_comparison)
     def spatial_comparison(
         self, node: ast.SpatialComparisonPredicate, lhs: str, rhs
     ):
-        """Creates a query for the give spatial comparison predicate.
-        """
-        return {
-            lhs: {
-                SPATIAL_COMPARISON_OP_MAP[node.op]: {"$geometry": rhs}
-            }
-        }
+        """Creates a query for the give spatial comparison predicate."""
+        return {lhs: {SPATIAL_COMPARISON_OP_MAP[node.op]: {"$geometry": rhs}}}
 
     @handle(ast.DistanceWithin, ast.DistanceBeyond)
+    @ensure_lhs_attribute(swap_distance_comparison)
     def distance(self, node: ast.SpatialDistancePredicate, lhs, rhs):
-        """ Creates a `$near` query for the given spatial distance
+        """Creates a `$near` query for the given spatial distance
         predicate.
         """
         distance = to_meters(node.distance, node.units)
@@ -240,14 +290,15 @@ class MongoDBEvaluator(Evaluator):
             lhs: {
                 "$near": {
                     "$geometry": rhs,
-                    SPATIAL_DISTANCE_OP_MAP[node.op]: distance
+                    SPATIAL_DISTANCE_OP_MAP[node.op]: distance,
                 }
             }
         }
 
     @handle(ast.BBox)
+    @ensure_lhs_attribute()
     def bbox(self, node: ast.BBox, lhs):
-        """ Creates a `$geoIntersects` query with the given bbox as
+        """Creates a `$geoIntersects` query with the given bbox as
         a `$box`. Ignores the `crs` parameter of the BBox.
         """
         return {
@@ -263,9 +314,9 @@ class MongoDBEvaluator(Evaluator):
         }
 
     @handle(ast.ArrayEquals, ast.ArrayOverlaps, ast.ArrayContains)
+    @ensure_lhs_attribute(swap_array_comparison)
     def array(self, node: ast.ArrayPredicate, lhs, rhs):
-        """ Creates the according query for the given array predicate.
-        """
+        """Creates the according query for the given array predicate."""
         if node.op == ast.ArrayComparisonOp.AEQUALS:
             return {lhs: {"$eq": rhs}}
         elif node.op == ast.ArrayComparisonOp.AOVERLAPS:
@@ -280,8 +331,8 @@ class MongoDBEvaluator(Evaluator):
         field name from there.
         """
         if self.attribute_map is not None:
-            return self.attribute_map[node.name]
-        return node.name
+            return AttributeWrapper(self.attribute_map[node.name])
+        return AttributeWrapper(node.name)
 
     # @handle(ast.Arithmetic, subclasses=True)
     # def arithmetic(self, node: ast.Arithmetic, lhs, rhs):
@@ -308,13 +359,15 @@ class MongoDBEvaluator(Evaluator):
         """Envelope values are converted to a $box object."""
         return {
             "type": "Polygon",
-            "coordinates": [[
-                [node.x1, node.y1],
-                [node.x1, node.y2],
-                [node.x2, node.y2],
-                [node.x2, node.y1],
-                [node.x1, node.y1],
-            ]],
+            "coordinates": [
+                [
+                    [node.x1, node.y1],
+                    [node.x1, node.y2],
+                    [node.x2, node.y2],
+                    [node.x2, node.y1],
+                    [node.x1, node.y1],
+                ]
+            ],
         }
 
 

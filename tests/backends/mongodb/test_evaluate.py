@@ -89,7 +89,7 @@ def data(collection):
 
 
 @pytest.fixture
-def evaluate(collection, data):
+def evaluate(collection, data):  # pylint: disable=W0613
     def inner(ast_, expected_ids=None):
         query = to_filter(ast_)
         print(query)
@@ -219,3 +219,52 @@ def test_array(evaluate):
         ),
         ["B"]
     )
+
+
+def test_swapped_lhs_rhs(evaluate):
+    evaluate(parse('5 = int_attribute'), ["A"])
+    evaluate(parse('6 > float_attribute'), ["A"])
+    evaluate(parse('6 < float_attribute'), ["B"])
+    evaluate(parse('5 >= int_attribute'), ["A"])
+    evaluate(parse('8 <= float_attribute'), ["B"])
+    evaluate(parse('0.0 <> float_attribute'), ["B"])
+
+    evaluate(
+        parse('INTERSECTS(ENVELOPE (0.0 1.0 0.0 1.0), geometry)'),
+        ["A"],
+    )
+    with pytest.raises(Exception):
+        evaluate(
+            parse(
+                'WITHIN('
+                'POLYGON ((-1.0 -1.0,-1.0 6.0, 6.0 6.0,6.0 -1.0,-1.0 -1.0)),'
+                'geometry)'
+            ),
+            ["A"],
+        )
+
+    evaluate(
+        ast.ArrayEquals(
+            [2, 3],
+            ast.Attribute("array_attribute"),
+        ),
+        ["A"]
+    )
+
+    with pytest.raises(Exception):
+        evaluate(
+            ast.ArrayOverlaps(
+                [2, 3, 4],
+                ast.Attribute("array_attribute"),
+            ),
+            ["A", "B"]
+        )
+
+    with pytest.raises(Exception):
+        evaluate(
+            ast.ArrayContains(
+                [1, 2, 3, 4],
+                ast.Attribute("array_attribute"),
+            ),
+            ["B"]
+        )
