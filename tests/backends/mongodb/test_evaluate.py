@@ -92,7 +92,6 @@ def data(collection):
 def evaluate(collection, data):  # pylint: disable=W0613
     def inner(ast_, expected_ids=None):
         query = to_filter(ast_)
-        print(query)
         result = list(collection.find(query))
         if expected_ids is not None:
             assert expected_ids == [r["identifier"] for r in result]
