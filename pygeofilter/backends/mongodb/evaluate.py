@@ -111,14 +111,12 @@ class MongoDBEvaluator(Evaluator):
     def between(self, node: ast.Between, lhs, low, high):
         """Creates an expression with `$lte`/`$gte` for the `between` node."""
         expr = {
-            lhs: {
-                "$lte": high,
-                "$gte": low,
-            }
+            "$lte": high,
+            "$gte": low,
         }
         if node.not_:
-            return self.not_(None, expr)
-        return expr
+            expr = self.not_(None, expr)
+        return {lhs: expr}
 
     @handle(ast.Like)
     def like(self, node: ast.Like, lhs):
@@ -131,14 +129,12 @@ class MongoDBEvaluator(Evaluator):
             node.escapechar
         )
         expr = {
-            lhs: {
-                "$regex": re_pattern,
-                "$options": "i" if node.nocase else ""
-            }
+            "$regex": re_pattern,
+            "$options": "i" if node.nocase else ""
         }
         if node.not_:
-            return self.not_(None, expr)
-        return expr
+            expr = self.not_(None, expr)
+        return {lhs: expr}
 
     @handle(ast.In)
     def in_(self, node: ast.In, lhs, *options):
@@ -155,17 +151,17 @@ class MongoDBEvaluator(Evaluator):
         """Performs a null check, by using the `$type` query on the given
         field.
         """
-        expr = {lhs: {"$type": "null"}}
+        expr = {"$type": "null"}
         if node.not_:
-            return self.not_(None, expr)
-        return expr
+            expr = self.not_(None, expr)
+        return {lhs: expr}
 
     @handle(ast.Exists)
     def exists(self, node: ast.Exists, lhs):
         """Performs an existense check, by using the `$exists` query on the
         given field
         """
-        return {lhs: {"$exists": node.not_}}
+        return {lhs: {"$exists": not node.not_}}
 
     # @handle(ast.TemporalPredicate, subclasses=True)
     # def temporal(self, node: ast.TemporalPredicate, lhs, rhs):
