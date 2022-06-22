@@ -98,7 +98,7 @@ def swap_spatial_comparison(node: ast.SpatialComparisonPredicate, lhs, rhs):
     if node.op == ast.SpatialComparisonOp.INTERSECTS:
         return ast.GeometryIntersects(node.rhs, node.lhs), rhs, lhs
 
-    raise Exception(f"Cannot swap spatial comparison predicate {node.op}")
+    raise ValueError(f"Cannot swap spatial comparison predicate {node.op}")
 
 
 def swap_distance_comparison(node: ast.SpatialDistancePredicate, lhs, rhs):
@@ -110,6 +110,8 @@ def swap_array_comparison(node: ast.ArrayPredicate, lhs, rhs):
     """Swaps array comparison nodes"""
     if node.op == ast.ArrayComparisonOp.AEQUALS:
         return ast.ArrayEquals(node.rhs, node.lhs), rhs, lhs
+
+    raise ValueError(f"Cannot swap array comparison predicate {node.op}")
 
 
 @dataclass(slots=True)

@@ -233,7 +233,7 @@ def test_swapped_lhs_rhs(evaluate):
         parse('INTERSECTS(ENVELOPE (0.0 1.0 0.0 1.0), geometry)'),
         ["A"],
     )
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         evaluate(
             parse(
                 'WITHIN('
@@ -251,7 +251,7 @@ def test_swapped_lhs_rhs(evaluate):
         ["A"]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         evaluate(
             ast.ArrayOverlaps(
                 [2, 3, 4],
@@ -260,7 +260,7 @@ def test_swapped_lhs_rhs(evaluate):
             ["A", "B"]
         )
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         evaluate(
             ast.ArrayContains(
                 [1, 2, 3, 4],
