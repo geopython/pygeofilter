@@ -29,6 +29,7 @@ def collection(db):
 def data(collection):
     collection.create_index([
         ("geometry", pymongo.GEOSPHERE),
+        ("center", pymongo.GEOSPHERE),
         # ("identifier"),
     ])
     id_a = collection.insert_one({
@@ -42,6 +43,10 @@ def data(collection):
                 [5, 0],
                 [0, 0]
             ]]],
+        },
+        "center": {
+            "type": "Point",
+            "coordinates": [2.5, 2.5],
         },
         "float_attribute": 0.0,
         "int_attribute": 5,
@@ -64,6 +69,10 @@ def data(collection):
                 [10, 5],
                 [5, 5]
             ]]],
+        },
+        "center": {
+            "type": "Point",
+            "coordinates": [7.5, 7.5],
         },
         "float_attribute": 30.0,
         "int_attribute": None,
@@ -157,7 +166,44 @@ def test_has_attr(evaluate):
 #     assert len(result) == 1 and result[0].identifier is data[1].identifier
 
 
+def test_spatial(evaluate):
+    evaluate(
+        parse('INTERSECTS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))'),
+        ["A"],
+    )
+    evaluate(
+        parse(
+            'WITHIN(geometry, '
+            'POLYGON ((-1.0 -1.0,-1.0 6.0, 6.0 6.0,6.0 -1.0,-1.0 -1.0)))'
+        ),
+        ["A"],
+    )
+    evaluate(
+        parse('BBOX(center, 2, 2, 3, 3)'),
+    )
+
+
+def test_spatial_distance(evaluate):
+    evaluate(
+        parse('DWITHIN(geometry, POINT(-0.00001 -0.000001), 5, feet)'),
+        ["A"]
+    )
+
+    evaluate(
+        parse('BEYOND(geometry, POINT(7.5 7.5), 10, kilometers)'),
+        ["A"]
+    )
+
+
 def test_array(evaluate):
+    evaluate(
+        ast.ArrayEquals(
+            ast.Attribute("array_attribute"),
+            [2, 3],
+        ),
+        ["A"]
+    )
+
     evaluate(
         ast.ArrayOverlaps(
             ast.Attribute("array_attribute"),
@@ -173,21 +219,3 @@ def test_array(evaluate):
         ),
         ["B"]
     )
-
-    # result = filter_(
-    #     ast.ArrayContainedBy(
-    #         ast.Attribute('array_attr'),
-    #         [1, 2, 3, 4],
-    #     ),
-    #     data
-    # )
-    # assert len(result) == 1 and result[0] is data[0]
-
-    # result = filter_(
-    #     ast.ArrayOverlaps(
-    #         ast.Attribute('array_attr'),
-    #         [5, 6, 7],
-    #     ),
-    #     data
-    # )
-    # assert len(result) == 1 and result[0] is data[1]

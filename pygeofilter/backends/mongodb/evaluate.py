@@ -226,7 +226,7 @@ class MongoDBEvaluator(Evaluator):
         """
         return {
             lhs: {
-                SPATIAL_COMPARISON_OP_MAP[node.op]: rhs
+                SPATIAL_COMPARISON_OP_MAP[node.op]: {"$geometry": rhs}
             }
         }
 
@@ -252,17 +252,23 @@ class MongoDBEvaluator(Evaluator):
         """
         return {
             lhs: {
-                "$geoIntersects": self.envelope(
-                    values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
-                )
+                "$geoIntersects": {
+                    "$geometry": self.envelope(
+                        values.Envelope(
+                            node.minx, node.maxx, node.miny, node.maxy
+                        )
+                    )
+                }
             }
         }
 
-    @handle(ast.ArrayOverlaps, ast.ArrayContains)
+    @handle(ast.ArrayEquals, ast.ArrayOverlaps, ast.ArrayContains)
     def array(self, node: ast.ArrayPredicate, lhs, rhs):
         """ Creates the according query for the given array predicate.
         """
-        if node.op == ast.ArrayComparisonOp.AOVERLAPS:
+        if node.op == ast.ArrayComparisonOp.AEQUALS:
+            return {lhs: {"$eq": rhs}}
+        elif node.op == ast.ArrayComparisonOp.AOVERLAPS:
             return {lhs: {"$in": rhs}}
         elif node.op == ast.ArrayComparisonOp.ACONTAINS:
             return {lhs: {"$all": rhs}}
@@ -301,16 +307,14 @@ class MongoDBEvaluator(Evaluator):
     def envelope(self, node: values.Envelope):
         """Envelope values are converted to a $box object."""
         return {
-            "$box": [
-                [
-                    min(node.x1, node.x2),
-                    min(node.y1, node.y2),
-                ],
-                [
-                    max(node.x1, node.x2),
-                    max(node.y1, node.y2),
-                ],
-            ],
+            "type": "Polygon",
+            "coordinates": [[
+                [node.x1, node.y1],
+                [node.x1, node.y2],
+                [node.x2, node.y2],
+                [node.x2, node.y1],
+                [node.x1, node.y1],
+            ]],
         }
 
 
