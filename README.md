@@ -12,13 +12,15 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
     * [CQL as defined in CSW 2.0](https://portal.ogc.org/files/?artifact_id=20555)
     * [CQL JSON as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-json-schema)
     * [JSON Filter Expressions (JFE)](https://github.com/tschaub/ogcapi-features/tree/json-array-expression/extensions/cql/jfe)
+    * [FES](http://docs.opengeospatial.org/is/09-026r2/09-026r2.html)
     * Soon:
         * [CQL Text as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-bnf)
-        * [FES](http://docs.opengeospatial.org/is/09-026r2/09-026r2.html)
 * Several backends included
     * [Django](https://www.djangoproject.com/)
     * [SQLAlchemy](https://www.sqlalchemy.org/)
     * [(Geo)Pandas](https://pandas.pydata.org/)
+    * [Elasticsearch]()
+    * [MongoDB]()
     * Native Python objects
 
 
@@ -326,6 +328,35 @@ layer = data.ExecuteSQL(f"""
 Note that it is vital to specify the `SQLite` dialect as this is the one used internally.
 
 :warning: Input values are *not* sanitized/separated from the generated SQL text. This is due to the compatibility with the OGR API not allowing to separate the SQL from the arguments.
+
+
+### MongoDB
+
+The `MongoDBEvaluator` creates a JSON structure that can be sent via the pymongo client.
+
+```python
+from pymongo import MongoClient
+from pygeofilter.parsers.ecql import parse
+from pygeofilter.backends.mongodb import to_filter
+
+# connect to the MongoDB database and create a spatial index for the geometry
+client = MongoClient()
+client.db.collection.create_index([
+    ("geometry", pymongo.GEOSPHERE),
+])
+
+# insert records here
+# ...
+
+# parse a filter
+ast_ = parse('INTERSECTS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))')
+
+# turn the AST to a MongoDB query
+query = to_filter(ast_)
+
+# perform the query
+results = collection.find(query)
+```
 
 
 ### Optimization
