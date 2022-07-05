@@ -72,7 +72,7 @@ class CQL2Evaluator(Evaluator):
 
     @handle(ast.Like)
     def like(self, node, *subargs):
-        return {"op": "like:, "args": [subargs[0], node.pattern]}
+        return {"op": "like", "args": [subargs[0], node.pattern]}
 
     @handle(ast.IsNull)
     def isnull(self, node, arg):
