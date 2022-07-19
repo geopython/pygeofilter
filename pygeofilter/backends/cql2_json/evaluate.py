@@ -72,7 +72,7 @@ class CQL2Evaluator(Evaluator):
 
     @handle(ast.Like)
     def like(self, node, *subargs):
-        return {"op": "like", "args": [node.lhs, node.pattern]}
+        return {"op": "like", "args": [subargs[0], node.pattern]}
 
     @handle(ast.IsNull)
     def isnull(self, node, arg):
@@ -83,6 +83,8 @@ class CQL2Evaluator(Evaluator):
         name = node.name.lower()
         if name == "lower":
             ret = {"lower": args[0]}
+        elif name == "upper":
+            ret = {"upper": args[0]}
         else:
             ret = {"function": name, "args": [*args]}
         return ret
