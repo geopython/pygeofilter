@@ -243,7 +243,27 @@ class Like(Predicate):
             f"{'I' if self.nocase else ''}LIKE '{self.pattern}'"
             # TODO wildcard, singlechar, escapechar
         )
+@dataclass
+class ILike(Predicate):
+    """ Node class to represent a wildcard string matching predicate.
+    """
 
+    lhs: Node
+    pattern: str
+    nocase: bool
+    wildcard: str
+    singlechar: str
+    escapechar: str
+    not_: bool
+
+    def get_sub_nodes(self) -> List[AstType]:
+        return [self.lhs]
+
+    def get_template(self) -> str:
+        return (
+            f"{{}} {'NOT ' if self.not_ else ''}"
+            f"{'I' if self.nocase else ''}ILIKE '{self.pattern}'"
+            # TODO wildcard, singlechar, escapechar
 
 @dataclass
 class In(Predicate):
