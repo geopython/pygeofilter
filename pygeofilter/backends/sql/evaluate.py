@@ -100,6 +100,21 @@ class SQLEvaluator(Evaluator):
             f"{lhs} {'NOT ' if node.not_ else ''}LIKE "
             f"'{pattern}' ESCAPE '{node.escapechar}'"
         )
+    
+    @handle(ast.ILike)
+    def ilike(self, node, lhs):
+        pattern = node.pattern
+        if node.wildcard != '%':
+            # TODO: not preceded by escapechar
+            pattern = pattern.replace(node.wildcard, '%')
+        if node.singlechar != '_':
+            # TODO: not preceded by escapechar
+            pattern = pattern.replace(node.singlechar, '_')
+
+        # TODO: handle node.nocase
+        return (
+            f"{lhs} {'NOT ' if node.not_ else ''}ILIKE "
+            f"'{pattern}' ESCAPE '{node.escapechar}'"
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
