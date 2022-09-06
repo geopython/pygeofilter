@@ -92,7 +92,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return ast.Like(node, pattern, False, '%', '.', '\\', True)
 
     def ilike(self, node, pattern):
-        return ast.Like(node, pattern, True, '%', '.', '\\', False)
+        return ast.ILike(node, pattern, True, '%', '.', '\\', False)
 
     def not_ilike(self, node, pattern):
         return ast.Like(node, pattern, True, '%', '.', '\\', True)
