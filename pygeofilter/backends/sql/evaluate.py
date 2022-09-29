@@ -95,7 +95,11 @@ class SQLEvaluator(Evaluator):
             # TODO: not preceded by escapechar
             pattern = pattern.replace(node.singlechar, '_')
 
-        # TODO: handle node.nocase
+        if node.nocase:
+            return (
+                f"{lhs} {'NOT ' if node.not_ else ''}ILIKE "
+                f"'{pattern}' ESCAPE '{node.escapechar}'"
+            )
         return (
             f"{lhs} {'NOT ' if node.not_ else ''}LIKE "
             f"'{pattern}' ESCAPE '{node.escapechar}'"
