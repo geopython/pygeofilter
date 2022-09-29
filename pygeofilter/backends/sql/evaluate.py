@@ -121,8 +121,7 @@ class SQLEvaluator(Evaluator):
     @handle(ast.BBox)
     def bbox(self, node, lhs):
         func = SPATIAL_COMPARISON_OP_MAP[ast.SpatialComparisonOp.INTERSECTS]
-        # TODO: create BBox geometry
-        rhs = ""
+        rhs = f"ST_GeomFromText('POLYGON(({node.minx} {node.miny}, {node.minx} {node.maxy}, {node.maxx} {node.maxy}, {node.maxx} {node.miny}, {node.minx} {node.miny}))')"
         return f"{func}({lhs},{rhs})"
 
     @handle(ast.Attribute)
