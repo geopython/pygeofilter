@@ -202,8 +202,8 @@ def test_within_multipolygon_attr():
     assert result == ast.GeometryWithin(
         values.Geometry(
             normalize_geom(
-                geometry.MultiPolygon(
-                    [geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])]
+                geometry.MultiPolygon.from_polygons(
+                    geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
                 ).__geo_interface__
             ),
         ),
