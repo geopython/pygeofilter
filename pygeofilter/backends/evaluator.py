@@ -126,7 +126,7 @@ class Evaluator(metaclass=EvaluatorMeta):
         )
 
     def adopt_result(self, result: Any) -> Any:
-        """Interface function for adopting the final evaluation result if necessary.
-        Default is no-op.
+        """Interface function for adopting the final evaluation result
+        if necessary.  Default is no-op.
         """
         return result
