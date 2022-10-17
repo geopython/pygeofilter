@@ -36,7 +36,9 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 # get version number
 # from https://github.com/mapbox/rasterio/blob/master/setup.py#L55
-with open(os.path.join(os.path.dirname(__file__), 'pygeofilter/__init__.py')) as f:
+init_file = os.path.join(os.path.dirname(__file__),
+                         'pygeofilter/__init__.py')
+with open(init_file) as f:
     for line in f:
         if line.find("__version__") >= 0:
             version = line.split("=")[1].strip()
@@ -48,10 +50,12 @@ with open(os.path.join(os.path.dirname(__file__), 'pygeofilter/__init__.py')) as
 with open('README.md') as f:
     readme = f.read()
 
+description = 'pygeofilter is a pure Python parser implementation of OGC filtering standards'  # noqa
+
 setup(
     name='pygeofilter',
     version=version,
-    description='pygeofilter is a pure Python parser implementation of OGC filtering standards',
+    description=description,
     long_description=readme,
     long_description_content_type="text/markdown",
     author='Fabian Schindler',

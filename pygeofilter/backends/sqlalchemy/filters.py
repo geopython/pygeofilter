@@ -142,8 +142,8 @@ def between(lhs, low, high, negate=False):
 
 
 def like(lhs, rhs, case=False, negate=False):
-    """ Create a filter to filter elements according to a string attribute using
-        wildcard expressions.
+    """ Create a filter to filter elements according to a string attribute
+        using wildcard expressions.
 
         :param lhs: the field to compare
         :param rhs: the wildcard pattern: a string containing any number of '%'
