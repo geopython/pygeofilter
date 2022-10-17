@@ -328,9 +328,9 @@ def test_within_multipolygon_attr():
     result = parse('WITHIN(MULTIPOLYGON(((1 1,2 2,0 3,1 1))), geometry)')
     assert result == ast.GeometryWithin(
         values.Geometry(
-            geometry.MultiPolygon([
+            geometry.MultiPolygon.from_polygons(
                 geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-            ]).__geo_interface__,
+            ).__geo_interface__,
         ),
         ast.Attribute('geometry'),
     )
@@ -341,10 +341,10 @@ def test_touches_attr_multilinestring():
     assert result == ast.GeometryTouches(
         ast.Attribute('geometry'),
         values.Geometry(
-            geometry.MultiLineString([
+            geometry.MultiLineString.from_linestrings(
                 geometry.LineString([(1, 1), (2, 2)]),
                 geometry.LineString([(0, 3), (1, 1)]),
-            ]).__geo_interface__,
+            ).__geo_interface__,
         ),
     )
 
@@ -354,10 +354,10 @@ def test_crosses_attr_multilinestring():
     assert result == ast.GeometryCrosses(
         ast.Attribute('geometry'),
         values.Geometry(
-            geometry.MultiLineString([
+            geometry.MultiLineString.from_linestrings(
                 geometry.LineString([(1, 1), (2, 2)]),
                 geometry.LineString([(0, 3), (1, 1)]),
-            ]).__geo_interface__,
+            ).__geo_interface__,
         ),
     )
 
@@ -367,10 +367,10 @@ def test_overlaps_attr_multilinestring():
     assert result == ast.GeometryOverlaps(
         ast.Attribute('geometry'),
         values.Geometry(
-            geometry.MultiLineString([
+            geometry.MultiLineString.from_linestrings(
                 geometry.LineString([(1, 1), (2, 2)]),
                 geometry.LineString([(0, 3), (1, 1)]),
-            ]).__geo_interface__,
+            ).__geo_interface__,
         ),
     )
 

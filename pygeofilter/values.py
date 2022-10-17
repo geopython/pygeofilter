@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from datetime import date, time, datetime, timedelta
 from typing import Any, List, Union, Optional
 
-from pygeoif.geometry import as_shape
+from pygeoif import shape
 
 
 @dataclass
@@ -43,7 +43,7 @@ class Geometry:
 
     def __eq__(self, o: object) -> bool:
         return (
-            as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
+            shape(self).__geo_interface__ == shape(o).__geo_interface__
         )
 
 
@@ -73,7 +73,7 @@ class Envelope:
 
     def __eq__(self, o: object) -> bool:
         return (
-            as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
+            shape(self).__geo_interface__ == shape(o).__geo_interface__
         )
 
 
