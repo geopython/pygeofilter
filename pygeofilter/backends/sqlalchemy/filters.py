@@ -5,7 +5,7 @@ from inspect import signature
 from typing import Callable, Dict
 
 from sqlalchemy import and_, func, not_, or_
-from pygeoif import shape
+from pygeoif.geometry import as_shape
 
 
 def parse_bbox(box, srid: int = None):
@@ -19,7 +19,7 @@ def parse_bbox(box, srid: int = None):
 
 
 def parse_geometry(geom):
-    wkt = shape(geom).wkt
+    wkt = as_shape(geom).to_wkt()
     search = re.search(r"SRID=(\d+);", wkt)
     sridtxt = "" if search else "SRID=4326;"
     return func.ST_GeomFromEWKT(f"{sridtxt}{wkt}")
