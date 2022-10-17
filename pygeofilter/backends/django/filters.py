@@ -145,8 +145,8 @@ def between(lhs: F, low: Union[F, Value], high: Union[F, Value],
 
 def like(lhs: F, pattern: str, nocase: bool = False, not_: bool = False,
          mapping_choices: Optional[Dict[str, Dict[str, str]]] = None) -> Q:
-    """ Create a filter to filter elements according to a string attribute using
-        wildcard expressions.
+    """ Create a filter to filter elements according to a string attribute
+        using wildcard expressions.
 
         :param lhs: the field to compare
         :type lhs: :class:`django.db.models.F`
