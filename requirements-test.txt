@@ -7,7 +7,7 @@ pyproj
 rtree
 pygml
 dateparser
-pygeoif
+pygeoif==0.7
 lark
 elasticsearch
 elasticsearch-dsl
