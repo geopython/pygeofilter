@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://www.github.com/geopython/pygeofilter/compare/v0.1.2...v0.2.0) (2022-10-17)
+
+
+### Features
+
+* adding initial elasticsearch implmentation ([2ccfa02](https://www.github.com/geopython/pygeofilter/commit/2ccfa02d5fcf1ee1f3be76f5cf375ace2556fa6c))
+
 ### [0.1.2](https://www.github.com/geopython/pygeofilter/compare/v0.1.1...v0.1.2) (2022-04-21)
 
 
