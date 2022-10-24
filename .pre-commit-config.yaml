@@ -22,4 +22,9 @@ repos:
     hooks:
       - id: mypy
         language_version: python
-        args: [--install-types, --non-interactive, pygeofilter]
+        args: [--install-types, --non-interactive]
+        # N.B.: Mypy is... a bit fragile.
+        # ref: https://github.com/python/mypy/issues/4008
+        # The issue is that we have too many evaluate.py or parser.py and mypy believe they are all the same
+        # when run within pre-commit
+        files: ^pygeofilter*
