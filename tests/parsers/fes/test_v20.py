@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 
 from dateparser.timezone_parser import StaticTzInfo
 
+from pygeofilter import ast, values
 from pygeofilter.parsers.fes.v20 import parse
-from pygeofilter import ast
-from pygeofilter import values
 
 
 def test_and():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:And>
@@ -22,21 +22,23 @@ def test_and():
         </fes:PropertyIsGreaterThan>
       </fes:And>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.And(
         ast.LessThan(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             30,
         ),
         ast.GreaterThan(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             10,
-        )
+        ),
     )
 
 
 def test_or():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Or>
@@ -50,21 +52,23 @@ def test_or():
         </fes:PropertyIsGreaterThanOrEqualTo>
       </fes:Or>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.Or(
         ast.LessEqual(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             30.5,
         ),
         ast.GreaterEqual(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             10.5,
-        )
+        ),
     )
 
 
 def test_not():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Not>
@@ -74,17 +78,19 @@ def test_not():
         </fes:PropertyIsEqualTo>
       </fes:Not>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.Not(
         ast.Equal(
-            ast.Attribute('attr'),
-            'value',
+            ast.Attribute("attr"),
+            "value",
         ),
     )
 
 
 def test_not_equal():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:PropertyIsNotEqualTo>
@@ -92,15 +98,17 @@ def test_not_equal():
         <fes:Literal type="xsd:string">value</fes:Literal>
       </fes:PropertyIsNotEqualTo>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.NotEqual(
-        ast.Attribute('attr'),
-        'value',
+        ast.Attribute("attr"),
+        "value",
     )
 
 
 def test_is_like():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:PropertyIsLike
@@ -112,19 +120,21 @@ def test_is_like():
         <fes:Literal type="xsd:string">some%</fes:Literal>
       </fes:PropertyIsLike>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.Like(
-        ast.Attribute('attr'),
-        'some%',
+        ast.Attribute("attr"),
+        "some%",
         nocase=False,
         not_=False,
-        wildcard='%',
-        singlechar='.',
-        escapechar='\\',
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
     )
 
     # case insensitive
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:PropertyIsLike
@@ -136,35 +146,39 @@ def test_is_like():
         <fes:Literal type="xsd:string">some%</fes:Literal>
       </fes:PropertyIsLike>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.Like(
-        ast.Attribute('attr'),
-        'some%',
+        ast.Attribute("attr"),
+        "some%",
         nocase=True,
         not_=False,
-        wildcard='%',
-        singlechar='.',
-        escapechar='\\',
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
     )
 
 
 def test_is_null():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:PropertyIsNull>
         <fes:ValueReference>attr</fes:ValueReference>
       </fes:PropertyIsNull>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.IsNull(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         not_=False,
     )
 
 
 def test_is_between():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:PropertyIsBetween>
@@ -177,9 +191,10 @@ def test_is_between():
         </fes:UpperBoundary>
       </fes:PropertyIsBetween>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.Between(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         10.5,
         11.5,
         not_=False,
@@ -187,7 +202,8 @@ def test_is_between():
 
 
 def test_geom_equals():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Equals>
@@ -199,24 +215,28 @@ def test_geom_equals():
         </gml:Point>
       </fes:Equals>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryEquals(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Point',
-            'coordinates': (1.0, 1.0),
-            'crs': {
-                'type': 'name',
-                'properties': {
-                    'name': 'http://www.opengis.net/def/crs/epsg/0/4326'
-                }
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Point",
+                "coordinates": (1.0, 1.0),
+                "crs": {
+                    "type": "name",
+                    "properties": {
+                        "name": "http://www.opengis.net/def/crs/epsg/0/4326"
+                    },
+                },
             }
-        })
+        ),
     )
 
 
 def test_geom_disjoint():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Disjoint>
@@ -226,21 +246,25 @@ def test_geom_disjoint():
         </gml:LineString>
       </fes:Disjoint>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryDisjoint(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'LineString',
-            'coordinates': [
-                (1.0, 1.0),
-                (2.0, 2.0),
-            ],
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "LineString",
+                "coordinates": [
+                    (1.0, 1.0),
+                    (2.0, 2.0),
+                ],
+            }
+        ),
     )
 
 
 def test_geom_touches():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Touches>
@@ -259,25 +283,25 @@ def test_geom_touches():
         </gml:Polygon>
       </fes:Touches>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryTouches(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'coordinates': [
-                [
-                    (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)],
+                    [(0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)],
                 ],
-                [
-                    (0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)
-                ],
-            ]
-        })
+            }
+        ),
     )
 
 
 def test_geom_within():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Within>
@@ -288,26 +312,30 @@ def test_geom_within():
         </gml:Envelope>
       </fes:Within>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryWithin(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'coordinates': [
-                [
-                    (0.0, 1.0),
-                    (0.0, 3.0),
-                    (2.0, 3.0),
-                    (2.0, 1.0),
-                    (0.0, 1.0),
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        (0.0, 1.0),
+                        (0.0, 3.0),
+                        (2.0, 3.0),
+                        (2.0, 1.0),
+                        (0.0, 1.0),
+                    ],
                 ],
-            ]
-        })
+            }
+        ),
     )
 
 
 def test_geom_overlaps():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Overlaps>
@@ -350,35 +378,31 @@ def test_geom_overlaps():
         </gml:MultiSurface>
       </fes:Overlaps>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryOverlaps(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'MultiPolygon',
-            'coordinates': [
-                [
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "MultiPolygon",
+                "coordinates": [
                     [
-                        (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)
+                        [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)],
+                        [(0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)],
                     ],
                     [
-                        (0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)
+                        [(10.0, 10.0), (11.0, 10.0), (10.0, 11.0), (10.0, 10.0)],
+                        [(10.2, 10.2), (10.5, 10.2), (10.2, 10.5), (10.2, 10.2)],
                     ],
                 ],
-                [
-                    [
-                        (10.0, 10.0), (11.0, 10.0), (10.0, 11.0), (10.0, 10.0)
-                    ],
-                    [
-                        (10.2, 10.2), (10.5, 10.2), (10.2, 10.5), (10.2, 10.2)
-                    ],
-                ]
-            ]
-        })
+            }
+        ),
     )
 
 
 def test_geom_crosses():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Crosses>
@@ -388,21 +412,19 @@ def test_geom_crosses():
         </georss:line>
       </fes:Crosses>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryCrosses(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'LineString',
-            'coordinates': [
-                (2.0, 1.0),
-                (1.0, 2.0)
-            ]
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {"type": "LineString", "coordinates": [(2.0, 1.0), (1.0, 2.0)]}
+        ),
     )
 
 
 def test_geom_intersects():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Intersects>
@@ -412,27 +434,25 @@ def test_geom_intersects():
         </georss:box>
       </fes:Intersects>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryIntersects(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'bbox': (0.5, 1.0, 1.5, 2.0),
-            'coordinates': [
-                [
-                    (0.5, 1.0),
-                    (0.5, 2.0),
-                    (1.5, 2.0),
-                    (1.5, 1.0),
-                    (0.5, 1.0)
-                ]
-            ]
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "bbox": (0.5, 1.0, 1.5, 2.0),
+                "coordinates": [
+                    [(0.5, 1.0), (0.5, 2.0), (1.5, 2.0), (1.5, 1.0), (0.5, 1.0)]
+                ],
+            }
+        ),
     )
 
 
 def test_geom_contains():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:Contains>
@@ -442,26 +462,24 @@ def test_geom_contains():
         </georss:polygon>
       </fes:Contains>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryContains(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'coordinates': [
-                [
-                    (0.5, 1.0),
-                    (0.5, 2.0),
-                    (1.5, 2.0),
-                    (1.5, 1.0),
-                    (0.5, 1.0)
-                ]
-            ]
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [(0.5, 1.0), (0.5, 2.0), (1.5, 2.0), (1.5, 1.0), (0.5, 1.0)]
+                ],
+            }
+        ),
     )
 
 
 def test_geom_dwithin():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <fes:DWithin>
@@ -472,20 +490,24 @@ def test_geom_dwithin():
         <fes:Distance uom="m">10</fes:Distance>
       </fes:DWithin>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.DistanceWithin(
-        ast.Attribute('attr'),
-        values.Geometry({
-            "type": "Point",
-            "coordinates": (1.0, 1.0),
-        }),
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Point",
+                "coordinates": (1.0, 1.0),
+            }
+        ),
         distance=10,
         units="m",
     )
 
 
 def test_after():
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
         xmlns:gml="http://www.opengis.net/gml">
@@ -496,19 +518,18 @@ def test_after():
         </gml:TimeInstant>
       </fes:After>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.TimeAfter(
-        ast.Attribute('attr'),
-        datetime(
-            2000, 1, 1, 0, 0, 0,
-            tzinfo=StaticTzInfo('Z', timedelta(0))
-        ),
+        ast.Attribute("attr"),
+        datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
     )
 
 
 def test_before():
     # using timePosition directly
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
         xmlns:gml="http://www.opengis.net/gml">
@@ -517,19 +538,18 @@ def test_before():
         <gml:timePosition>2000-01-01T00:00:00Z</gml:timePosition>
       </fes:Before>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.TimeBefore(
-        ast.Attribute('attr'),
-        datetime(
-            2000, 1, 1, 0, 0, 0,
-            tzinfo=StaticTzInfo('Z', timedelta(0))
-        ),
+        ast.Attribute("attr"),
+        datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
     )
 
 
 def test_begins():
     # using timePosition directly
-    result = parse('''
+    result = parse(
+        """
     <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
         xmlns:gml="http://www.opengis.net/gml">
@@ -549,17 +569,12 @@ def test_begins():
         </gml:TimePeriod>
       </fes:Begins>
     </fes:Filter>
-    ''')
+    """
+    )
     assert result == ast.TimeBegins(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         values.Interval(
-            datetime(
-                2000, 1, 1, 0, 0, 0,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
-            ),
-            datetime(
-                2001, 1, 1, 0, 0, 0,
-                tzinfo=StaticTzInfo('Z', timedelta(0))
-            ),
+            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2001, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
         ),
     )

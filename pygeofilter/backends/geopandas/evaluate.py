@@ -25,15 +25,13 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from datetime import date, time, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from shapely import geometry
 
-from . import filters
-from ... import ast
-from ... import values
+from ... import ast, values
 from ..evaluator import Evaluator, handle
-
+from . import filters
 
 LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
 
@@ -62,12 +60,7 @@ class GeoPandasEvaluator(Evaluator):
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        return filters.between(
-            lhs,
-            low,
-            high,
-            node.not_
-        )
+        return filters.between(lhs, low, high, node.not_)
 
     @handle(ast.Like)
     def like(self, node, lhs):
@@ -84,7 +77,9 @@ class GeoPandasEvaluator(Evaluator):
     @handle(ast.In)
     def in_(self, node, lhs, *options):
         return filters.contains(
-            lhs, options, node.not_,
+            lhs,
+            options,
+            node.not_,
         )
 
     @handle(ast.IsNull)
@@ -112,30 +107,15 @@ class GeoPandasEvaluator(Evaluator):
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        return filters.bbox(
-            lhs,
-            node.minx,
-            node.miny,
-            node.maxx,
-            node.maxy,
-            node.crs
-        )
+        return filters.bbox(lhs, node.minx, node.miny, node.maxx, node.maxy, node.crs)
 
     @handle(ast.Attribute)
     def attribute(self, node):
-        return filters.attribute(
-            self.df,
-            node.name,
-            self.field_mapping
-        )
+        return filters.attribute(self.df, node.name, self.field_mapping)
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
-        return filters.arithmetic(
-            lhs,
-            rhs,
-            node.op.value
-        )
+        return filters.arithmetic(lhs, rhs, node.op.value)
 
     @handle(ast.Function)
     def function(self, node, *arguments):
@@ -155,12 +135,9 @@ class GeoPandasEvaluator(Evaluator):
 
     @handle(values.Envelope)
     def envelope(self, node):
-        return geometry.Polygon.from_bounds(
-            node.x1, node.y1, node.x2, node.y2
-        )
+        return geometry.Polygon.from_bounds(node.x1, node.y1, node.x2, node.y2)
 
 
 def to_filter(df, root, field_mapping=None, function_map=None):
-    """
-    """
+    """ """
     return GeoPandasEvaluator(df, field_mapping, function_map).evaluate(root)

@@ -1,7 +1,5 @@
-from operator import (
-    and_, or_, lt, le, gt, ge, ne, eq, add, sub, mul, truediv
-)
 from functools import reduce
+from operator import add, and_, eq, ge, gt, le, lt, mul, ne, or_, sub, truediv
 
 import shapely
 
@@ -9,17 +7,14 @@ from ...util import like_pattern_to_re
 
 
 def combine(sub_filters, combinator: str):
-    """ Combine filters using a logical combinator """
+    """Combine filters using a logical combinator"""
     assert combinator in ("AND", "OR")
     op = and_ if combinator == "AND" else or_
-    return reduce(
-        lambda acc, q: op(acc, q) if acc is not None else q,
-        sub_filters
-    )
+    return reduce(lambda acc, q: op(acc, q) if acc is not None else q, sub_filters)
 
 
 def negate(sub_filter):
-    """ Negate a filter, opposing its meaning. """
+    """Negate a filter, opposing its meaning."""
     return ~sub_filter
 
 
@@ -46,11 +41,7 @@ def between(lhs, low, high, not_):
 
 def like(lhs, pattern, nocase, wildcard, singlechar, escapechar, not_):
     regex = like_pattern_to_re(
-        pattern,
-        nocase,
-        wildcard,
-        singlechar,
-        escapechar or '\\'
+        pattern, nocase, wildcard, singlechar, escapechar or "\\"
     )
     result = lhs.str.match(regex)
     if not_:
@@ -79,14 +70,14 @@ def temporal(lhs, time_or_period, op):
 
 
 SPATIAL_OP_MAP = {
-    "INTERSECTS": 'intersects',
-    "DISJOINT": 'disjoint',
-    "CONTAINS": 'contains',
-    "WITHIN": 'within',
-    "TOUCHES": 'touches',
-    "CROSSES": 'crosses',
-    "OVERLAPS": 'overlaps',
-    "EQUALS": 'geom_equals',
+    "INTERSECTS": "intersects",
+    "DISJOINT": "disjoint",
+    "CONTAINS": "contains",
+    "WITHIN": "within",
+    "TOUCHES": "touches",
+    "CROSSES": "crosses",
+    "OVERLAPS": "overlaps",
+    "EQUALS": "geom_equals",
 }
 
 
@@ -107,14 +98,9 @@ def attribute(df, name, field_mapping=None):
     return df[name]
 
 
-OP_TO_FUNC = {
-    "+": add,
-    "-": sub,
-    "*": mul,
-    "/": truediv
-}
+OP_TO_FUNC = {"+": add, "-": sub, "*": mul, "/": truediv}
 
 
 def arithmetic(lhs, rhs, op):
-    """ Create an arithmetic filter """
+    """Create an arithmetic filter"""
     return OP_TO_FUNC[op](lhs, rhs)

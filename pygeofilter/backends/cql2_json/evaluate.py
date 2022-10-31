@@ -26,14 +26,13 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Dict, Optional
-from datetime import datetime, date
-
-from ..evaluator import Evaluator, handle
-from ... import ast
-from ...cql2 import get_op
-from ... import values
 import json
+from datetime import date, datetime
+from typing import Dict, Optional
+
+from ... import ast, values
+from ...cql2 import get_op
+from ..evaluator import Evaluator, handle
 
 
 def json_serializer(obj):

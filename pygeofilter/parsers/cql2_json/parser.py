@@ -26,14 +26,13 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
+import json
 from datetime import date, datetime, timedelta
 from typing import List, Union, cast
-import json
 
-from ... import ast
-from ... import values
-from ...util import parse_datetime, parse_date, parse_duration
+from ... import ast, values
 from ...cql2 import BINARY_OP_PREDICATES_MAP
+from ...util import parse_date, parse_datetime, parse_duration
 
 # https://github.com/opengeospatial/ogcapi-features/tree/master/cql2
 
@@ -41,7 +40,7 @@ from ...cql2 import BINARY_OP_PREDICATES_MAP
 JsonType = Union[dict, list, str, float, int, bool, None]
 
 
-def walk_cql_json(node: JsonType):
+def walk_cql_json(node: JsonType):  # noqa: C901
     if isinstance(
         node,
         (
@@ -105,15 +104,11 @@ def walk_cql_json(node: JsonType):
     elif "function" in node:
         return ast.Function(
             node["function"]["name"],
-            cast(
-                List[ast.AstType], walk_cql_json(node["function"]["arguments"])
-            ),
+            cast(List[ast.AstType], walk_cql_json(node["function"]["arguments"])),
         )
 
     elif "lower" in node:
-        return ast.Function(
-            "lower", [cast(ast.Node, walk_cql_json(node["lower"]))]
-        )
+        return ast.Function("lower", [cast(ast.Node, walk_cql_json(node["lower"]))])
 
     elif "op" in node:
         op = node["op"]
@@ -165,12 +160,8 @@ def walk_cql_json(node: JsonType):
             )
 
         elif op in BINARY_OP_PREDICATES_MAP:
-            args = [
-                cast(ast.Node, walk_cql_json(arg)) for arg in args
-            ]
-            return BINARY_OP_PREDICATES_MAP[op](
-                *args
-            )
+            args = [cast(ast.Node, walk_cql_json(arg)) for arg in args]
+            return BINARY_OP_PREDICATES_MAP[op](*args)
 
     raise ValueError(f"Unable to parse expression node {node!r}")
 

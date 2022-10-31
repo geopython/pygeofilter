@@ -1,11 +1,8 @@
+from datetime import date, datetime, time, timedelta
 
-from datetime import datetime, date, time, timedelta
-
-from . import filters
-from ... import ast
-from ... import values
+from ... import ast, values
 from ..evaluator import Evaluator, handle
-
+from . import filters
 
 LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
 
@@ -32,12 +29,7 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        return filters.between(
-            lhs,
-            low,
-            high,
-            node.not_
-        )
+        return filters.between(lhs, low, high, node.not_)
 
     @handle(ast.Like)
     def like(self, node, lhs):
@@ -59,12 +51,7 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
     @handle(ast.IsNull)
     def null(self, node, lhs):
-        return filters.runop(
-            lhs,
-            None,
-            "is_null",
-            node.not_
-        )
+        return filters.runop(lhs, None, "is_null", node.not_)
 
     # @handle(ast.ExistsPredicateNode)
     # def exists(self, node, lhs):
@@ -98,7 +85,7 @@ class SQLAlchemyFilterEvaluator(Evaluator):
         return filters.spatial(
             lhs,
             rhs,
-            'RELATE',
+            "RELATE",
             pattern=node.pattern,
         )
 
@@ -114,29 +101,15 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        return filters.bbox(
-            lhs,
-            node.minx,
-            node.miny,
-            node.maxx,
-            node.maxy,
-            node.crs
-        )
+        return filters.bbox(lhs, node.minx, node.miny, node.maxx, node.maxy, node.crs)
 
     @handle(ast.Attribute)
     def attribute(self, node):
-        return filters.attribute(
-            node.name,
-            self.field_mapping
-        )
+        return filters.attribute(node.name, self.field_mapping)
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
-        return filters.runop(
-            lhs,
-            rhs,
-            node.op.value
-        )
+        return filters.runop(lhs, rhs, node.op.value)
 
     # TODO: map functions
     # @handle(ast.FunctionExpressionNode)
@@ -161,14 +134,14 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
 
 def to_filter(ast, field_mapping=None):
-    """ Helper function to translate ECQL AST to Django Query expressions.
+    """Helper function to translate ECQL AST to Django Query expressions.
 
-        :param ast: the abstract syntax tree
-        :param field_mapping: a dict mapping from the filter name to the Django
-                              field lookup.
-        :param mapping_choices: a dict mapping field lookups to choices.
-        :type ast: :class:`Node`
-        :returns: a Django query object
-        :rtype: :class:`django.db.models.Q`
+    :param ast: the abstract syntax tree
+    :param field_mapping: a dict mapping from the filter name to the Django
+                          field lookup.
+    :param mapping_choices: a dict mapping field lookups to choices.
+    :type ast: :class:`Node`
+    :returns: a Django query object
+    :rtype: :class:`django.db.models.Q`
     """
     return SQLAlchemyFilterEvaluator(field_mapping).evaluate(ast)

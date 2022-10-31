@@ -27,8 +27,8 @@
 
 
 from dataclasses import dataclass
-from datetime import date, time, datetime, timedelta
-from typing import Any, List, Union, Optional
+from datetime import date, datetime, time, timedelta
+from typing import Any, List, Optional, Union
 
 from pygeoif.geometry import as_shape
 
@@ -42,9 +42,7 @@ class Geometry:
         return self.geometry
 
     def __eq__(self, o: object) -> bool:
-        return (
-            as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
-        )
+        return as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
 
 
 @dataclass
@@ -58,13 +56,15 @@ class Envelope:
     def geometry(self):
         return {
             "type": "Polygon",
-            "coordinates": [[
-                [self.x1, self.y1],
-                [self.x1, self.y2],
-                [self.x2, self.y2],
-                [self.x2, self.y1],
-                [self.x1, self.y1]
-            ]]
+            "coordinates": [
+                [
+                    [self.x1, self.y1],
+                    [self.x1, self.y2],
+                    [self.x2, self.y2],
+                    [self.x2, self.y1],
+                    [self.x1, self.y1],
+                ]
+            ],
         }
 
     @property
@@ -72,9 +72,7 @@ class Envelope:
         return self.geometry
 
     def __eq__(self, o: object) -> bool:
-        return (
-            as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
-        )
+        return as_shape(self).__geo_interface__ == as_shape(o).__geo_interface__
 
 
 @dataclass

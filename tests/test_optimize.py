@@ -26,8 +26,8 @@
 # ------------------------------------------------------------------------------
 
 from pygeofilter import ast
-from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.optimize import optimize
+from pygeofilter.parsers.ecql import parse
 
 
 def test_not():
@@ -41,36 +41,20 @@ def test_not():
 def test_combination():
     # reduce right hand side
     result = optimize(parse("attr = 1 AND 1 < 2"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # reduce left hand side
     result = optimize(parse("1 < 2 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # reduce left hand side
     result = optimize(parse("1 < 2 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # can' reduce
     result = optimize(parse("attr = 1 AND other = 2"))
     assert result == ast.And(
-        ast.Equal(
-            ast.Attribute('attr'),
-            1
-        ),
-        ast.Equal(
-            ast.Attribute('other'),
-            2
-        )
+        ast.Equal(ast.Attribute("attr"), 1), ast.Equal(ast.Attribute("other"), 2)
     )
 
     # reduce AND to an INCLUDE if both sides evaluate to true
@@ -99,93 +83,52 @@ def test_combination():
 def test_comparison():
     # reduce less than
     result = optimize(parse("1 < 2 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # reduce greater than
     result = optimize(parse("2 > 1 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # reduce less or equal
     result = optimize(parse("1 <= 2 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # reduce greater or equal
     result = optimize(parse("2 >= 1 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # reduce not equal
     result = optimize(parse("2 <> 1 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
 
 def test_between():
     # allow reduction
     result = optimize(parse("5 BETWEEN 1 AND 6 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
     result = optimize(parse("10 NOT BETWEEN 1 AND 6 AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # don't reduce if either lhs, low or high are uncertain
     result = optimize(parse("attr BETWEEN 1 AND 6"))
-    assert result == ast.Between(
-        ast.Attribute("attr"), 1, 6, False
-    )
+    assert result == ast.Between(ast.Attribute("attr"), 1, 6, False)
     result = optimize(parse("5 BETWEEN attr AND 6"))
-    assert result == ast.Between(
-        5, ast.Attribute("attr"), 6, False
-    )
+    assert result == ast.Between(5, ast.Attribute("attr"), 6, False)
     result = optimize(parse("5 BETWEEN 1 AND attr"))
-    assert result == ast.Between(
-        5, 1, ast.Attribute("attr"), False
-    )
+    assert result == ast.Between(5, 1, ast.Attribute("attr"), False)
 
 
 def test_like():
     # allow reduction
     result = optimize(parse("'This is a test' LIKE 'This is %' AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
-    result = optimize(
-        parse("'This is a test' LIKE 'This is . test' AND attr = 1")
-    )
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
+    result = optimize(parse("'This is a test' LIKE 'This is . test' AND attr = 1"))
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
 
     # don't reduction when an attribute is referenced
     result = optimize(parse("attr LIKE 'This is %'"))
     assert result == ast.Like(
-        ast.Attribute('attr'),
-        'This is %',
-        False,
-        '%',
-        '.',
-        '\\',
-        False
+        ast.Attribute("attr"), "This is %", False, "%", ".", "\\", False
     )
 
 
@@ -193,29 +136,15 @@ def test_in():
     # allow reduction when the left hand side and all options
     # are certain
     result = optimize(parse("1 IN (1, 2, 3) AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
     result = optimize(parse("5 NOT IN (1, 2, 3) AND attr = 1"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        1
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 1)
     # don't allow reduction if either left hand side or either option
     # is uncertain
     result = optimize(parse("attr IN (1, 2, 3)"))
-    assert result == ast.In(
-        ast.Attribute('attr'),
-        [1, 2, 3],
-        False
-    )
+    assert result == ast.In(ast.Attribute("attr"), [1, 2, 3], False)
     result = optimize(parse("1 IN (attr, 2, 3)"))
-    assert result == ast.In(
-        1,
-        [ast.Attribute('attr'), 2, 3],
-        False
-    )
+    assert result == ast.In(1, [ast.Attribute("attr"), 2, 3], False)
 
 
 def test_temporal():
@@ -236,60 +165,40 @@ def test_spatial():
 def test_arithmetic():
     # test possible optimizations
     result = optimize(parse("attr = 10 + 10"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        20
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 20)
 
     result = optimize(parse("attr = 30 - 10"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        20
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 20)
 
     result = optimize(parse("attr = 10 * 2"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        20
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 20)
 
     result = optimize(parse("attr = 40 / 2"))
-    assert result == ast.Equal(
-        ast.Attribute('attr'),
-        20
-    )
+    assert result == ast.Equal(ast.Attribute("attr"), 20)
 
     # test imppossible optimizations
     result = optimize(parse("attr = other + 10"))
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        ast.Add(
-            ast.Attribute('other'), 10
-        ),
+        ast.Attribute("attr"),
+        ast.Add(ast.Attribute("other"), 10),
     )
 
     result = optimize(parse("attr = other - 10"))
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        ast.Sub(
-            ast.Attribute('other'), 10
-        ),
+        ast.Attribute("attr"),
+        ast.Sub(ast.Attribute("other"), 10),
     )
 
     result = optimize(parse("attr = other * 2"))
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        ast.Mul(
-            ast.Attribute('other'), 2
-        ),
+        ast.Attribute("attr"),
+        ast.Mul(ast.Attribute("other"), 2),
     )
 
     result = optimize(parse("attr = other / 2"))
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        ast.Div(
-            ast.Attribute('other'), 2
-        ),
+        ast.Attribute("attr"),
+        ast.Div(ast.Attribute("other"), 2),
     )
 
 
@@ -299,43 +208,31 @@ def test_function():
 
     result = optimize(parse("attr = myadder(1, 2)"), {"myadder": myadder})
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         3,
     )
 
     # can't optimize a function referencing an attribute
     result = optimize(parse("attr = myadder(other, 2)"), {"myadder": myadder})
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        ast.Function(
-            "myadder", [
-                ast.Attribute("other"),
-                2
-            ]
-        )
+        ast.Attribute("attr"), ast.Function("myadder", [ast.Attribute("other"), 2])
     )
     # can't optimize a function with a nested reference to an attribute
-    result = optimize(
-        parse("attr = myadder(other + 2, 2)"), {"myadder": myadder}
-    )
+    result = optimize(parse("attr = myadder(other + 2, 2)"), {"myadder": myadder})
     assert result == ast.Equal(
-        ast.Attribute('attr'),
-        ast.Function(
-            "myadder", [
-                ast.Add(ast.Attribute("other"), 2),
-                2
-            ]
-        )
+        ast.Attribute("attr"),
+        ast.Function("myadder", [ast.Add(ast.Attribute("other"), 2), 2]),
     )
 
     # can't optimize an unknown functions
     result = optimize(parse("attr = unkown(1, 2)"), {"myadder": myadder})
     assert result == ast.Equal(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         ast.Function(
-            "unkown", [
+            "unkown",
+            [
                 1,
                 2,
-            ]
-        )
+            ],
+        ),
     )

@@ -1,29 +1,33 @@
 from ... import ast
 from .base import FESBaseParser
-from .util import handle, ParseInput, Element
+from .util import Element, ParseInput, handle
 
 
 class FES11Parser(FESBaseParser):
-    namespace = 'http://www.opengis.net/ogc'
+    namespace = "http://www.opengis.net/ogc"
 
-    @handle('Add')
-    def add(self, node: Element, lhs: ast.ScalarAstType,
-            rhs: ast.ScalarAstType) -> ast.Node:
+    @handle("Add")
+    def add(
+        self, node: Element, lhs: ast.ScalarAstType, rhs: ast.ScalarAstType
+    ) -> ast.Node:
         return ast.Add(lhs, rhs)
 
-    @handle('Sub')
-    def sub(self, node: Element, lhs: ast.ScalarAstType,
-            rhs: ast.ScalarAstType) -> ast.Node:
+    @handle("Sub")
+    def sub(
+        self, node: Element, lhs: ast.ScalarAstType, rhs: ast.ScalarAstType
+    ) -> ast.Node:
         return ast.Sub(lhs, rhs)
 
-    @handle('Mul')
-    def mul(self, node: Element, lhs: ast.ScalarAstType,
-            rhs: ast.ScalarAstType) -> ast.Node:
+    @handle("Mul")
+    def mul(
+        self, node: Element, lhs: ast.ScalarAstType, rhs: ast.ScalarAstType
+    ) -> ast.Node:
         return ast.Mul(lhs, rhs)
 
-    @handle('Div')
-    def div(self, node: Element, lhs: ast.ScalarAstType,
-            rhs: ast.ScalarAstType) -> ast.Node:
+    @handle("Div")
+    def div(
+        self, node: Element, lhs: ast.ScalarAstType, rhs: ast.ScalarAstType
+    ) -> ast.Node:
         return ast.Div(lhs, rhs)
 
 

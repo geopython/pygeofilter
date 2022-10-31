@@ -31,9 +31,8 @@ from datetime import datetime, timedelta
 from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
+from pygeofilter import ast, values
 from pygeofilter.parsers.cql2_json import parse
-from pygeofilter import ast
-from pygeofilter import values
 
 
 def normalize_geom(geometry):
@@ -180,12 +179,8 @@ def test_attribute_after_dt_dt():
     assert result == ast.TimeAfter(
         ast.Attribute("attr"),
         values.Interval(
-            datetime(
-                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
-            ),
-            datetime(
-                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
-            ),
+            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
         ),
     )
 
@@ -203,9 +198,7 @@ def test_meets_dt_dr():
     assert result == ast.TimeMeets(
         ast.Attribute("attr"),
         values.Interval(
-            datetime(
-                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
-            ),
+            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
             timedelta(seconds=4),
         ),
     )
@@ -225,9 +218,7 @@ def test_attribute_metby_dr_dt():
         ast.Attribute("attr"),
         values.Interval(
             timedelta(seconds=4),
-            datetime(
-                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
-            ),
+            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
         ),
     )
 
@@ -246,9 +237,7 @@ def test_attribute_toverlaps_open_dt():
         ast.Attribute("attr"),
         values.Interval(
             None,
-            datetime(
-                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
-            ),
+            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
         ),
     )
 
@@ -266,9 +255,7 @@ def test_attribute_overlappedby_dt_open():
     assert result == ast.TimeOverlappedBy(
         ast.Attribute("attr"),
         values.Interval(
-            datetime(
-                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
-            ),
+            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
             None,
         ),
     )
@@ -278,9 +265,7 @@ def test_attribute_overlappedby_dt_open():
 
 
 def test_attribute_aequals():
-    result = parse(
-        {"op": "a_equals", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
-    )
+    result = parse({"op": "a_equals", "args": [{"property": "arrayattr"}, [1, 2, 3]]})
     assert result == ast.ArrayEquals(
         ast.Attribute("arrayattr"),
         [1, 2, 3],
@@ -288,9 +273,7 @@ def test_attribute_aequals():
 
 
 def test_attribute_aoverlaps():
-    result = parse(
-        {"op": "a_overlaps", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
-    )
+    result = parse({"op": "a_overlaps", "args": [{"property": "arrayattr"}, [1, 2, 3]]})
     assert result == ast.ArrayOverlaps(
         ast.Attribute("arrayattr"),
         [1, 2, 3],
@@ -298,9 +281,7 @@ def test_attribute_aoverlaps():
 
 
 def test_attribute_acontains():
-    result = parse(
-        {"op": "a_contains", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
-    )
+    result = parse({"op": "a_contains", "args": [{"property": "arrayattr"}, [1, 2, 3]]})
     assert result == ast.ArrayContains(
         ast.Attribute("arrayattr"),
         [1, 2, 3],
@@ -335,9 +316,7 @@ def test_intersects_attr_point():
     )
     assert result == ast.GeometryIntersects(
         ast.Attribute("geometry"),
-        values.Geometry(
-            normalize_geom(geometry.Point(1, 1).__geo_interface__)
-        ),
+        values.Geometry(normalize_geom(geometry.Point(1, 1).__geo_interface__)),
     )
 
 
@@ -357,9 +336,7 @@ def test_disjoint_linestring_attr():
     )
     assert result == ast.GeometryDisjoint(
         values.Geometry(
-            normalize_geom(
-                geometry.LineString([(1, 1), (2, 2)]).__geo_interface__
-            ),
+            normalize_geom(geometry.LineString([(1, 1), (2, 2)]).__geo_interface__),
         ),
         ast.Attribute("geometry"),
     )
@@ -383,9 +360,7 @@ def test_contains_attr_polygon():
         ast.Attribute("geometry"),
         values.Geometry(
             normalize_geom(
-                geometry.Polygon(
-                    [(1, 1), (2, 2), (0, 3), (1, 1)]
-                ).__geo_interface__
+                geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__
             ),
         ),
     )

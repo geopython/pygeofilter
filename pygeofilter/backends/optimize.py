@@ -25,32 +25,30 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from datetime import date, datetime, time, timedelta
 import operator
+from datetime import date, datetime, time, timedelta
 from typing import Callable, Dict
 
 import shapely
 
-from .evaluator import Evaluator, handle
-from .. import ast
-from .. import values
+from .. import ast, values
 from ..util import like_pattern_to_re
-
+from .evaluator import Evaluator, handle
 
 COMPARISON_MAP = {
-    '=': operator.eq,
-    '<>': operator.ne,
-    '<': operator.lt,
-    '<=': operator.le,
-    '>': operator.gt,
-    '>=': operator.ge,
+    "=": operator.eq,
+    "<>": operator.ne,
+    "<": operator.lt,
+    "<=": operator.le,
+    ">": operator.gt,
+    ">=": operator.ge,
 }
 
 ARITHMETIC_MAP = {
-    '+': operator.add,
-    '-': operator.sub,
-    '*': operator.mul,
-    '/': operator.truediv,
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+    "/": operator.truediv,
 }
 
 
@@ -73,11 +71,7 @@ def is_geometry_literal(value):
 
 
 def is_any_literal(value):
-    return (
-        is_literal(value)
-        or is_temporal_literal(value)
-        or is_geometry_literal(value)
-    )
+    return is_literal(value) or is_temporal_literal(value) or is_geometry_literal(value)
 
 
 def to_geometry(value):
@@ -104,7 +98,7 @@ class OptimizeEvaluator(Evaluator):
     @handle(ast.And, ast.Or)
     def combination(self, node, lhs, rhs):
         if isinstance(lhs, bool) and isinstance(rhs, bool):
-            op = operator.and_ if node.op.value == 'AND' else operator.or_
+            op = operator.and_ if node.op.value == "AND" else operator.or_
             return op(lhs, rhs)
 
         elif isinstance(lhs, bool) or isinstance(rhs, bool):
@@ -116,14 +110,14 @@ class OptimizeEvaluator(Evaluator):
             # for OR nodes, when we have one true branch, the other
             # can be dropped. Otherwise we can shorthand to the
             # uncertain branch
-            if node.op.value == 'OR':
+            if node.op.value == "OR":
                 if certain:
                     return True
                 else:
                     return uncertain
             # for AND nodes, we can drop the node if the certain one is
             # false. Otherwise we can shorthand to the other
-            elif node.op.value == 'AND':
+            elif node.op.value == "AND":
                 if certain:
                     return uncertain
                 else:
@@ -133,7 +127,7 @@ class OptimizeEvaluator(Evaluator):
             return False
 
         else:
-            return (ast.And if node.op.value == 'AND' else ast.Or)(lhs, rhs)
+            return (ast.And if node.op.value == "AND" else ast.Or)(lhs, rhs)
 
     @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
@@ -151,12 +145,7 @@ class OptimizeEvaluator(Evaluator):
                 result = not result
             return result
         else:
-            return ast.Between(
-                lhs,
-                low,
-                high,
-                node.not_
-            )
+            return ast.Between(lhs, low, high, node.not_)
 
     @handle(ast.Like)
     def like(self, node, lhs):
@@ -166,7 +155,7 @@ class OptimizeEvaluator(Evaluator):
                 node.nocase,
                 node.wildcard,
                 node.singlechar,
-                node.escapechar
+                node.escapechar,
             )
             result = regex.match(lhs) is not None
             if node.not_:
@@ -316,47 +305,43 @@ def to_interval(value):
     elif isinstance(value, datetime):
         return (value, value)
 
-    raise ValueError(f'Invalid type {type(value)}')
+    raise ValueError(f"Invalid type {type(value)}")
 
 
-def relate_intervals(lhs, rhs):
+def relate_intervals(lhs, rhs):  # noqa: C901
     ll, lh = lhs
     rl, rh = rhs
     if lh < rl:
-        return 'BEFORE'
+        return "BEFORE"
     elif ll > rh:
-        return 'AFTER'
+        return "AFTER"
     elif lh == rl:
-        return 'MEETS'
+        return "MEETS"
     elif ll == rh:
-        return 'METBY'
+        return "METBY"
     elif ll < rl and rl < lh < rh:
-        return 'TOVERLAPS'
+        return "TOVERLAPS"
     elif rl < ll < rh and lh > rh:
-        return 'OVERLAPPEDBY'
+        return "OVERLAPPEDBY"
     elif ll == rl and lh < rh:
-        return 'BEGINS'
+        return "BEGINS"
     elif ll == rl and lh > rh:
-        return 'BEGUNBY'
+        return "BEGUNBY"
     elif ll > rl and lh < rh:
-        return 'DURING'
+        return "DURING"
     elif ll < rl and lh > rh:
-        return 'TCONTAINS'
+        return "TCONTAINS"
     elif ll > rl and lh == rh:
-        return 'TENDS'
+        return "TENDS"
     elif ll < rl and lh == rh:
-        return 'ENDEDBY'
+        return "ENDEDBY"
     elif ll == rl and lh == rh:
-        return 'TEQUALS'
+        return "TEQUALS"
 
-    raise ValueError(
-        f'Error relating intervals [{ll}, {lh}] and ({rl}, {rh})'
-    )
+    raise ValueError(f"Error relating intervals [{ll}, {lh}] and ({rl}, {rh})")
 
 
-def optimize(
-        root: ast.Node,
-        function_map: Dict[str, Callable] = None) -> ast.Node:
+def optimize(root: ast.Node, function_map: Dict[str, Callable] = None) -> ast.Node:
     result = OptimizeEvaluator(function_map or {}).evaluate(root)
     if isinstance(result, bool):
         result = ast.Include(not result)

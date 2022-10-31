@@ -25,16 +25,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os.path
 import logging
+import os.path
 
 from lark import Lark, logger, v_args
 
-from ... import ast
-from ... import values
-from ..wkt import WKTTransformer
-from ..iso8601 import ISO8601Transformer
+from ... import ast, values
 from ...cql2 import SPATIAL_PREDICATES_MAP, TEMPORAL_PREDICATES_MAP
+from ..iso8601 import ISO8601Transformer
+from ..wkt import WKTTransformer
 
 logger.setLevel(logging.DEBUG)
 

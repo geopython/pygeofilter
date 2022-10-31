@@ -34,17 +34,12 @@ class WKTTransformer(Transformer):
         print(srid, geometry)
         geometry["crs"] = {
             "type": "name",
-            "properties": {
-                "name": f"urn:ogc:def:crs:EPSG::{srid}"
-            }
+            "properties": {"name": f"urn:ogc:def:crs:EPSG::{srid}"},
         }
         return geometry
 
     def wkt__geometrycollection(self, *geometries):
-        return {
-            "type": "GeometryCollection",
-            "geometries": geometries
-        }
+        return {"type": "GeometryCollection", "geometries": geometries}
 
     def wkt__point(self, coordinates):
         return {

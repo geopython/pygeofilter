@@ -26,12 +26,16 @@
 # ------------------------------------------------------------------------------
 
 import re
-from datetime import timedelta, date, datetime
+from datetime import date, datetime, timedelta
+
 from dateparser import parse as _parse_datetime
 
 __all__ = [
-    'parse_datetime', 'RE_ISO_8601', 'parse_duration',
-    'like_pattern_to_re_pattern', 'like_pattern_to_re'
+    "parse_datetime",
+    "RE_ISO_8601",
+    "parse_duration",
+    "like_pattern_to_re_pattern",
+    "like_pattern_to_re",
 ]
 
 RE_ISO_8601 = re.compile(
@@ -46,37 +50,34 @@ RE_ISO_8601 = re.compile(
 
 
 def parse_duration(value: str) -> timedelta:
-    """ Parses an ISO 8601 duration string into a python timedelta object.
-        Raises a ``ValueError`` if a conversion was not possible.
+    """Parses an ISO 8601 duration string into a python timedelta object.
+    Raises a ``ValueError`` if a conversion was not possible.
 
-        :param value: the ISO8601 duration string to parse
-        :type value: str
-        :return: the parsed duration
-        :rtype: datetime.timedelta
+    :param value: the ISO8601 duration string to parse
+    :type value: str
+    :return: the parsed duration
+    :rtype: datetime.timedelta
     """
 
     match = RE_ISO_8601.match(value)
     if not match:
-        raise ValueError(
-            "Could not parse ISO 8601 duration from '%s'." % value
-        )
+        raise ValueError("Could not parse ISO 8601 duration from '%s'." % value)
     parts = match.groupdict()
 
-    sign = -1 if "-" == parts['sign'] else 1
-    days = float(parts['days'] or 0)
-    days += float(parts['months'] or 0) * 30  # ?!
-    days += float(parts['years'] or 0) * 365  # ?!
-    fsec = float(parts['seconds'] or 0)
-    fsec += float(parts['minutes'] or 0) * 60
-    fsec += float(parts['hours'] or 0) * 3600
+    sign = -1 if "-" == parts["sign"] else 1
+    days = float(parts["days"] or 0)
+    days += float(parts["months"] or 0) * 30  # ?!
+    days += float(parts["years"] or 0) * 365  # ?!
+    fsec = float(parts["seconds"] or 0)
+    fsec += float(parts["minutes"] or 0) * 60
+    fsec += float(parts["hours"] or 0) * 3600
 
     return sign * timedelta(days, fsec)
 
 
 def parse_date(value: str) -> date:
-    """ Backport for `fromisoformat` for dates in Python 3.6
-    """
-    return date(*(int(part) for part in value.split('-')))
+    """Backport for `fromisoformat` for dates in Python 3.6"""
+    return date(*(int(part) for part in value.split("-")))
 
 
 def parse_datetime(value: str) -> datetime:
@@ -94,8 +95,8 @@ def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):
     dx_single_char = re.escape(x_single_char)
 
     # special handling if escape char clashes with re escape char
-    if escape_char == '\\':
-        x_escape_char = '\\\\\\\\'
+    if escape_char == "\\":
+        x_escape_char = "\\\\\\\\"
     else:
         x_escape_char = re.escape(escape_char)
     dx_escape_char = re.escape(x_escape_char)
@@ -104,39 +105,39 @@ def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):
 
     # handle not escaped wildcards/single chars
     pattern = re.sub(
-        f'(?<!{x_escape_char}){dx_wildcard}',
-        '.*',
+        f"(?<!{x_escape_char}){dx_wildcard}",
+        ".*",
         pattern,
     )
     pattern = re.sub(
-        f'(?<!{x_escape_char}){dx_single_char}',
-        '.',
+        f"(?<!{x_escape_char}){dx_single_char}",
+        ".",
         pattern,
     )
 
     # handle escaped wildcard, single chars and escape chars
     pattern = re.sub(
-        f'{dx_escape_char}{dx_wildcard}',
+        f"{dx_escape_char}{dx_wildcard}",
         x_wildcard,
         pattern,
     )
     pattern = re.sub(
-        f'{dx_escape_char}{dx_single_char}',
+        f"{dx_escape_char}{dx_single_char}",
         x_single_char,
         pattern,
     )
     pattern = re.sub(
-        f'{x_escape_char}{x_escape_char}',
+        f"{x_escape_char}{x_escape_char}",
         x_escape_char,
         pattern,
     )
 
-    return f'^{pattern}$'
+    return f"^{pattern}$"
 
 
 def like_pattern_to_re(like, nocase, wildcard, single_char, escape_char):
     flags = re.I if nocase else 0
     return re.compile(
         like_pattern_to_re_pattern(like, wildcard, single_char, escape_char),
-        flags=flags
+        flags=flags,
     )

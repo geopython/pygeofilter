@@ -25,74 +25,73 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import List, Union, cast
 import json
-
-from ...util import parse_duration, parse_datetime
-from ...values import Envelope, Geometry
-from ... import ast
-from ... import values
 from datetime import datetime
+from typing import List, Union, cast
+
+from ... import ast, values
+from ...util import parse_datetime, parse_duration
+from ...values import Envelope, Geometry
 
 # https://portal.ogc.org/files/96288
 
 
 COMPARISON_MAP = {
-    'eq': ast.Equal,
-    'lt': ast.LessThan,
-    'lte': ast.LessEqual,
-    'gt': ast.GreaterThan,
-    'gte': ast.GreaterEqual,
+    "eq": ast.Equal,
+    "lt": ast.LessThan,
+    "lte": ast.LessEqual,
+    "gt": ast.GreaterThan,
+    "gte": ast.GreaterEqual,
 }
 
 SPATIAL_PREDICATES_MAP = {
-    'intersects': ast.GeometryIntersects,
-    'equals': ast.GeometryEquals,
-    'disjoint': ast.GeometryDisjoint,
-    'touches': ast.GeometryTouches,
-    'within': ast.GeometryWithin,
-    'overlaps': ast.GeometryOverlaps,
-    'crosses': ast.GeometryCrosses,
-    'contains': ast.GeometryContains,
+    "intersects": ast.GeometryIntersects,
+    "equals": ast.GeometryEquals,
+    "disjoint": ast.GeometryDisjoint,
+    "touches": ast.GeometryTouches,
+    "within": ast.GeometryWithin,
+    "overlaps": ast.GeometryOverlaps,
+    "crosses": ast.GeometryCrosses,
+    "contains": ast.GeometryContains,
 }
 
 TEMPORAL_PREDICATES_MAP = {
-    'before': ast.TimeBefore,
-    'after': ast.TimeAfter,
-    'meets': ast.TimeMeets,
-    'metby': ast.TimeMetBy,
-    'toverlaps': ast.TimeOverlaps,
-    'overlappedby': ast.TimeOverlappedBy,
-    'begins': ast.TimeBegins,
-    'begunby': ast.TimeBegunBy,
-    'during': ast.TimeDuring,
-    'tcontains': ast.TimeContains,
-    'ends': ast.TimeEnds,
-    'endedby': ast.TimeEndedBy,
-    'tequals': ast.TimeEquals,
+    "before": ast.TimeBefore,
+    "after": ast.TimeAfter,
+    "meets": ast.TimeMeets,
+    "metby": ast.TimeMetBy,
+    "toverlaps": ast.TimeOverlaps,
+    "overlappedby": ast.TimeOverlappedBy,
+    "begins": ast.TimeBegins,
+    "begunby": ast.TimeBegunBy,
+    "during": ast.TimeDuring,
+    "tcontains": ast.TimeContains,
+    "ends": ast.TimeEnds,
+    "endedby": ast.TimeEndedBy,
+    "tequals": ast.TimeEquals,
     # 'anyinteract': ast.TimeAnyInteract, # TODO?
 }
 
 
 ARRAY_PREDICATES_MAP = {
-    'aequals': ast.ArrayEquals,
-    'acontains': ast.ArrayContains,
-    'acontainedBy': ast.ArrayContainedBy,
-    'aoverlaps': ast.ArrayOverlaps,
+    "aequals": ast.ArrayEquals,
+    "acontains": ast.ArrayContains,
+    "acontainedBy": ast.ArrayContainedBy,
+    "aoverlaps": ast.ArrayOverlaps,
 }
 
 ARITHMETIC_MAP = {
-    '+': ast.Add,
-    '-': ast.Sub,
-    '*': ast.Mul,
-    '/': ast.Div,
+    "+": ast.Add,
+    "-": ast.Sub,
+    "*": ast.Mul,
+    "/": ast.Div,
 }
 
 
-def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
+def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:  # noqa: C901
     if is_temporal and isinstance(node, str):
         # Open interval
-        if node == '..':
+        if node == "..":
             return None
 
         try:
@@ -101,7 +100,7 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
             value = parse_datetime(node)
 
         if value is None:
-            raise ValueError(f'Failed to parse temporal value from {node}')
+            raise ValueError(f"Failed to parse temporal value from {node}")
 
         return value
 
@@ -110,8 +109,7 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
 
     if isinstance(node, list):
         result = [
-            cast(datetime, walk_cql_json(sub_node, is_temporal))
-            for sub_node in node
+            cast(datetime, walk_cql_json(sub_node, is_temporal)) for sub_node in node
         ]
         if is_temporal:
             return values.Interval(*result)
@@ -121,22 +119,20 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
     assert isinstance(node, dict)
 
     # check if we are dealing with a geometry
-    if 'type' in node and 'coordinates' in node:
+    if "type" in node and "coordinates" in node:
         # TODO: test if node is actually valid
         return Geometry(node)
 
-    elif 'bbox' in node:
-        return Envelope(*node['bbox'])
+    elif "bbox" in node:
+        return Envelope(*node["bbox"])
 
     # decode all other nodes
     for name, value in node.items():
-        if name in ('and', 'or'):
+        if name in ("and", "or"):
             sub_items = cast(list, walk_cql_json(value))
-            return (ast.And if name == 'and' else ast.Or).from_items(
-                *sub_items
-            )
+            return (ast.And if name == "and" else ast.Or).from_items(*sub_items)
 
-        elif name == 'not':
+        elif name == "not":
             # allow both arrays and objects, the standard is ambigous in
             # that regard
             if isinstance(value, list):
@@ -149,34 +145,34 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
                 cast(ast.ScalarAstType, walk_cql_json(value[1])),
             )
 
-        elif name == 'between':
+        elif name == "between":
             return ast.Between(
-                cast(ast.Node, walk_cql_json(value['value'])),
-                cast(ast.ScalarAstType, walk_cql_json(value['lower'])),
-                cast(ast.ScalarAstType, walk_cql_json(value['upper'])),
+                cast(ast.Node, walk_cql_json(value["value"])),
+                cast(ast.ScalarAstType, walk_cql_json(value["lower"])),
+                cast(ast.ScalarAstType, walk_cql_json(value["upper"])),
                 not_=False,
             )
 
-        elif name == 'like':
+        elif name == "like":
             return ast.Like(
-                cast(ast.Node, walk_cql_json(value['like'][0])),
-                cast(str, value['like'][1]),
-                nocase=value.get('nocase', True),
-                wildcard=value.get('wildcard', '%'),
-                singlechar=value.get('singleChar', '.'),
-                escapechar=value.get('escapeChar', '\\'),
+                cast(ast.Node, walk_cql_json(value["like"][0])),
+                cast(str, value["like"][1]),
+                nocase=value.get("nocase", True),
+                wildcard=value.get("wildcard", "%"),
+                singlechar=value.get("singleChar", "."),
+                escapechar=value.get("escapeChar", "\\"),
                 not_=False,
             )
 
-        elif name == 'in':
+        elif name == "in":
             return ast.In(
-                cast(ast.AstType, walk_cql_json(value['value'])),
-                cast(List[ast.AstType], walk_cql_json(value['list'])),
+                cast(ast.AstType, walk_cql_json(value["value"])),
+                cast(List[ast.AstType], walk_cql_json(value["list"])),
                 not_=False,
                 # TODO nocase
             )
 
-        elif name == 'isNull':
+        elif name == "isNull":
             return ast.IsNull(
                 walk_cql_json(value),
                 not_=False,
@@ -190,14 +186,8 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
 
         elif name in TEMPORAL_PREDICATES_MAP:
             return TEMPORAL_PREDICATES_MAP[name](
-                cast(
-                    ast.TemporalAstType,
-                    walk_cql_json(value[0], is_temporal=True)
-                ),
-                cast(
-                    ast.TemporalAstType,
-                    walk_cql_json(value[1], is_temporal=True)
-                ),
+                cast(ast.TemporalAstType, walk_cql_json(value[0], is_temporal=True)),
+                cast(ast.TemporalAstType, walk_cql_json(value[1], is_temporal=True)),
             )
 
         elif name in ARRAY_PREDICATES_MAP:
@@ -212,16 +202,16 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:
                 cast(ast.ScalarAstType, walk_cql_json(value[1])),
             )
 
-        elif name == 'property':
+        elif name == "property":
             return ast.Attribute(value)
 
-        elif name == 'function':
+        elif name == "function":
             return ast.Function(
-                value['name'],
-                cast(List[ast.AstType], walk_cql_json(value['arguments'])),
+                value["name"],
+                cast(List[ast.AstType], walk_cql_json(value["arguments"])),
             )
 
-    raise ValueError(f'Unable to parse expression node {node!r}')
+    raise ValueError(f"Unable to parse expression node {node!r}")
 
 
 def parse(cql: Union[str, dict]) -> ast.AstType:

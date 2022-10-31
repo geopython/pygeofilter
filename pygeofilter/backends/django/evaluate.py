@@ -29,10 +29,9 @@ import json
 
 from django.contrib.gis.geos import GEOSGeometry, Polygon
 
-from . import filters
-from ... import ast
-from ... import values
+from ... import ast, values
 from ..evaluator import Evaluator, handle
+from . import filters
 
 
 class DjangoFilterEvaluator(Evaluator):
@@ -50,47 +49,25 @@ class DjangoFilterEvaluator(Evaluator):
 
     @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
-        return filters.compare(
-            lhs,
-            rhs,
-            node.op.value,
-            self.mapping_choices
-        )
+        return filters.compare(lhs, rhs, node.op.value, self.mapping_choices)
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        return filters.between(
-            lhs,
-            low,
-            high,
-            node.not_
-        )
+        return filters.between(lhs, low, high, node.not_)
 
     @handle(ast.Like)
     def like(self, node, lhs):
         return filters.like(
-            lhs,
-            node.pattern,
-            node.nocase,
-            node.not_,
-            self.mapping_choices
+            lhs, node.pattern, node.nocase, node.not_, self.mapping_choices
         )
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
-        return filters.contains(
-            lhs,
-            options,
-            node.not_,
-            self.mapping_choices
-        )
+        return filters.contains(lhs, options, node.not_, self.mapping_choices)
 
     @handle(ast.IsNull)
     def null(self, node, lhs):
-        return filters.null(
-            lhs,
-            node.not_
-        )
+        return filters.null(lhs, node.not_)
 
     # @handle(ast.ExistsPredicateNode)
     # def exists(self, node, lhs):
@@ -139,14 +116,7 @@ class DjangoFilterEvaluator(Evaluator):
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        return filters.bbox(
-            lhs,
-            node.minx,
-            node.miny,
-            node.maxx,
-            node.maxy,
-            node.crs
-        )
+        return filters.bbox(lhs, node.minx, node.miny, node.maxx, node.maxy, node.crs)
 
     @handle(ast.Attribute)
     def attribute(self, node):
@@ -154,11 +124,7 @@ class DjangoFilterEvaluator(Evaluator):
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
-        return filters.arithmetic(
-            lhs,
-            rhs,
-            node.op.value
-        )
+        return filters.arithmetic(lhs, rhs, node.op.value)
 
     # TODO: map functions
     # @handle(ast.FunctionExpressionNode)
@@ -179,22 +145,18 @@ class DjangoFilterEvaluator(Evaluator):
 
     @handle(values.Envelope)
     def envelope(self, node):
-        return Polygon.from_bbox(
-            (node.x1, node.y1, node.x2, node.y2)
-        )
+        return Polygon.from_bbox((node.x1, node.y1, node.x2, node.y2))
 
 
 def to_filter(root, field_mapping=None, mapping_choices=None):
-    """ Helper function to translate ECQL AST to Django Query expressions.
+    """Helper function to translate ECQL AST to Django Query expressions.
 
-        :param ast: the abstract syntax tree
-        :param field_mapping: a dict mapping from the filter name to the Django
-                              field lookup.
-        :param mapping_choices: a dict mapping field lookups to choices.
-        :type ast: :class:`Node`
-        :returns: a Django query object
-        :rtype: :class:`django.db.models.Q`
+    :param ast: the abstract syntax tree
+    :param field_mapping: a dict mapping from the filter name to the Django
+                          field lookup.
+    :param mapping_choices: a dict mapping field lookups to choices.
+    :type ast: :class:`Node`
+    :returns: a Django query object
+    :rtype: :class:`django.db.models.Q`
     """
-    return DjangoFilterEvaluator(
-        field_mapping, mapping_choices
-    ).evaluate(root)
+    return DjangoFilterEvaluator(field_mapping, mapping_choices).evaluate(root)

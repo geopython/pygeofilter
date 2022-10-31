@@ -1,7 +1,8 @@
 """Get fixtures from the spec."""
 import json
-import requests
 import re
+
+import requests
 
 url = (
     "https://raw.githubusercontent.com/radiantearth/"
