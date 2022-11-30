@@ -91,7 +91,7 @@ class CQL2Evaluator(Evaluator):
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
-        return {"in": {"value": lhs, "list": options}}
+        return {"op": "in", "args": [lhs, options]}
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
