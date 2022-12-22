@@ -4,8 +4,8 @@ from functools import reduce
 from inspect import signature
 from typing import Callable, Dict
 
-from sqlalchemy import and_, func, not_, or_
 from pygeoif.geometry import as_shape
+from sqlalchemy import and_, func, not_, or_
 
 
 def parse_bbox(box, srid: int = None):
@@ -84,11 +84,11 @@ class Operator:
 
 
 def combine(sub_filters, combinator: str = "AND"):
-    """ Combine filters using a logical combinator
+    """Combine filters using a logical combinator
 
-        :param sub_filters: the filters to combine
-        :param combinator: a string: "AND" / "OR"
-        :return: the combined filter
+    :param sub_filters: the filters to combine
+    :param combinator: a string: "AND" / "OR"
+    :return: the combined filter
     """
     assert combinator in ("AND", "OR")
     _op = and_ if combinator == "AND" else or_
@@ -100,21 +100,21 @@ def combine(sub_filters, combinator: str = "AND"):
 
 
 def negate(sub_filter):
-    """ Negate a filter, opposing its meaning.
+    """Negate a filter, opposing its meaning.
 
-        :param sub_filter: the filter to negate
-        :return: the negated filter
+    :param sub_filter: the filter to negate
+    :return: the negated filter
     """
     return not_(sub_filter)
 
 
 def runop(lhs, rhs=None, op: str = "=", negate: bool = False):
-    """ Compare a filter with an expression using a comparison operation
+    """Compare a filter with an expression using a comparison operation
 
-        :param lhs: the field to compare
-        :param rhs: the filter expression
-        :param op: a string denoting the operation.
-        :return: a comparison expression object
+    :param lhs: the field to compare
+    :param rhs: the filter expression
+    :param op: a string denoting the operation.
+    :return: a comparison expression object
     """
     _op = Operator(op)
 
@@ -124,15 +124,15 @@ def runop(lhs, rhs=None, op: str = "=", negate: bool = False):
 
 
 def between(lhs, low, high, negate=False):
-    """ Create a filter to match elements that have a value within a certain
-        range.
+    """Create a filter to match elements that have a value within a certain
+    range.
 
-        :param lhs: the field to compare
-        :param low: the lower value of the range
-        :param high: the upper value of the range
-        :param not_: whether the range shall be inclusive (the default) or
-                     exclusive
-        :return: a comparison expression object
+    :param lhs: the field to compare
+    :param low: the lower value of the range
+    :param high: the upper value of the range
+    :param not_: whether the range shall be inclusive (the default) or
+                 exclusive
+    :return: a comparison expression object
     """
     l_op = Operator("<=")
     g_op = Operator(">=")
@@ -142,16 +142,16 @@ def between(lhs, low, high, negate=False):
 
 
 def like(lhs, rhs, case=False, negate=False):
-    """ Create a filter to filter elements according to a string attribute
-        using wildcard expressions.
+    """Create a filter to filter elements according to a string attribute
+    using wildcard expressions.
 
-        :param lhs: the field to compare
-        :param rhs: the wildcard pattern: a string containing any number of '%'
-                    characters as wildcards.
-        :param case: whether the lookup shall be done case sensitively or not
-        :param not_: whether the range shall be inclusive (the default) or
-                     exclusive
-        :return: a comparison expression object
+    :param lhs: the field to compare
+    :param rhs: the wildcard pattern: a string containing any number of '%'
+                characters as wildcards.
+    :param case: whether the lookup shall be done case sensitively or not
+    :param not_: whether the range shall be inclusive (the default) or
+                 exclusive
+    :return: a comparison expression object
     """
     if case:
         _op = Operator("like")
@@ -164,20 +164,20 @@ def like(lhs, rhs, case=False, negate=False):
 
 
 def temporal(lhs, time_or_period, op):
-    """ Create a temporal filter for the given temporal attribute.
+    """Create a temporal filter for the given temporal attribute.
 
-        :param lhs: the field to compare
-        :type lhs: :class:`django.db.models.F`
-        :param time_or_period: the time instant or time span to use as a filter
-        :type time_or_period: :class:`datetime.datetime` or a tuple of two
-                              datetimes or a tuple of one datetime and one
-                              :class:`datetime.timedelta`
-        :param op: the comparison operation. one of ``"BEFORE"``,
-                   ``"BEFORE OR DURING"``, ``"DURING"``, ``"DURING OR AFTER"``,
-                   ``"AFTER"``.
-        :type op: str
-        :return: a comparison expression object
-        :rtype: :class:`django.db.models.Q`
+    :param lhs: the field to compare
+    :type lhs: :class:`django.db.models.F`
+    :param time_or_period: the time instant or time span to use as a filter
+    :type time_or_period: :class:`datetime.datetime` or a tuple of two
+                          datetimes or a tuple of one datetime and one
+                          :class:`datetime.timedelta`
+    :param op: the comparison operation. one of ``"BEFORE"``,
+               ``"BEFORE OR DURING"``, ``"DURING"``, ``"DURING OR AFTER"``,
+               ``"AFTER"``.
+    :type op: str
+    :return: a comparison expression object
+    :rtype: :class:`django.db.models.Q`
     """
     low = None
     high = None
@@ -211,19 +211,19 @@ UNITS_LOOKUP = {"kilometers": "km", "meters": "m"}
 
 
 def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
-    """ Create a spatial filter for the given spatial attribute.
+    """Create a spatial filter for the given spatial attribute.
 
-        :param lhs: the field to compare
-        :param rhs: the time instant or time span to use as a filter
-        :param op: the comparison operation. one of ``"INTERSECTS"``,
-                   ``"DISJOINT"``, `"CONTAINS"``, ``"WITHIN"``,
-                   ``"TOUCHES"``, ``"CROSSES"``, ``"OVERLAPS"``,
-                   ``"EQUALS"``, ``"RELATE"``, ``"DWITHIN"``, ``"BEYOND"``
-        :param pattern: the spatial relation pattern
-        :param distance: the distance value for distance based lookups:
-                         ``"DWITHIN"`` and ``"BEYOND"``
-        :param units: the units the distance is expressed in
-        :return: a comparison expression object
+    :param lhs: the field to compare
+    :param rhs: the time instant or time span to use as a filter
+    :param op: the comparison operation. one of ``"INTERSECTS"``,
+               ``"DISJOINT"``, `"CONTAINS"``, ``"WITHIN"``,
+               ``"TOUCHES"``, ``"CROSSES"``, ``"OVERLAPS"``,
+               ``"EQUALS"``, ``"RELATE"``, ``"DWITHIN"``, ``"BEYOND"``
+    :param pattern: the spatial relation pattern
+    :param distance: the distance value for distance based lookups:
+                     ``"DWITHIN"`` and ``"BEYOND"``
+    :param units: the units the distance is expressed in
+    :return: a comparison expression object
     """
 
     _op = Operator(op)
@@ -240,25 +240,25 @@ def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
 
 
 def bbox(lhs, minx, miny, maxx, maxy, crs=4326):
-    """ Create a bounding box filter for the given spatial attribute.
+    """Create a bounding box filter for the given spatial attribute.
 
-        :param lhs: the field to compare
-        :param minx: the lower x part of the bbox
-        :param miny: the lower y part of the bbox
-        :param maxx: the upper x part of the bbox
-        :param maxy: the upper y part of the bbox
-        :param crs: the CRS the bbox is expressed in
-        :return: a comparison expression object
+    :param lhs: the field to compare
+    :param minx: the lower x part of the bbox
+    :param miny: the lower y part of the bbox
+    :param maxx: the upper x part of the bbox
+    :param maxy: the upper y part of the bbox
+    :param crs: the CRS the bbox is expressed in
+    :return: a comparison expression object
     """
 
     return lhs.ST_Intersects(parse_bbox([minx, miny, maxx, maxy], crs))
 
 
 def attribute(name, field_mapping=None):
-    """ Create an attribute lookup expression using a field mapping dictionary.
+    """Create an attribute lookup expression using a field mapping dictionary.
 
-        :param name: the field filter name
-        :param field_mapping: the dictionary to use as a lookup.
+    :param name: the field filter name
+    :param field_mapping: the dictionary to use as a lookup.
     """
     field = field_mapping.get(name, name)
 

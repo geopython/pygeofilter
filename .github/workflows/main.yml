@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ['3.7', '3.8', '3.9']
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -41,7 +41,7 @@ jobs:
     - name: Run unit tests
       run: |
         pytest
-        flake8 pygeofilter tests
-    - name: Run type checking
+    - name: run pre-commit (code formatting, lint and type checking)
       run: |
-        mypy --install-types --non-interactive pygeofilter
+        python -m pip install pre-commit
+        pre-commit run --all-files

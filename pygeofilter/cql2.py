@@ -1,5 +1,6 @@
 # Common configurations for cql2 parsers and evaluators.
 from typing import Dict, Type, Union
+
 from . import ast
 
 # https://github.com/opengeospatial/ogcapi-features/tree/master/cql2

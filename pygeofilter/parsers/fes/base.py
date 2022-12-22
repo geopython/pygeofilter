@@ -1,164 +1,176 @@
 import base64
 import datetime
 
-from pygml.v32 import (
-    parse_v32, NAMESPACE as NAMESPACE_32, NSMAP as NSMAP_32
-)
-from pygml.pre_v32 import (
-    parse_pre_v32, NAMESPACE as NAMESPACE_PRE_32, NSMAP as NSMAP_PRE_32
-)
-from pygml.v33 import parse_v33_ce, NAMESPACE as NAMESPACE_33_CE
-from pygml.georss import NAMESPACE as NAMESPACE_GEORSS, parse_georss
+from pygml.georss import NAMESPACE as NAMESPACE_GEORSS
+from pygml.georss import parse_georss
+from pygml.pre_v32 import NAMESPACE as NAMESPACE_PRE_32
+from pygml.pre_v32 import NSMAP as NSMAP_PRE_32
+from pygml.pre_v32 import parse_pre_v32
+from pygml.v32 import NAMESPACE as NAMESPACE_32
+from pygml.v32 import NSMAP as NSMAP_32
+from pygml.v32 import parse_v32
+from pygml.v33 import NAMESPACE as NAMESPACE_33_CE
+from pygml.v33 import parse_v33_ce
 
-from ... import ast
-from ... import values
+from ... import ast, values
 from ...util import parse_datetime, parse_duration
-from .util import XMLParser, handle, handle_namespace, Element
 from .gml import is_temporal, parse_temporal
+from .util import Element, XMLParser, handle, handle_namespace
 
 
 class FESBaseParser(XMLParser):
-    @handle('Filter')
+    @handle("Filter")
     def filter_(self, node: Element, predicate):
         return predicate
 
-    @handle('And')
+    @handle("And")
     def and_(self, node: Element, lhs, rhs):
         return ast.And(lhs, rhs)
 
-    @handle('Or')
+    @handle("Or")
     def or_(self, node: Element, lhs, rhs):
         return ast.Or(lhs, rhs)
 
-    @handle('Not')
+    @handle("Not")
     def not_(self, node: Element, lhs):
         return ast.Not(lhs)
 
-    @handle('PropertyIsEqualTo')
+    @handle("PropertyIsEqualTo")
     def property_is_equal_to(self, node: Element, lhs, rhs):
         return ast.Equal(lhs, rhs)
 
-    @handle('PropertyIsNotEqualTo')
+    @handle("PropertyIsNotEqualTo")
     def property_is_not_equal_to(self, node: Element, lhs, rhs):
         return ast.NotEqual(lhs, rhs)
 
-    @handle('PropertyIsLessThan')
+    @handle("PropertyIsLessThan")
     def property_is_less_than(self, node: Element, lhs, rhs):
         return ast.LessThan(lhs, rhs)
 
-    @handle('PropertyIsGreaterThan')
+    @handle("PropertyIsGreaterThan")
     def property_is_greater_than(self, node: Element, lhs, rhs):
         return ast.GreaterThan(lhs, rhs)
 
-    @handle('PropertyIsLessThanOrEqualTo')
+    @handle("PropertyIsLessThanOrEqualTo")
     def property_is_less_than_or_equal_to(self, node: Element, lhs, rhs):
         return ast.LessEqual(lhs, rhs)
 
-    @handle('PropertyIsGreaterThanOrEqualTo')
+    @handle("PropertyIsGreaterThanOrEqualTo")
     def property_is_greater_than_or_equal_to(self, node: Element, lhs, rhs):
         return ast.GreaterEqual(lhs, rhs)
 
-    @handle('PropertyIsLike')
+    @handle("PropertyIsLike")
     def property_is_like(self, node: Element, lhs, rhs):
         return ast.Like(
             lhs,
             rhs,
-            wildcard=node.attrib['wildCard'],
-            singlechar=node.attrib['singleChar'],
-            escapechar=node.attrib.get('escape', node.attrib['escapeChar']),
-            nocase=node.attrib.get('matchCase', 'true') == 'false',
+            wildcard=node.attrib["wildCard"],
+            singlechar=node.attrib["singleChar"],
+            escapechar=node.attrib.get("escape", node.attrib["escapeChar"]),
+            nocase=node.attrib.get("matchCase", "true") == "false",
             not_=False,
         )
 
-    @handle('PropertyIsNull')
+    @handle("PropertyIsNull")
     def property_is_null(self, node: Element, lhs):
         return ast.IsNull(lhs, not_=False)
 
-    @handle('PropertyIsBetween')
+    @handle("PropertyIsBetween")
     def property_is_between(self, node: Element, lhs, low, high):
         return ast.Between(lhs, low, high, False)
 
-    @handle('LowerBoundary', 'UpperBoundary')
+    @handle("LowerBoundary", "UpperBoundary")
     def boundary(self, node: Element, expression):
         return expression
 
-    @handle('Equals')
+    @handle("Equals")
     def geometry_equals(self, node: Element, lhs, rhs):
         return ast.GeometryEquals(lhs, rhs)
 
-    @handle('Disjoint')
+    @handle("Disjoint")
     def geometry_disjoint(self, node: Element, lhs, rhs):
         return ast.GeometryDisjoint(lhs, rhs)
 
-    @handle('Touches')
+    @handle("Touches")
     def geometry_touches(self, node: Element, lhs, rhs):
         return ast.GeometryTouches(lhs, rhs)
 
-    @handle('Within')
+    @handle("Within")
     def geometry_within(self, node: Element, lhs, rhs):
         return ast.GeometryWithin(lhs, rhs)
 
-    @handle('Overlaps')
+    @handle("Overlaps")
     def geometry_overlaps(self, node: Element, lhs, rhs):
         return ast.GeometryOverlaps(lhs, rhs)
 
-    @handle('Crosses')
+    @handle("Crosses")
     def geometry_crosses(self, node: Element, lhs, rhs):
         return ast.GeometryCrosses(lhs, rhs)
 
-    @handle('Intersects')
+    @handle("Intersects")
     def geometry_intersects(self, node: Element, lhs, rhs):
         return ast.GeometryIntersects(lhs, rhs)
 
-    @handle('Contains')
+    @handle("Contains")
     def geometry_contains(self, node: Element, lhs, rhs):
         return ast.GeometryContains(lhs, rhs)
 
-    @handle('DWithin')
+    @handle("DWithin")
     def distance_within(self, node: Element, lhs, rhs, distance_and_units):
         distance, units = distance_and_units
         return ast.DistanceWithin(lhs, rhs, distance, units)
 
-    @handle('Beyond')
+    @handle("Beyond")
     def distance_beyond(self, node: Element, lhs, rhs, distance_and_units):
         distance, units = distance_and_units
         return ast.DistanceBeyond(lhs, rhs, distance, units)
 
-    @handle('Distance')
+    @handle("Distance")
     def distance(self, node: Element):
-        return (float(node.text), node.attrib['uom'])
+        return (float(node.text), node.attrib["uom"])
 
     # @handle('BBOX')
     # def geometry_bbox(self, node: Element, lhs, rhs):
     #     # TODO: ast.BBox() seems incompatible
     #     pass
 
-    @handle('ValueReference')
+    @handle("ValueReference")
     def value_reference(self, node):
         return ast.Attribute(node.text)
 
-    @handle('Literal')
+    @handle("Literal")
     def literal(self, node):
-        type_ = node.get('type', '').rpartition(':')[2]
+        type_ = node.get("type", "").rpartition(":")[2]
         value = node.text
-        if type_ == 'boolean':
-            return value.lower() == 'true'
-        elif type_ in ('byte', 'int', 'integer', 'long', 'negativeInteger',
-                       'nonNegativeInteger', 'nonPositiveInteger',
-                       'positiveInteger', 'short', 'unsignedByte',
-                       'unsignedInt', 'unsignedLong', 'unsignedShort'):
+        if type_ == "boolean":
+            return value.lower() == "true"
+        elif type_ in (
+            "byte",
+            "int",
+            "integer",
+            "long",
+            "negativeInteger",
+            "nonNegativeInteger",
+            "nonPositiveInteger",
+            "positiveInteger",
+            "short",
+            "unsignedByte",
+            "unsignedInt",
+            "unsignedLong",
+            "unsignedShort",
+        ):
             return int(value)
-        elif type_ in ('decimal', 'double', 'float'):
+        elif type_ in ("decimal", "double", "float"):
             return float(value)
-        elif type_ == 'base64Binary':
+        elif type_ == "base64Binary":
             return base64.b64decode(value)
-        elif type_ == 'hexBinary':
+        elif type_ == "hexBinary":
             return bytes.fromhex(value)
-        elif type_ == 'date':
+        elif type_ == "date":
             return datetime.date.fromisoformat(value)
-        elif type_ == 'dateTime':
+        elif type_ == "dateTime":
             return parse_datetime(value)
-        elif type_ == 'duration':
+        elif type_ == "duration":
             return parse_duration(value)
 
         # return to string

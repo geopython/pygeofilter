@@ -3,95 +3,106 @@ import datetime
 
 from ... import ast
 from ...util import parse_datetime, parse_duration
-from .util import handle, ParseInput, Element
 from .base import FESBaseParser
+from .util import Element, ParseInput, handle
 
 
 class FES20Parser(FESBaseParser):
-    namespace = 'http://www.opengis.net/fes/2.0'
+    namespace = "http://www.opengis.net/fes/2.0"
 
     # @handle('PropertyIsNil')
     # def property_is_nil(self, node: Element, lhs, rhs):
     #     return ast...
 
-    @handle('After')
+    @handle("After")
     def time_after(self, node: Element, lhs, rhs):
         return ast.TimeAfter(lhs, rhs)
 
-    @handle('Before')
+    @handle("Before")
     def time_before(self, node: Element, lhs, rhs):
         return ast.TimeBefore(lhs, rhs)
 
-    @handle('Begins')
+    @handle("Begins")
     def time_begins(self, node: Element, lhs, rhs):
         return ast.TimeBegins(lhs, rhs)
 
-    @handle('BegunBy')
+    @handle("BegunBy")
     def time_begun_by(self, node: Element, lhs, rhs):
         return ast.TimeBegunBy(lhs, rhs)
 
-    @handle('TContains')
+    @handle("TContains")
     def time_contains(self, node: Element, lhs, rhs):
         return ast.TimeContains(lhs, rhs)
 
-    @handle('During')
+    @handle("During")
     def time_during(self, node: Element, lhs, rhs):
         return ast.TimeDuring(lhs, rhs)
 
-    @handle('TEquals')
+    @handle("TEquals")
     def time_equals(self, node: Element, lhs, rhs):
         return ast.TimeEquals(lhs, rhs)
 
-    @handle('TOverlaps')
+    @handle("TOverlaps")
     def time_overlaps(self, node: Element, lhs, rhs):
         return ast.TimeOverlaps(lhs, rhs)
 
-    @handle('Meets')
+    @handle("Meets")
     def time_meets(self, node: Element, lhs, rhs):
         return ast.TimeMeets(lhs, rhs)
 
-    @handle('OverlappedBy')
+    @handle("OverlappedBy")
     def time_overlapped_by(self, node: Element, lhs, rhs):
         return ast.TimeOverlappedBy(lhs, rhs)
 
-    @handle('MetBy')
+    @handle("MetBy")
     def time_met_by(self, node: Element, lhs, rhs):
         return ast.TimeMetBy(lhs, rhs)
 
-    @handle('Ends')
+    @handle("Ends")
     def time_ends(self, node: Element, lhs, rhs):
         return ast.TimeEnds(lhs, rhs)
 
-    @handle('EndedBy')
+    @handle("EndedBy")
     def time_ended_by(self, node: Element, lhs, rhs):
         return ast.TimeEndedBy(lhs, rhs)
 
-    @handle('ValueReference')
+    @handle("ValueReference")
     def value_reference(self, node: Element):
         return ast.Attribute(node.text)
 
-    @handle('Literal')
+    @handle("Literal")
     def literal(self, node: Element):
-        type_ = node.get('type').rpartition(':')[2]
+        type_ = node.get("type").rpartition(":")[2]
         value = node.text
-        if type_ == 'boolean':
-            return value.lower() == 'true'
-        elif type_ in ('byte', 'int', 'integer', 'long', 'negativeInteger',
-                       'nonNegativeInteger', 'nonPositiveInteger',
-                       'positiveInteger', 'short', 'unsignedByte',
-                       'unsignedInt', 'unsignedLong', 'unsignedShort'):
+        if type_ == "boolean":
+            return value.lower() == "true"
+        elif type_ in (
+            "byte",
+            "int",
+            "integer",
+            "long",
+            "negativeInteger",
+            "nonNegativeInteger",
+            "nonPositiveInteger",
+            "positiveInteger",
+            "short",
+            "unsignedByte",
+            "unsignedInt",
+            "unsignedLong",
+            "unsignedShort",
+        ):
             return int(value)
-        elif type_ in ('decimal', 'double', 'float'):
+        elif type_ in ("decimal", "double", "float"):
             return float(value)
-        elif type_ == 'base64Binary':
+        elif type_ == "base64Binary":
             return base64.b64decode(value)
-        elif type_ == 'hexBinary':
+        elif type_ == "hexBinary":
             return bytes.fromhex(value)
-        elif type_ == 'date':
+        elif type_ == "date":
             return datetime.date.fromisoformat(value)
-        elif type_ == 'dateTime':
+        elif type_ == "dateTime":
             return parse_datetime(value)
-        elif type_ == 'duration':
+        elif type_ == "duration":
             return parse_duration(value)
 
         # return to string

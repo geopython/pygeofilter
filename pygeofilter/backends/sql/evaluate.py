@@ -29,43 +29,40 @@ from typing import Dict, Optional
 
 import shapely.geometry
 
+from ... import ast, values
 from ..evaluator import Evaluator, handle
-from ... import ast
-from ... import values
-
 
 COMPARISON_OP_MAP = {
-    ast.ComparisonOp.EQ: '=',
-    ast.ComparisonOp.NE: '<>',
-    ast.ComparisonOp.LT: '<',
-    ast.ComparisonOp.LE: '<=',
-    ast.ComparisonOp.GT: '>',
-    ast.ComparisonOp.GE: '>=',
+    ast.ComparisonOp.EQ: "=",
+    ast.ComparisonOp.NE: "<>",
+    ast.ComparisonOp.LT: "<",
+    ast.ComparisonOp.LE: "<=",
+    ast.ComparisonOp.GT: ">",
+    ast.ComparisonOp.GE: ">=",
 }
 
 
 ARITHMETIC_OP_MAP = {
-    ast.ArithmeticOp.ADD: '+',
-    ast.ArithmeticOp.SUB: '-',
-    ast.ArithmeticOp.MUL: '*',
-    ast.ArithmeticOp.DIV: '/',
+    ast.ArithmeticOp.ADD: "+",
+    ast.ArithmeticOp.SUB: "-",
+    ast.ArithmeticOp.MUL: "*",
+    ast.ArithmeticOp.DIV: "/",
 }
 
 SPATIAL_COMPARISON_OP_MAP = {
-    ast.SpatialComparisonOp.INTERSECTS: 'ST_Intersects',
-    ast.SpatialComparisonOp.DISJOINT: 'ST_Disjoint',
-    ast.SpatialComparisonOp.CONTAINS: 'ST_Contains',
-    ast.SpatialComparisonOp.WITHIN: 'ST_Within',
-    ast.SpatialComparisonOp.TOUCHES: 'ST_Touches',
-    ast.SpatialComparisonOp.CROSSES: 'ST_Crosses',
-    ast.SpatialComparisonOp.OVERLAPS: 'ST_Overlaps',
-    ast.SpatialComparisonOp.EQUALS: 'ST_Equals',
+    ast.SpatialComparisonOp.INTERSECTS: "ST_Intersects",
+    ast.SpatialComparisonOp.DISJOINT: "ST_Disjoint",
+    ast.SpatialComparisonOp.CONTAINS: "ST_Contains",
+    ast.SpatialComparisonOp.WITHIN: "ST_Within",
+    ast.SpatialComparisonOp.TOUCHES: "ST_Touches",
+    ast.SpatialComparisonOp.CROSSES: "ST_Crosses",
+    ast.SpatialComparisonOp.OVERLAPS: "ST_Overlaps",
+    ast.SpatialComparisonOp.EQUALS: "ST_Equals",
 }
 
 
 class SQLEvaluator(Evaluator):
-    def __init__(self, attribute_map: Dict[str, str],
-                 function_map: Dict[str, str]):
+    def __init__(self, attribute_map: Dict[str, str], function_map: Dict[str, str]):
         self.attribute_map = attribute_map
         self.function_map = function_map
 
@@ -75,7 +72,7 @@ class SQLEvaluator(Evaluator):
 
     @handle(ast.And, ast.Or)
     def combination(self, node, lhs, rhs):
-        return f'({lhs} {node.op.value} {rhs})'
+        return f"({lhs} {node.op.value} {rhs})"
 
     @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
@@ -88,12 +85,12 @@ class SQLEvaluator(Evaluator):
     @handle(ast.Like)
     def like(self, node, lhs):
         pattern = node.pattern
-        if node.wildcard != '%':
+        if node.wildcard != "%":
             # TODO: not preceded by escapechar
-            pattern = pattern.replace(node.wildcard, '%')
-        if node.singlechar != '_':
+            pattern = pattern.replace(node.wildcard, "%")
+        if node.singlechar != "_":
             # TODO: not preceded by escapechar
-            pattern = pattern.replace(node.singlechar, '_')
+            pattern = pattern.replace(node.singlechar, "_")
 
         # TODO: handle node.nocase
         return (
@@ -126,7 +123,7 @@ class SQLEvaluator(Evaluator):
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
-        return f"\"{self.attribute_map[node.name]}\""
+        return f'"{self.attribute_map[node.name]}"'
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node: ast.Arithmetic, lhs, rhs):
@@ -153,12 +150,13 @@ class SQLEvaluator(Evaluator):
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
-        wkb_hex = shapely.geometry.box(
-            node.x1, node.y1, node.x2, node.y2
-        ).wkb_hex
+        wkb_hex = shapely.geometry.box(node.x1, node.y1, node.x2, node.y2).wkb_hex
         return f"ST_GeomFromWKB(x'{wkb_hex}')"
 
 
-def to_sql_where(root: ast.Node, field_mapping: Dict[str, str],
-                 function_map: Optional[Dict[str, str]] = None) -> str:
+def to_sql_where(
+    root: ast.Node,
+    field_mapping: Dict[str, str],
+    function_map: Optional[Dict[str, str]] = None,
+) -> str:
     return SQLEvaluator(field_mapping, function_map or {}).evaluate(root)

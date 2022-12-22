@@ -25,40 +25,39 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from enum import Enum
 from dataclasses import dataclass
-from typing import List, Optional, ClassVar, Union
+from enum import Enum
+from typing import ClassVar, List, Optional, Union
 
 from . import values
 
-
-AstType = Union['Node', values.ValueType, list]
-ScalarAstType = Union['Node', int, float]
-SpatialAstType = Union['Node', values.SpatialValueType]
-TemporalAstType = Union['Node', values.TemporalValueType]
-ArrayAstType = Union['Node', List[AstType]]
+AstType = Union["Node", values.ValueType, list]
+ScalarAstType = Union["Node", int, float]
+SpatialAstType = Union["Node", values.SpatialValueType]
+TemporalAstType = Union["Node", values.TemporalValueType]
+ArrayAstType = Union["Node", List[AstType]]
 
 
 class Node:
-    """ The base class for all other nodes to display the AST of CQL.
-    """
+    """The base class for all other nodes to display the AST of CQL."""
+
     inline: bool = False
 
     def get_sub_nodes(self) -> List[AstType]:
-        """ Get a list of sub-node of this node.
+        """Get a list of sub-node of this node.
 
-            :return: a list of all sub-nodes
-            :rtype: list[Node]
+        :return: a list of all sub-nodes
+        :rtype: list[Node]
         """
         return []
 
     def get_template(self) -> str:
-        """ Get a template string (using the ``.format`` method)
-            to represent the current node and sub-nodes. The template string
-            must provide a template replacement for each sub-node reported by
-            :func:`~pygeofilter.ast.Node.get_sub_nodes`.
+        """Get a template string (using the ``.format`` method)
+        to represent the current node and sub-nodes. The template string
+        must provide a template replacement for each sub-node reported by
+        :func:`~pygeofilter.ast.Node.get_sub_nodes`.
 
-            :return: the template to render
+        :return: the template to render
         """
         raise NotImplementedError
 
@@ -67,19 +66,19 @@ class Node:
             return False
 
         self_dict = {
-            k: v.__geo_interface__ if hasattr(v, '__geo_interface__') else v
+            k: v.__geo_interface__ if hasattr(v, "__geo_interface__") else v
             for k, v in self.__dict__.items()
         }
         other_dict = {
-            k: v.__geo_interface__ if hasattr(v, '__geo_interface__') else v
+            k: v.__geo_interface__ if hasattr(v, "__geo_interface__") else v
             for k, v in other.__dict__.items()
         }
         return self_dict == other_dict
 
 
 class Condition(Node):
-    """ The base class for all nodes representing a condition
-    """
+    """The base class for all nodes representing a condition"""
+
     pass
 
 
@@ -95,7 +94,7 @@ class Not(Condition):
         self.sub_node = sub_node
 
     def get_sub_nodes(self) -> List[AstType]:
-        """ Returns the sub-node for the negated condition. """
+        """Returns the sub-node for the negated condition."""
         return [self.sub_node]
 
     def get_template(self) -> str:
@@ -109,8 +108,8 @@ class CombinationOp(Enum):
 
 @dataclass
 class Combination(Condition):
-    """ Node class to represent a condition to combine two other conditions
-        using either AND or OR.
+    """Node class to represent a condition to combine two other conditions
+    using either AND or OR.
     """
 
     lhs: Node
@@ -142,24 +141,24 @@ class Or(Combination):
 
 
 class Predicate(Node):
-    """ The base class for all nodes representing a predicate
-    """
+    """The base class for all nodes representing a predicate"""
+
     pass
 
 
 class ComparisonOp(Enum):
-    EQ = '='
-    NE = '<>'
-    LT = '<'
-    LE = '<='
-    GT = '>'
-    GE = '>='
+    EQ = "="
+    NE = "<>"
+    LT = "<"
+    LE = "<="
+    GT = ">"
+    GE = ">="
 
 
 @dataclass
 class Comparison(Predicate):
-    """ Node class to represent a comparison predicate: to compare two
-        expressions using a comparison operation.
+    """Node class to represent a comparison predicate: to compare two
+    expressions using a comparison operation.
     """
 
     lhs: ScalarAstType
@@ -205,8 +204,8 @@ class GreaterEqual(Comparison):
 
 @dataclass
 class Between(Predicate):
-    """ Node class to represent a BETWEEN predicate: to check whether an
-        expression value within a range.
+    """Node class to represent a BETWEEN predicate: to check whether an
+    expression value within a range.
     """
 
     lhs: Node
@@ -223,8 +222,7 @@ class Between(Predicate):
 
 @dataclass
 class Like(Predicate):
-    """ Node class to represent a wildcard sting matching predicate.
-    """
+    """Node class to represent a wildcard sting matching predicate."""
 
     lhs: Node
     pattern: str
@@ -247,8 +245,8 @@ class Like(Predicate):
 
 @dataclass
 class In(Predicate):
-    """ Node class to represent list checking predicate.
-    """
+    """Node class to represent list checking predicate."""
+
     lhs: AstType
     sub_nodes: List[AstType]
     not_: bool
@@ -265,8 +263,7 @@ class In(Predicate):
 
 @dataclass
 class IsNull(Predicate):
-    """ Node class to represent null check predicate.
-    """
+    """Node class to represent null check predicate."""
 
     lhs: AstType
     not_: bool
@@ -295,7 +292,7 @@ class Include(Predicate):
     not_: bool
 
     def get_template(self) -> str:
-        return 'EXCLUDE' if self.not_ else 'INCLUDE'
+        return "EXCLUDE" if self.not_ else "INCLUDE"
 
 
 # https://portal.ogc.org/files/96288#enhanced-temporal-operators
@@ -316,30 +313,30 @@ class Include(Predicate):
 # BEFORE_OR_DURING  <----->
 # DURING_OR_AFTER           <----->
 
-class TemporalComparisonOp(Enum):
-    DISJOINT = 'DISJOINT'
-    AFTER = 'AFTER'
-    BEFORE = 'BEFORE'
-    BEGINS = 'BEGINS'
-    BEGUNBY = 'BEGUNBY'
-    TCONTAINS = 'TCONTAINS'
-    DURING = 'DURING'
-    ENDEDBY = 'ENDEDBY'
-    ENDS = 'ENDS'
-    TEQUALS = 'TEQUALS'
-    MEETS = 'MEETS'
-    METBY = 'METBY'
-    TOVERLAPS = 'TOVERLAPS'
-    OVERLAPPEDBY = 'OVERLAPPEDBY'
 
-    BEFORE_OR_DURING = 'BEFORE OR DURING'
-    DURING_OR_AFTER = 'DURING OR AFTER'
+class TemporalComparisonOp(Enum):
+    DISJOINT = "DISJOINT"
+    AFTER = "AFTER"
+    BEFORE = "BEFORE"
+    BEGINS = "BEGINS"
+    BEGUNBY = "BEGUNBY"
+    TCONTAINS = "TCONTAINS"
+    DURING = "DURING"
+    ENDEDBY = "ENDEDBY"
+    ENDS = "ENDS"
+    TEQUALS = "TEQUALS"
+    MEETS = "MEETS"
+    METBY = "METBY"
+    TOVERLAPS = "TOVERLAPS"
+    OVERLAPPEDBY = "OVERLAPPEDBY"
+
+    BEFORE_OR_DURING = "BEFORE OR DURING"
+    DURING_OR_AFTER = "DURING OR AFTER"
 
 
 @dataclass
 class TemporalPredicate(Predicate):
-    """ Node class to represent temporal predicate.
-    """
+    """Node class to represent temporal predicate."""
 
     lhs: TemporalAstType
     rhs: TemporalAstType
@@ -433,16 +430,15 @@ class TimeDuringOrAfter(TemporalPredicate):
 
 
 class ArrayComparisonOp(Enum):
-    AEQUALS = 'AEQUALS'
-    ACONTAINS = 'ACONTAINS'
-    ACONTAINEDBY = 'ACONTAINEDBY'
-    AOVERLAPS = 'AOVERLAPS'
+    AEQUALS = "AEQUALS"
+    ACONTAINS = "ACONTAINS"
+    ACONTAINEDBY = "ACONTAINEDBY"
+    AOVERLAPS = "AOVERLAPS"
 
 
 @dataclass
 class ArrayPredicate(Predicate):
-    """ Node class to represent array predicates.
-    """
+    """Node class to represent array predicates."""
 
     lhs: ArrayAstType
     rhs: ArrayAstType
@@ -476,20 +472,19 @@ class ArrayOverlaps(ArrayPredicate):
 
 
 class SpatialComparisonOp(Enum):
-    INTERSECTS = 'INTERSECTS'
-    DISJOINT = 'DISJOINT'
-    CONTAINS = 'CONTAINS'
-    WITHIN = 'WITHIN'
-    TOUCHES = 'TOUCHES'
-    CROSSES = 'CROSSES'
-    OVERLAPS = 'OVERLAPS'
-    EQUALS = 'EQUALS'
+    INTERSECTS = "INTERSECTS"
+    DISJOINT = "DISJOINT"
+    CONTAINS = "CONTAINS"
+    WITHIN = "WITHIN"
+    TOUCHES = "TOUCHES"
+    CROSSES = "CROSSES"
+    OVERLAPS = "OVERLAPS"
+    EQUALS = "EQUALS"
 
 
 @dataclass
 class SpatialComparisonPredicate(Predicate):
-    """ Node class to represent spatial relation predicate.
-    """
+    """Node class to represent spatial relation predicate."""
 
     lhs: SpatialAstType
     rhs: SpatialAstType
@@ -544,8 +539,7 @@ class GeometryEquals(SpatialComparisonPredicate):
 
 @dataclass
 class Relate(Predicate):
-    """ Node class to represent spatial relation predicate.
-    """
+    """Node class to represent spatial relation predicate."""
 
     lhs: SpatialAstType
     rhs: SpatialAstType
@@ -559,14 +553,13 @@ class Relate(Predicate):
 
 
 class SpatialDistanceOp(Enum):
-    DWITHIN = 'DWITHIN'
-    BEYOND = 'BEYOND'
+    DWITHIN = "DWITHIN"
+    BEYOND = "BEYOND"
 
 
 @dataclass
 class SpatialDistancePredicate(Predicate):
-    """ Node class to represent spatial relation predicate.
-    """
+    """Node class to represent spatial relation predicate."""
 
     lhs: SpatialAstType
     rhs: SpatialAstType
@@ -593,8 +586,7 @@ class DistanceBeyond(SpatialDistancePredicate):
 
 @dataclass
 class BBox(Predicate):
-    """ Node class to represent a bounding box predicate.
-    """
+    """Node class to represent a bounding box predicate."""
 
     lhs: SpatialAstType
     minx: float
@@ -614,17 +606,18 @@ class BBox(Predicate):
 
 
 class Expression(Node):
-    """ The base class for all nodes representing expressions
-    """
+    """The base class for all nodes representing expressions"""
+
     pass
 
 
 class Attribute(Expression):
-    """ Node class to represent attribute lookup expressions
+    """Node class to represent attribute lookup expressions
 
-        :ivar name: the name of the attribute to be accessed
-        :type name: str
+    :ivar name: the name of the attribute to be accessed
+    :type name: str
     """
+
     inline = True
 
     def __init__(self, name):
@@ -635,16 +628,16 @@ class Attribute(Expression):
 
 
 class ArithmeticOp(Enum):
-    ADD = '+'
-    SUB = '-'
-    MUL = '*'
-    DIV = '/'
+    ADD = "+"
+    SUB = "-"
+    MUL = "*"
+    DIV = "/"
 
 
 @dataclass
 class Arithmetic(Expression):
-    """ Node class to represent arithmetic operation expressions with two
-        sub-expressions and an operator.
+    """Node class to represent arithmetic operation expressions with two
+    sub-expressions and an operator.
     """
 
     lhs: ScalarAstType
@@ -680,8 +673,7 @@ class Div(Arithmetic):
 
 @dataclass
 class Function(Expression):
-    """ Node class to represent function invocations.
-    """
+    """Node class to represent function invocations."""
 
     name: str
     arguments: List[AstType]
@@ -693,15 +685,15 @@ class Function(Expression):
         return f"{self.name} ({', '.join(['{}'] * len(self.arguments))})"
 
 
-def indent(text: str, amount: int, ch: str = ' ') -> str:
+def indent(text: str, amount: int, ch: str = " ") -> str:
     padding = amount * ch
-    return ''.join(padding + line for line in text.splitlines(True))
+    return "".join(padding + line for line in text.splitlines(True))
 
 
 def get_repr(node: Node, indent_amount: int = 0, indent_incr: int = 4) -> str:
-    """ Get a debug representation of the given AST node. ``indent_amount``
-        and ``indent_incr`` are for the recursive call and don't need to be
-        passed.
+    """Get a debug representation of the given AST node. ``indent_amount``
+    and ``indent_incr`` are for the recursive call and don't need to be
+    passed.
     """
     sub_nodes = node.get_sub_nodes()
     template = node.get_template()
@@ -712,12 +704,8 @@ def get_repr(node: Node, indent_amount: int = 0, indent_incr: int = 4) -> str:
             args.append(
                 "(\n{}\n)".format(
                     indent(
-                        get_repr(
-                            sub_node,
-                            indent_amount + indent_incr,
-                            indent_incr
-                        ),
-                        indent_amount + indent_incr
+                        get_repr(sub_node, indent_amount + indent_incr, indent_incr),
+                        indent_amount + indent_incr,
                     )
                 )
             )

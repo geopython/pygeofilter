@@ -100,9 +100,7 @@ class Evaluator(metaclass=EvaluatorMeta):
             subnodes = cast(ast.Node, node).get_sub_nodes()
             if subnodes:
                 if isinstance(subnodes, list):
-                    sub_args = [
-                        self.evaluate(sub_node, False) for sub_node in subnodes
-                    ]
+                    sub_args = [self.evaluate(sub_node, False) for sub_node in subnodes]
                 else:
                     sub_args = [self.evaluate(subnodes, False)]
 
@@ -121,9 +119,7 @@ class Evaluator(metaclass=EvaluatorMeta):
         """Interface function for a last resort when trying to evaluate a node
         and no handler was found.
         """
-        raise NotImplementedError(
-            f"Failed to evaluate node of type {type(node)}"
-        )
+        raise NotImplementedError(f"Failed to evaluate node of type {type(node)}")
 
     def adopt_result(self, result: Any) -> Any:
         """Interface function for adopting the final evaluation result

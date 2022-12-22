@@ -84,6 +84,22 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * spaces, not tabs
 * pygeofilter, instead of PyGeoFilter, pygeoFilter, etc.
 
+
+#### **pre-commit**
+The project is using [`pre-commit`](https://pre-commit.com) to automatically run code formatting and type checking on new commits. Please install `pre-commit` and enable it on your environment before pushing new commits.
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Enable pre-commit
+cd /pygeofilter
+pre-commit install
+
+# Optional - run pre-commit manually
+pre-commit run --all-files
+```
+
 ## Suggesting Enhancements
 
 We welcome suggestions for enhancements, but reserve the right to reject them if they do not follow future plans for pygeofilter.

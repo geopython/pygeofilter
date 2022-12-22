@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+      - id: black
+        language_version: python
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        language_version: python
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 5.0.4
+    hooks:
+      - id: flake8
+        language_version: python
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.982
+    hooks:
+      - id: mypy
+        language_version: python
+        args: [--install-types, --non-interactive]
+        # N.B.: Mypy is... a bit fragile.
+        # ref: https://github.com/python/mypy/issues/4008
+        # The issue is that we have too many evaluate.py or parser.py and mypy believe they are all the same
+        # when run within pre-commit
+        files: ^pygeofilter*

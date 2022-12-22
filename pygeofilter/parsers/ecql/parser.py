@@ -24,16 +24,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os.path
 import logging
+import os.path
 
 from lark import Lark, logger, v_args
 
-from ... import ast
-from ... import values
-from ..wkt import WKTTransformer
+from ... import ast, values
 from ..iso8601 import ISO8601Transformer
-
+from ..wkt import WKTTransformer
 
 logger.setLevel(logging.DEBUG)
 
@@ -86,16 +84,16 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return ast.Between(lhs, low, high, True)
 
     def like(self, node, pattern):
-        return ast.Like(node, pattern, False, '%', '.', '\\', False)
+        return ast.Like(node, pattern, False, "%", ".", "\\", False)
 
     def not_like(self, node, pattern):
-        return ast.Like(node, pattern, False, '%', '.', '\\', True)
+        return ast.Like(node, pattern, False, "%", ".", "\\", True)
 
     def ilike(self, node, pattern):
-        return ast.Like(node, pattern, True, '%', '.', '\\', False)
+        return ast.Like(node, pattern, True, "%", ".", "\\", False)
 
     def not_ilike(self, node, pattern):
-        return ast.Like(node, pattern, True, '%', '.', '\\', True)
+        return ast.Like(node, pattern, True, "%", ".", "\\", True)
 
     def in_(self, node, *options):
         return ast.In(node, list(options), False)
@@ -153,9 +151,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return ast.BBox(lhs, minx, miny, maxx, maxy, crs)
 
     def function(self, func_name, *expressions):
-        return ast.Function(
-            str(func_name), list(expressions)
-        )
+        return ast.Function(str(func_name), list(expressions))
 
     def add(self, lhs, rhs):
         return ast.Add(lhs, rhs)
@@ -201,12 +197,12 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
 
 
 parser = Lark.open(
-    'grammar.lark',
+    "grammar.lark",
     rel_to=__file__,
-    parser='lalr',
+    parser="lalr",
     debug=True,
     transformer=ECQLTransformer(),
-    import_paths=[os.path.dirname(os.path.dirname(__file__))]
+    import_paths=[os.path.dirname(os.path.dirname(__file__))],
 )
 
 

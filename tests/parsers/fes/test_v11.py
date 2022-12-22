@@ -1,10 +1,10 @@
+from pygeofilter import ast, values
 from pygeofilter.parsers.fes.v11 import parse
-from pygeofilter import ast
-from pygeofilter import values
 
 
 def test_and():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:And>
@@ -18,21 +18,23 @@ def test_and():
         </ogc:PropertyIsGreaterThan>
       </ogc:And>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.And(
         ast.LessThan(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             30,
         ),
         ast.GreaterThan(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             10,
-        )
+        ),
     )
 
 
 def test_or():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Or>
@@ -46,21 +48,23 @@ def test_or():
         </ogc:PropertyIsGreaterThanOrEqualTo>
       </ogc:Or>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.Or(
         ast.LessEqual(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             30.5,
         ),
         ast.GreaterEqual(
-            ast.Attribute('attr'),
+            ast.Attribute("attr"),
             10.5,
-        )
+        ),
     )
 
 
 def test_not():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Not>
@@ -70,17 +74,19 @@ def test_not():
         </ogc:PropertyIsEqualTo>
       </ogc:Not>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.Not(
         ast.Equal(
-            ast.Attribute('attr'),
-            'value',
+            ast.Attribute("attr"),
+            "value",
         ),
     )
 
 
 def test_not_equal():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsNotEqualTo>
@@ -88,15 +94,17 @@ def test_not_equal():
         <ogc:Literal type="xsd:string">value</ogc:Literal>
       </ogc:PropertyIsNotEqualTo>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.NotEqual(
-        ast.Attribute('attr'),
-        'value',
+        ast.Attribute("attr"),
+        "value",
     )
 
 
 def test_is_like():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsLike
@@ -108,19 +116,21 @@ def test_is_like():
         <ogc:Literal type="xsd:string">some%</ogc:Literal>
       </ogc:PropertyIsLike>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.Like(
-        ast.Attribute('attr'),
-        'some%',
+        ast.Attribute("attr"),
+        "some%",
         nocase=False,
         not_=False,
-        wildcard='%',
-        singlechar='.',
-        escapechar='\\',
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
     )
 
     # case insensitive
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsLike
@@ -132,35 +142,39 @@ def test_is_like():
         <ogc:Literal type="xsd:string">some%</ogc:Literal>
       </ogc:PropertyIsLike>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.Like(
-        ast.Attribute('attr'),
-        'some%',
+        ast.Attribute("attr"),
+        "some%",
         nocase=True,
         not_=False,
-        wildcard='%',
-        singlechar='.',
-        escapechar='\\',
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
     )
 
 
 def test_is_null():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsNull>
         <ogc:ValueReference>attr</ogc:ValueReference>
       </ogc:PropertyIsNull>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.IsNull(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         not_=False,
     )
 
 
 def test_is_between():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsBetween>
@@ -173,9 +187,10 @@ def test_is_between():
         </ogc:UpperBoundary>
       </ogc:PropertyIsBetween>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.Between(
-        ast.Attribute('attr'),
+        ast.Attribute("attr"),
         10.5,
         11.5,
         not_=False,
@@ -183,7 +198,8 @@ def test_is_between():
 
 
 def test_geom_equals():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Equals>
@@ -195,24 +211,28 @@ def test_geom_equals():
         </gml:Point>
       </ogc:Equals>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryEquals(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Point',
-            'coordinates': (1.0, 1.0),
-            'crs': {
-                'type': 'name',
-                'properties': {
-                    'name': 'http://www.opengis.net/def/crs/epsg/0/4326'
-                }
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Point",
+                "coordinates": (1.0, 1.0),
+                "crs": {
+                    "type": "name",
+                    "properties": {
+                        "name": "http://www.opengis.net/def/crs/epsg/0/4326"
+                    },
+                },
             }
-        })
+        ),
     )
 
 
 def test_geom_disjoint():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Disjoint>
@@ -222,21 +242,25 @@ def test_geom_disjoint():
         </gml:LineString>
       </ogc:Disjoint>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryDisjoint(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'LineString',
-            'coordinates': [
-                (1.0, 1.0),
-                (2.0, 2.0),
-            ],
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "LineString",
+                "coordinates": [
+                    (1.0, 1.0),
+                    (2.0, 2.0),
+                ],
+            }
+        ),
     )
 
 
 def test_geom_touches():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Touches>
@@ -255,25 +279,25 @@ def test_geom_touches():
         </gml:Polygon>
       </ogc:Touches>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryTouches(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'coordinates': [
-                [
-                    (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)],
+                    [(0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)],
                 ],
-                [
-                    (0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)
-                ],
-            ]
-        })
+            }
+        ),
     )
 
 
 def test_geom_within():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Within>
@@ -284,26 +308,30 @@ def test_geom_within():
         </gml:Envelope>
       </ogc:Within>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryWithin(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'coordinates': [
-                [
-                    (0.0, 1.0),
-                    (0.0, 3.0),
-                    (2.0, 3.0),
-                    (2.0, 1.0),
-                    (0.0, 1.0),
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        (0.0, 1.0),
+                        (0.0, 3.0),
+                        (2.0, 3.0),
+                        (2.0, 1.0),
+                        (0.0, 1.0),
+                    ],
                 ],
-            ]
-        })
+            }
+        ),
     )
 
 
 def test_geom_overlaps():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Overlaps>
@@ -346,35 +374,31 @@ def test_geom_overlaps():
         </gml:MultiSurface>
       </ogc:Overlaps>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryOverlaps(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'MultiPolygon',
-            'coordinates': [
-                [
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "MultiPolygon",
+                "coordinates": [
                     [
-                        (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)
+                        [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)],
+                        [(0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)],
                     ],
                     [
-                        (0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)
+                        [(10.0, 10.0), (11.0, 10.0), (10.0, 11.0), (10.0, 10.0)],
+                        [(10.2, 10.2), (10.5, 10.2), (10.2, 10.5), (10.2, 10.2)],
                     ],
                 ],
-                [
-                    [
-                        (10.0, 10.0), (11.0, 10.0), (10.0, 11.0), (10.0, 10.0)
-                    ],
-                    [
-                        (10.2, 10.2), (10.5, 10.2), (10.2, 10.5), (10.2, 10.2)
-                    ],
-                ]
-            ]
-        })
+            }
+        ),
     )
 
 
 def test_geom_crosses():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Crosses>
@@ -384,21 +408,19 @@ def test_geom_crosses():
         </georss:line>
       </ogc:Crosses>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryCrosses(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'LineString',
-            'coordinates': [
-                (2.0, 1.0),
-                (1.0, 2.0)
-            ]
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {"type": "LineString", "coordinates": [(2.0, 1.0), (1.0, 2.0)]}
+        ),
     )
 
 
 def test_geom_intersects():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Intersects>
@@ -408,27 +430,25 @@ def test_geom_intersects():
         </georss:box>
       </ogc:Intersects>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryIntersects(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'bbox': (0.5, 1.0, 1.5, 2.0),
-            'coordinates': [
-                [
-                    (0.5, 1.0),
-                    (0.5, 2.0),
-                    (1.5, 2.0),
-                    (1.5, 1.0),
-                    (0.5, 1.0)
-                ]
-            ]
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "bbox": (0.5, 1.0, 1.5, 2.0),
+                "coordinates": [
+                    [(0.5, 1.0), (0.5, 2.0), (1.5, 2.0), (1.5, 1.0), (0.5, 1.0)]
+                ],
+            }
+        ),
     )
 
 
 def test_geom_contains():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Contains>
@@ -438,26 +458,24 @@ def test_geom_contains():
         </georss:polygon>
       </ogc:Contains>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.GeometryContains(
-        ast.Attribute('attr'),
-        values.Geometry({
-            'type': 'Polygon',
-            'coordinates': [
-                [
-                    (0.5, 1.0),
-                    (0.5, 2.0),
-                    (1.5, 2.0),
-                    (1.5, 1.0),
-                    (0.5, 1.0)
-                ]
-            ]
-        })
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [(0.5, 1.0), (0.5, 2.0), (1.5, 2.0), (1.5, 1.0), (0.5, 1.0)]
+                ],
+            }
+        ),
     )
 
 
 def test_geom_dwithin():
-    result = parse('''
+    result = parse(
+        """
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:DWithin>
@@ -468,13 +486,16 @@ def test_geom_dwithin():
         <ogc:Distance uom="m">10</ogc:Distance>
       </ogc:DWithin>
     </ogc:Filter>
-    ''')
+    """
+    )
     assert result == ast.DistanceWithin(
-        ast.Attribute('attr'),
-        values.Geometry({
-            "type": "Point",
-            "coordinates": (1.0, 1.0),
-        }),
+        ast.Attribute("attr"),
+        values.Geometry(
+            {
+                "type": "Point",
+                "coordinates": (1.0, 1.0),
+            }
+        ),
         distance=10,
         units="m",
     )

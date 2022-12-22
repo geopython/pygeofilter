@@ -1,18 +1,24 @@
 import ctypes.util
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.event import listen
-from sqlalchemy.sql import select, func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
-from geoalchemy2 import Geometry
 import dateparser
 import pytest
+from geoalchemy2 import Geometry
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    create_engine,
+)
+from sqlalchemy.event import listen
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.sql import func, select
 
-from pygeofilter.parsers.ecql import parse
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
-
+from pygeofilter.parsers.ecql import parse
 
 Base = declarative_base()
 
@@ -66,7 +72,7 @@ FIELD_MAPPING = {
 def load_spatialite(dbapi_conn, connection_record):
     dbapi_conn.enable_load_extension(True)
     dbapi_conn.load_extension(
-        ctypes.util.find_library('mod_spatialite')
+        ctypes.util.find_library("mod_spatialite")
         or "/usr/lib/x86_64-linux-gnu/mod_spatialite.so"
     )
 
@@ -130,11 +136,7 @@ def setup_database(connection):
     Base.metadata.create_all()
 
     seed_database(
-        scoped_session(
-            sessionmaker(
-                autocommit=False, autoflush=False, bind=connection
-            )
-        )
+        scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=connection))
     )
 
     yield
@@ -159,6 +161,7 @@ def evaluate(session, cql_expr, expected_ids):
     results = [row.identifier for row in q]
 
     assert expected_ids == type(expected_ids)(results)
+
 
 # common comparisons
 
@@ -189,6 +192,7 @@ def test_float_ge(db_session):
 
 def test_float_between(db_session):
     evaluate(db_session, "floatAttribute BETWEEN -1 AND 1", ("A",))
+
 
 # test different field types
 
@@ -260,6 +264,7 @@ def test_not_like_endswith(db_session):
 def test_not_ilike_endswith(db_session):
     evaluate(db_session, "strMetaAttribute NOT ILIKE '%b'", ("A",))
 
+
 # (NOT) IN
 
 
@@ -269,6 +274,7 @@ def test_string_in(db_session):
 
 def test_string_not_in(db_session):
     evaluate(db_session, "identifier NOT IN ('B', 'C')", ("A",))
+
 
 # (NOT) NULL
 
@@ -280,15 +286,12 @@ def test_string_null(db_session):
 def test_string_not_null(db_session):
     evaluate(db_session, "intAttribute IS NOT NULL", ("A",))
 
+
 # temporal predicates
 
 
 def test_before(db_session):
-    evaluate(
-        db_session,
-        "datetimeAttribute BEFORE 2000-01-01T00:00:01Z",
-        ("A",)
-    )
+    evaluate(db_session, "datetimeAttribute BEFORE 2000-01-01T00:00:01Z", ("A",))
 
 
 def test_before_or_during_dt_dt(db_session):
@@ -303,8 +306,7 @@ def test_before_or_during_dt_dt(db_session):
 def test_before_or_during_dt_td(db_session):
     evaluate(
         db_session,
-        "datetimeAttribute BEFORE OR DURING "
-        "2000-01-01T00:00:00Z / PT4S",
+        "datetimeAttribute BEFORE OR DURING " "2000-01-01T00:00:00Z / PT4S",
         ("A",),
     )
 
@@ -312,8 +314,7 @@ def test_before_or_during_dt_td(db_session):
 def test_before_or_during_td_dt(db_session):
     evaluate(
         db_session,
-        "datetimeAttribute BEFORE OR DURING "
-        "PT4S / 2000-01-01T00:00:03Z",
+        "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z",
         ("A",),
     )
 
@@ -321,10 +322,10 @@ def test_before_or_during_td_dt(db_session):
 def test_during_td_dt(db_session):
     evaluate(
         db_session,
-        "datetimeAttribute BEFORE OR DURING "
-        "PT4S / 2000-01-01T00:00:03Z",
+        "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z",
         ("A",),
     )
+
 
 # spatial predicates
 
@@ -338,11 +339,7 @@ def test_intersects_mulitipoint_1(db_session):
 
 
 def test_intersects_mulitipoint_2(db_session):
-    evaluate(
-        db_session,
-        "INTERSECTS(geometry, MULTIPOINT((0 0), (1 1)))",
-        ("A",)
-    )
+    evaluate(db_session, "INTERSECTS(geometry, MULTIPOINT((0 0), (1 1)))", ("A",))
 
 
 def test_intersects_linestring(db_session):
@@ -379,6 +376,7 @@ def test_intersects_multipolygon(db_session):
 def test_intersects_envelope(db_session):
     evaluate(db_session, "INTERSECTS(geometry, ENVELOPE(0 1.0 0 1.0))", ("A",))
 
+
 # Commented out as not supported in spatialite for testing
 # def test_dwithin(db_session):
 #    evaluate(db_session, "DWITHIN(geometry, POINT(0 0), 10, meters)", ("A",))
@@ -390,6 +388,7 @@ def test_intersects_envelope(db_session):
 def test_bbox(db_session):
     evaluate(db_session, "BBOX(geometry, 0, 0, 1, 1, '4326')", ("A",))
 
+
 # arithmethic expressions
 
 
@@ -398,26 +397,16 @@ def test_arith_simple_plus(db_session):
 
 
 def test_arith_field_plus_1(db_session):
-    evaluate(
-        db_session,
-        "intMetaAttribute = floatMetaAttribute + 10",
-        ("A", "B")
-    )
+    evaluate(db_session, "intMetaAttribute = floatMetaAttribute + 10", ("A", "B"))
 
 
 def test_arith_field_plus_2(db_session):
-    evaluate(
-        db_session,
-        "intMetaAttribute = 10 + floatMetaAttribute",
-        ("A", "B")
-    )
+    evaluate(db_session, "intMetaAttribute = 10 + floatMetaAttribute", ("A", "B"))
 
 
 def test_arith_field_plus_field(db_session):
     evaluate(
-        db_session,
-        "intMetaAttribute = " "floatMetaAttribute + intAttribute",
-        ("A",)
+        db_session, "intMetaAttribute = " "floatMetaAttribute + intAttribute", ("A",)
     )
 
 

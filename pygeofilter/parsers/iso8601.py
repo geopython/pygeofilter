@@ -27,7 +27,7 @@
 
 from lark import Transformer, v_args
 
-from ..util import parse_duration, parse_datetime
+from ..util import parse_datetime, parse_duration
 
 
 @v_args(inline=True)

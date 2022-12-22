@@ -27,40 +27,31 @@
 
 """Install pygeofilter."""
 
-from setuptools import find_packages, setup
 import os
 import os.path
 
-# don't install dependencies when building win readthedocs
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
+from setuptools import find_packages, setup
 
-# get version number
-# from https://github.com/mapbox/rasterio/blob/master/setup.py#L55
-init_py = os.path.join(os.path.dirname(__file__), 'pygeofilter/__init__.py')
-with open(init_py) as f:
-    for line in f:
-        if line.find("__version__") >= 0:
-            version = line.split("=")[1].strip()
-            version = version.strip('"')
-            version = version.strip("'")
-            break
+# don't install dependencies when building win readthedocs
+on_rtd = os.environ.get("READTHEDOCS") == "True"
 
 # use README.md for project long_description
-with open('README.md') as f:
+with open("README.md") as f:
     readme = f.read()
 
-description='pygeofilter is a pure Python parser implementation of OGC filtering standards'  # noqa
+description = (
+    "pygeofilter is a pure Python parser implementation of OGC filtering standards"
+)
 
 setup(
-    name='pygeofilter',
-    version=version,
+    name="pygeofilter",
     description=description,
     long_description=readme,
     long_description_content_type="text/markdown",
-    author='Fabian Schindler',
-    author_email='fabian.schindler@eox.at',
-    url='https://github.com/geopython/pygeofilter',
-    license='MIT',
+    author="Fabian Schindler",
+    author_email="fabian.schindler@eox.at",
+    url="https://github.com/geopython/pygeofilter",
+    license="MIT",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -68,23 +59,25 @@ setup(
         "lark<1.0",
         "pygeoif==0.7",
         "dataclasses;python_version<'3.7'",
-    ] if not on_rtd else [],
+    ]
+    if not on_rtd
+    else [],
     extras_require={
-        'backend-django': ['django'],
-        'backend-sqlalchemy': ['geoalchemy2', 'sqlalchemy'],
-        'backend-native': ['shapely'],
-        'backend-elasticsearch': ['elasticsearch', 'elasticsearch-dsl'],
-        'fes': ['pygml>=0.2']
+        "backend-django": ["django"],
+        "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy"],
+        "backend-native": ["shapely"],
+        "backend-elasticsearch": ["elasticsearch", "elasticsearch-dsl"],
+        "fes": ["pygml>=0.2"],
     },
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Topic :: Scientific/Engineering :: GIS',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "Topic :: Scientific/Engineering :: GIS",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
-    tests_require=['pytest']
+    tests_require=["pytest"],
 )
