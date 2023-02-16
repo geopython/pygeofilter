@@ -1,5 +1,15 @@
 # Changelog
 
+### [0.2.1](https://www.github.com/geopython/pygeofilter/compare/v0.2.0...v0.2.1) (2023-02-16)
+
+
+### Bug Fixes
+
+* dt naivety ([08fb5f5](https://www.github.com/geopython/pygeofilter/commit/08fb5f5f8b0a5ee39443a6233d558bbacadb5acb))
+* order of date/datetime checking in native evaluator ([d37d7c8](https://www.github.com/geopython/pygeofilter/commit/d37d7c8cb483fdb9ff53ff9f871d5a8f85a227e1))
+* pinning sqlalchemy to version < 2.0.0 ([6e67239](https://www.github.com/geopython/pygeofilter/commit/6e67239eb1af9a77599bbbc8cee211c9f906d95e))
+* timezone handling for dates ([6c0e5c1](https://www.github.com/geopython/pygeofilter/commit/6c0e5c17ce5dde2dc541ccd6411c55d2a86e52ec))
+
 ## [0.2.0](https://www.github.com/geopython/pygeofilter/compare/v0.1.2...v0.2.0) (2022-10-17)
 
 
