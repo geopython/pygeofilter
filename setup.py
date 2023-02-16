@@ -64,7 +64,7 @@ setup(
     else [],
     extras_require={
         "backend-django": ["django"],
-        "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy"],
+        "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy<2"],
         "backend-native": ["shapely"],
         "backend-elasticsearch": ["elasticsearch", "elasticsearch-dsl"],
         "fes": ["pygml>=0.2"],
