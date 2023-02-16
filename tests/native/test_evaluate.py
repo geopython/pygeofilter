@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import List, Optional
 
 import pytest
@@ -38,7 +38,7 @@ def data():
             5,
             5.5,
             date(2010, 1, 1),
-            datetime(2010, 1, 1),
+            datetime(2010, 1, 1, tzinfo=timezone.utc),
             Point(1, 1),
             [2, 3],
             Nested("this is a test"),
@@ -49,7 +49,7 @@ def data():
             8,
             8.5,
             date(2010, 1, 10),
-            datetime(2010, 1, 10),
+            datetime(2010, 1, 10, tzinfo=timezone.utc),
             Point(2, 2),
             [1, 2, 3, 4, 5],
             Nested("this is another test"),

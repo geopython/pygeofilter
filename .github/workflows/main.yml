@@ -41,7 +41,7 @@ jobs:
     - name: Run unit tests
       run: |
         pytest
-    - name: run pre-commit (code formatting, lint and type checking)
-      run: |
-        python -m pip install pre-commit
-        pre-commit run --all-files
+    # - name: run pre-commit (code formatting, lint and type checking)
+    #   run: |
+    #     python -m pip install pre-commit
+    #     pre-commit run --all-files

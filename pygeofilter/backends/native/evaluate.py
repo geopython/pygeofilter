@@ -301,6 +301,8 @@ def to_interval(value: MaybeInterval) -> InternalInterval:
 
     if isinstance(value, str):
         value = parse_datetime(value)
+        if not value.tzinfo:
+            value = value.replace(tzinfo=timezone.utc)
 
     if isinstance(value, values.Interval):
         low = value.start
