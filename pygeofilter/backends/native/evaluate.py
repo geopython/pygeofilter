@@ -329,14 +329,14 @@ def to_interval(value: MaybeInterval) -> InternalInterval:
 
         return (low, high)
 
+    elif isinstance(value, datetime):
+        return (value, value)
+
     elif isinstance(value, date):
         return (
             datetime.combine(value, time.min, timezone.utc),
             datetime.combine(value, time.max, timezone.utc),
         )
-
-    elif isinstance(value, datetime):
-        return (value, value)
 
     elif value is None:
         return (None, None)
