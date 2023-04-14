@@ -10,4 +10,3 @@ dateparser
 lark
 elasticsearch
 elasticsearch-dsl
-gdal
