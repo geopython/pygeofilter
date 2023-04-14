@@ -1,6 +1,6 @@
 django
 geoalchemy2
-sqlalchemy<2.0.0
+sqlalchemy
 geopandas
 fiona
 pyproj
@@ -10,3 +10,4 @@ dateparser
 lark
 elasticsearch
 elasticsearch-dsl
+gdal
