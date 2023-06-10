@@ -32,7 +32,7 @@ import shapely.geometry
 
 from ... import ast, values
 from ...util import like_pattern_to_re, parse_datetime
-from ..evaluator import Evaluator, handle
+from ...evaluator import Evaluator, handle
 
 COMPARISON_MAP = {
     ast.ComparisonOp.EQ: "==",

@@ -33,7 +33,7 @@ import shapely
 
 from .. import ast, values
 from ..util import like_pattern_to_re
-from .evaluator import Evaluator, handle
+from ..evaluator import Evaluator, handle
 
 COMPARISON_MAP = {
     "=": operator.eq,

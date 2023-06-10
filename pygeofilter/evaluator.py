@@ -28,7 +28,7 @@
 from functools import wraps
 from typing import Any, Callable, Dict, List, Type, cast
 
-from .. import ast
+from . import ast
 
 
 def get_all_subclasses(*classes: Type) -> List[Type]:

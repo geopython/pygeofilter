@@ -31,7 +31,7 @@ from datetime import date, datetime, timedelta
 from typing import List, Union, cast
 
 from ... import ast, values
-from ...cql2 import BINARY_OP_PREDICATES_MAP
+from ..cql2 import BINARY_OP_PREDICATES_MAP
 from ...util import parse_date, parse_datetime, parse_duration
 
 # https://github.com/opengeospatial/ogcapi-features/tree/master/cql2
