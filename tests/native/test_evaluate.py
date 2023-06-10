@@ -8,7 +8,7 @@ from shapely.geometry import Point
 
 from pygeofilter import ast
 from pygeofilter.backends.native.evaluate import NativeEvaluator
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 
 @dataclass

@@ -20,7 +20,7 @@ from elasticsearch_dsl import (
 
 from pygeofilter import ast
 from pygeofilter.backends.elasticsearch import to_filter
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 from pygeofilter.util import parse_datetime
 
 

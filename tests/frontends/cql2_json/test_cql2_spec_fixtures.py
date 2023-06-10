@@ -2,8 +2,8 @@ import json
 import pathlib
 
 from pygeofilter.backends.cql2_json import to_cql2
-from pygeofilter.parsers.cql2_json import parse as json_parse
-from pygeofilter.parsers.cql2_text import parse as text_parse
+from pygeofilter.frontends.cql2_json import parse as json_parse
+from pygeofilter.frontends.cql2_text import parse as text_parse
 
 dir = pathlib.Path(__file__).parent.resolve()
 fixtures = pathlib.Path(dir, "fixtures.json")

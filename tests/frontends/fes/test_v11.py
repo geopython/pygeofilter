@@ -1,27 +1,23 @@
-from datetime import datetime, timedelta
-
-from dateparser.timezone_parser import StaticTzInfo
-
 from pygeofilter import ast, values
-from pygeofilter.parsers.fes.v20 import parse
+from pygeofilter.frontends.fes.v11 import parse
 
 
 def test_and():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:And>
-        <fes:PropertyIsLessThan>
-          <fes:ValueReference>attr</fes:ValueReference>
-          <fes:Literal type="xsd:int">30</fes:Literal>
-        </fes:PropertyIsLessThan>
-        <fes:PropertyIsGreaterThan>
-          <fes:ValueReference>attr</fes:ValueReference>
-          <fes:Literal type="xsd:int">10</fes:Literal>
-        </fes:PropertyIsGreaterThan>
-      </fes:And>
-    </fes:Filter>
+      <ogc:And>
+        <ogc:PropertyIsLessThan>
+          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:Literal type="xsd:int">30</ogc:Literal>
+        </ogc:PropertyIsLessThan>
+        <ogc:PropertyIsGreaterThan>
+          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:Literal type="xsd:int">10</ogc:Literal>
+        </ogc:PropertyIsGreaterThan>
+      </ogc:And>
+    </ogc:Filter>
     """
     )
     assert result == ast.And(
@@ -39,19 +35,19 @@ def test_and():
 def test_or():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Or>
-        <fes:PropertyIsLessThanOrEqualTo>
-          <fes:ValueReference>attr</fes:ValueReference>
-          <fes:Literal type="xsd:double">30.5</fes:Literal>
-        </fes:PropertyIsLessThanOrEqualTo>
-        <fes:PropertyIsGreaterThanOrEqualTo>
-          <fes:ValueReference>attr</fes:ValueReference>
-          <fes:Literal type="xsd:double">10.5</fes:Literal>
-        </fes:PropertyIsGreaterThanOrEqualTo>
-      </fes:Or>
-    </fes:Filter>
+      <ogc:Or>
+        <ogc:PropertyIsLessThanOrEqualTo>
+          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:Literal type="xsd:double">30.5</ogc:Literal>
+        </ogc:PropertyIsLessThanOrEqualTo>
+        <ogc:PropertyIsGreaterThanOrEqualTo>
+          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:Literal type="xsd:double">10.5</ogc:Literal>
+        </ogc:PropertyIsGreaterThanOrEqualTo>
+      </ogc:Or>
+    </ogc:Filter>
     """
     )
     assert result == ast.Or(
@@ -69,15 +65,15 @@ def test_or():
 def test_not():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Not>
-        <fes:PropertyIsEqualTo>
-          <fes:ValueReference>attr</fes:ValueReference>
-          <fes:Literal type="xsd:string">value</fes:Literal>
-        </fes:PropertyIsEqualTo>
-      </fes:Not>
-    </fes:Filter>
+      <ogc:Not>
+        <ogc:PropertyIsEqualTo>
+          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:Literal type="xsd:string">value</ogc:Literal>
+        </ogc:PropertyIsEqualTo>
+      </ogc:Not>
+    </ogc:Filter>
     """
     )
     assert result == ast.Not(
@@ -91,13 +87,13 @@ def test_not():
 def test_not_equal():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:PropertyIsNotEqualTo>
-        <fes:ValueReference>attr</fes:ValueReference>
-        <fes:Literal type="xsd:string">value</fes:Literal>
-      </fes:PropertyIsNotEqualTo>
-    </fes:Filter>
+      <ogc:PropertyIsNotEqualTo>
+        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:Literal type="xsd:string">value</ogc:Literal>
+      </ogc:PropertyIsNotEqualTo>
+    </ogc:Filter>
     """
     )
     assert result == ast.NotEqual(
@@ -109,17 +105,17 @@ def test_not_equal():
 def test_is_like():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:PropertyIsLike
+      <ogc:PropertyIsLike
           wildCard="%"
           singleChar="."
           escapeChar="\\"
           matchCase="true">
-        <fes:ValueReference>attr</fes:ValueReference>
-        <fes:Literal type="xsd:string">some%</fes:Literal>
-      </fes:PropertyIsLike>
-    </fes:Filter>
+        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:Literal type="xsd:string">some%</ogc:Literal>
+      </ogc:PropertyIsLike>
+    </ogc:Filter>
     """
     )
     assert result == ast.Like(
@@ -135,17 +131,17 @@ def test_is_like():
     # case insensitive
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:PropertyIsLike
+      <ogc:PropertyIsLike
           wildCard="%"
           singleChar="."
           escapeChar="\\"
           matchCase="false">
-        <fes:ValueReference>attr</fes:ValueReference>
-        <fes:Literal type="xsd:string">some%</fes:Literal>
-      </fes:PropertyIsLike>
-    </fes:Filter>
+        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:Literal type="xsd:string">some%</ogc:Literal>
+      </ogc:PropertyIsLike>
+    </ogc:Filter>
     """
     )
     assert result == ast.Like(
@@ -162,12 +158,12 @@ def test_is_like():
 def test_is_null():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:PropertyIsNull>
-        <fes:ValueReference>attr</fes:ValueReference>
-      </fes:PropertyIsNull>
-    </fes:Filter>
+      <ogc:PropertyIsNull>
+        <ogc:ValueReference>attr</ogc:ValueReference>
+      </ogc:PropertyIsNull>
+    </ogc:Filter>
     """
     )
     assert result == ast.IsNull(
@@ -179,18 +175,18 @@ def test_is_null():
 def test_is_between():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:PropertyIsBetween>
-        <fes:ValueReference>attr</fes:ValueReference>
-        <fes:LowerBoundary>
-          <fes:Literal type="xsd:double">10.5</fes:Literal>
-        </fes:LowerBoundary>
-        <fes:UpperBoundary>
-          <fes:Literal type="xsd:double">11.5</fes:Literal>
-        </fes:UpperBoundary>
-      </fes:PropertyIsBetween>
-    </fes:Filter>
+      <ogc:PropertyIsBetween>
+        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:LowerBoundary>
+          <ogc:Literal type="xsd:double">10.5</ogc:Literal>
+        </ogc:LowerBoundary>
+        <ogc:UpperBoundary>
+          <ogc:Literal type="xsd:double">11.5</ogc:Literal>
+        </ogc:UpperBoundary>
+      </ogc:PropertyIsBetween>
+    </ogc:Filter>
     """
     )
     assert result == ast.Between(
@@ -204,17 +200,17 @@ def test_is_between():
 def test_geom_equals():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Equals>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Equals>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <gml:Point gml:id="ID"
             srsName="http://www.opengis.net/def/crs/epsg/0/4326"
             xmlns:gml="http://www.opengis.net/gml">
           <gml:pos>1.0 1.0</gml:pos>
         </gml:Point>
-      </fes:Equals>
-    </fes:Filter>
+      </ogc:Equals>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryEquals(
@@ -237,15 +233,15 @@ def test_geom_equals():
 def test_geom_disjoint():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Disjoint>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Disjoint>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <gml:LineString xmlns:gml="http://www.opengis.net/gml">
           <gml:posList>1.0 1.0 2.0 2.0</gml:posList>
         </gml:LineString>
-      </fes:Disjoint>
-    </fes:Filter>
+      </ogc:Disjoint>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryDisjoint(
@@ -265,10 +261,10 @@ def test_geom_disjoint():
 def test_geom_touches():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Touches>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Touches>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <gml:Polygon xmlns:gml="http://www.opengis.net/gml">
             <gml:exterior>
                 <gml:LinearRing>
@@ -281,8 +277,8 @@ def test_geom_touches():
                 </gml:LinearRing>
             </gml:interior>
         </gml:Polygon>
-      </fes:Touches>
-    </fes:Filter>
+      </ogc:Touches>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryTouches(
@@ -302,16 +298,16 @@ def test_geom_touches():
 def test_geom_within():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Within>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Within>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <gml:Envelope xmlns:gml="http://www.opengis.net/gml">
           <gml:lowerCorner>0.0 1.0</gml:lowerCorner>
           <gml:upperCorner>2.0 3.0</gml:upperCorner>
         </gml:Envelope>
-      </fes:Within>
-    </fes:Filter>
+      </ogc:Within>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryWithin(
@@ -336,10 +332,10 @@ def test_geom_within():
 def test_geom_overlaps():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Overlaps>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Overlaps>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <gml:MultiSurface xmlns:gml="http://www.opengis.net/gml">
             <gml:surfaceMember>
                 <gml:Polygon>
@@ -376,8 +372,8 @@ def test_geom_overlaps():
                 </gml:Polygon>
             </gml:surfaceMember>
         </gml:MultiSurface>
-      </fes:Overlaps>
-    </fes:Filter>
+      </ogc:Overlaps>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryOverlaps(
@@ -403,15 +399,15 @@ def test_geom_overlaps():
 def test_geom_crosses():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Crosses>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Crosses>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <georss:line xmlns:georss="http://www.georss.org/georss">
             1.0 2.0 2.0 1.0
         </georss:line>
-      </fes:Crosses>
-    </fes:Filter>
+      </ogc:Crosses>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryCrosses(
@@ -425,15 +421,15 @@ def test_geom_crosses():
 def test_geom_intersects():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Intersects>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Intersects>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <georss:box xmlns:georss="http://www.georss.org/georss">
             1.0 0.5 2.0 1.5
         </georss:box>
-      </fes:Intersects>
-    </fes:Filter>
+      </ogc:Intersects>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryIntersects(
@@ -453,15 +449,15 @@ def test_geom_intersects():
 def test_geom_contains():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:Contains>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:Contains>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <georss:polygon xmlns:georss="http://www.georss.org/georss">
             1.0 0.5 2.0 0.5 2.0 1.5 1.0 1.5 1.0 0.5
         </georss:polygon>
-      </fes:Contains>
-    </fes:Filter>
+      </ogc:Contains>
+    </ogc:Filter>
     """
     )
     assert result == ast.GeometryContains(
@@ -480,16 +476,16 @@ def test_geom_contains():
 def test_geom_dwithin():
     result = parse(
         """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
-      <fes:DWithin>
-        <fes:ValueReference>attr</fes:ValueReference>
+      <ogc:DWithin>
+        <ogc:ValueReference>attr</ogc:ValueReference>
         <georss:point xmlns:georss="http://www.georss.org/georss">
             1.0 1.0
         </georss:point>
-        <fes:Distance uom="m">10</fes:Distance>
-      </fes:DWithin>
-    </fes:Filter>
+        <ogc:Distance uom="m">10</ogc:Distance>
+      </ogc:DWithin>
+    </ogc:Filter>
     """
     )
     assert result == ast.DistanceWithin(
@@ -502,79 +498,4 @@ def test_geom_dwithin():
         ),
         distance=10,
         units="m",
-    )
-
-
-def test_after():
-    result = parse(
-        """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
-        xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
-        xmlns:gml="http://www.opengis.net/gml">
-      <fes:After>
-        <fes:ValueReference>attr</fes:ValueReference>
-        <gml:TimeInstant>
-          <gml:timePosition>2000-01-01T00:00:00Z</gml:timePosition>
-        </gml:TimeInstant>
-      </fes:After>
-    </fes:Filter>
-    """
-    )
-    assert result == ast.TimeAfter(
-        ast.Attribute("attr"),
-        datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-    )
-
-
-def test_before():
-    # using timePosition directly
-    result = parse(
-        """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
-        xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
-        xmlns:gml="http://www.opengis.net/gml">
-      <fes:Before>
-        <fes:ValueReference>attr</fes:ValueReference>
-        <gml:timePosition>2000-01-01T00:00:00Z</gml:timePosition>
-      </fes:Before>
-    </fes:Filter>
-    """
-    )
-    assert result == ast.TimeBefore(
-        ast.Attribute("attr"),
-        datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-    )
-
-
-def test_begins():
-    # using timePosition directly
-    result = parse(
-        """
-    <fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"
-        xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
-        xmlns:gml="http://www.opengis.net/gml">
-      <fes:Begins>
-        <fes:ValueReference>attr</fes:ValueReference>
-        <gml:TimePeriod>
-          <gml:begin>
-            <gml:TimeInstant>
-              <gml:timePosition>2000-01-01T00:00:00Z</gml:timePosition>
-            </gml:TimeInstant>
-          </gml:begin>
-          <gml:end>
-            <gml:TimeInstant>
-              <gml:timePosition>2001-01-01T00:00:00Z</gml:timePosition>
-            </gml:TimeInstant>
-          </gml:end>
-        </gml:TimePeriod>
-      </fes:Begins>
-    </fes:Filter>
-    """
-    )
-    assert result == ast.TimeBegins(
-        ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2001, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-        ),
     )

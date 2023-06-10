@@ -32,7 +32,7 @@ from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
 from pygeofilter import ast, values
-from pygeofilter.parsers.jfe import parse
+from pygeofilter.frontends.jfe import parse
 
 
 def normalize_geom(geometry):

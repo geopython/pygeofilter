@@ -27,7 +27,7 @@
 
 from pygeofilter import ast
 from pygeofilter.backends.optimize import optimize
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 
 def test_not():

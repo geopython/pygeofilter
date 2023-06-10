@@ -18,7 +18,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import func, select
 
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 Base = declarative_base()
 
