@@ -29,7 +29,7 @@ import pytest
 from testapp import models
 
 from pygeofilter.backends.django.evaluate import to_filter
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 
 def evaluate(cql_expr, expected_ids, model_type=None):

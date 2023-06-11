@@ -31,7 +31,7 @@ import os.path
 from lark import Lark, logger, v_args
 
 from ... import ast, values
-from ...cql2 import SPATIAL_PREDICATES_MAP, TEMPORAL_PREDICATES_MAP
+from ..cql2 import SPATIAL_PREDICATES_MAP, TEMPORAL_PREDICATES_MAP
 from ..iso8601 import ISO8601Transformer
 from ..wkt import WKTTransformer
 

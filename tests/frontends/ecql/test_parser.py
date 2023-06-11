@@ -31,7 +31,7 @@ from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
 from pygeofilter import ast, values
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 
 def test_attribute_eq_literal():

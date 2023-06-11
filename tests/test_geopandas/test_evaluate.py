@@ -6,7 +6,7 @@ import pytest
 from shapely.geometry import Point
 
 from pygeofilter.backends.geopandas.evaluate import to_filter
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 
 @pytest.fixture

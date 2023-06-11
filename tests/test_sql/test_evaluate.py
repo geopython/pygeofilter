@@ -29,7 +29,7 @@ import pytest
 from osgeo import ogr
 
 from pygeofilter.backends.sql import to_sql_where
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 ogr.UseExceptions()
 

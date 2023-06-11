@@ -28,7 +28,7 @@
 from django.test import TransactionTestCase
 
 from pygeofilter.backends.django.evaluate import to_filter
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.frontends.ecql import parse
 
 from . import models
 

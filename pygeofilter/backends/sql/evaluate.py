@@ -30,7 +30,7 @@ from typing import Dict, Optional
 import shapely.geometry
 
 from ... import ast, values
-from ..evaluator import Evaluator, handle
+from ...evaluator import Evaluator, handle
 
 COMPARISON_OP_MAP = {
     ast.ComparisonOp.EQ: "=",

@@ -30,7 +30,7 @@ import json
 from django.contrib.gis.geos import GEOSGeometry, Polygon
 
 from ... import ast, values
-from ..evaluator import Evaluator, handle
+from ...evaluator import Evaluator, handle
 from . import filters
 
 

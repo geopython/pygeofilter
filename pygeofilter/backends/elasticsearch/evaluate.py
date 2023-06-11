@@ -41,7 +41,7 @@ from elasticsearch_dsl import Q
 from packaging.version import Version
 
 from ... import ast, values
-from ..evaluator import Evaluator, handle
+from ...evaluator import Evaluator, handle
 from .util import like_to_wildcard
 
 VERSION_7_10_0 = Version("7.10.0")

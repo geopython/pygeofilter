@@ -31,8 +31,8 @@ from datetime import date, datetime
 from typing import Dict, Optional
 
 from ... import ast, values
-from ...cql2 import get_op
-from ..evaluator import Evaluator, handle
+from ...frontends.cql2 import get_op
+from ...evaluator import Evaluator, handle
 
 
 def json_serializer(obj):

@@ -29,14 +29,17 @@ import re
 from datetime import date, datetime, timedelta
 
 from dateparser import parse as _parse_datetime
+import isodate
 
-__all__ = [
-    "parse_datetime",
-    "RE_ISO_8601",
-    "parse_duration",
-    "like_pattern_to_re_pattern",
-    "like_pattern_to_re",
-]
+
+# __all__ = [
+#     "parse_datetime",
+#     "encode_duration",
+#     "RE_ISO_8601",
+#     "parse_duration",
+#     "like_pattern_to_re_pattern",
+#     "like_pattern_to_re",
+# ]
 
 RE_ISO_8601 = re.compile(
     r"^(?P<sign>[+-])?P"
@@ -85,6 +88,18 @@ def parse_datetime(value: str) -> datetime:
     if parsed is None:
         raise ValueError(value)
     return parsed
+
+
+def encode_duration(value: timedelta) -> str:
+    return isodate.duration_isoformat(value)
+
+
+def encode_date(value: date) -> str:
+    return value.isoformat()
+
+
+def encode_datetime(value: datetime) -> str:
+    return datetime.isoformat().replace("+00:00", "Z")
 
 
 def like_pattern_to_re_pattern(like, wildcard, single_char, escape_char):
