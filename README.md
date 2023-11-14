@@ -173,6 +173,14 @@ class MyAPIEvaluator(Evaluator):
 
 ## Testing
 
+### Proconditions
+
+1. Install [gdal](https://gdal.org/download.html#binaries) on your system. This package and some site-packages will use it to calculate geospatial data.
+2. Provide an elasticsearch instance. You can simply use the provided docker compose setup.
+
+
+### Python dependencies
+
 For testing, several requirements must be satisfied. These can be installed, via pip:
 
 ```bash
@@ -180,13 +188,24 @@ pip install -r requirements-dev.txt
 pip install -r requirements-test.txt
 ```
 
+### Docker
+
+Start the elasticsearch instance:
+
+```bash
+docker compose up
+
+```
+
+### Excecuting tests
+
+
 The functionality can be tested using `pytest`.
 
 ```bash
 python -m pytest
 ```
 
-### Docker
 
 To execute tests in Docker:
 
@@ -194,6 +213,7 @@ To execute tests in Docker:
 docker build -t pygeofilter/test -f Dockerfile-3.9 .
 docker run --rm pygeofilter/test
 ```
+
 
 ## Backends
 
