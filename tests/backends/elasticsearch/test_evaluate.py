@@ -1,5 +1,5 @@
 # pylint: disable=W0621,C0114,C0115,C0116
-
+import os
 import pytest
 from elasticsearch_dsl import (
     Date,
@@ -53,8 +53,9 @@ class Record(Document):
 
 @pytest.fixture(autouse=True, scope="session")
 def connection():
+    hostname = os.environ.get("eshostname", "localhost")
     connections.create_connection(
-        hosts=["https://localhost:9200"],
+        hosts=[f"https://{hostname}:9200"],
         ca_certs=False, 
         verify_certs=False,
         basic_auth=("elastic", "changeme")

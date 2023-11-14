@@ -209,9 +209,8 @@ python -m pytest
 
 To execute tests in Docker:
 
-```
-docker build -t pygeofilter/test -f Dockerfile-3.9 .
-docker run --rm pygeofilter/test
+```bash
+docker compose up --build test
 ```
 
 

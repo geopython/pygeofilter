@@ -1,5 +1,18 @@
 version: '3.8'
 services:
+  
+  test:
+    build: 
+      context: .
+      dockerfile: bullseye-3.9.Dockerfile 
+    tty: true # To support colorized log output.
+    networks:
+      - default
+    depends_on:
+      - es01
+    environment:
+      - eshostname=es01
+  
   es01:
     depends_on:
      setup:
