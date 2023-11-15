@@ -29,15 +29,9 @@ jobs:
         sudo sysctl -w vm.swappiness=1
         sudo sysctl -w fs.file-max=262144
         sudo sysctl -w vm.max_map_count=262144
-    - name: Install and run Elasticsearch 📦
-      uses: getong/elasticsearch-action@v1.2
-      with:
-        elasticsearch version: '8.2.2'
-        host port: 9200
-        container port: 9200
-        host node port: 9300
-        node port: 9300
-        discovery type: 'single-node'
+    - name: Run elasticsearch docker container 📦
+      run: |
+        docker compose up --build es01
     - name: Run unit tests
       run: |
         pytest
