@@ -29,6 +29,10 @@ class FES11Parser(FESBaseParser):
         self, node: Element, lhs: ast.ScalarAstType, rhs: ast.ScalarAstType
     ) -> ast.Node:
         return ast.Div(lhs, rhs)
+    
+    @handle("PropertyName")
+    def property_name(self, node):
+        return ast.Attribute(node.text)
 
 
 def parse(input_: ParseInput) -> ast.Node:
