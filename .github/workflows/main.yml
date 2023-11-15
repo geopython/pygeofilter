@@ -23,7 +23,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y binutils libproj-dev gdal-bin libgdal-dev libsqlite3-mod-spatialite spatialite-bin
         pip install tox
-        pip install pygdal=="`gdal-config --version`.*"
+        sudo -H pip install gdal=="`gdal-config --version`.*"
     
     - name: Run elasticsearch docker container 📦
       run: |
