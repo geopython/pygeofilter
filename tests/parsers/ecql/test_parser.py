@@ -34,6 +34,14 @@ from pygeofilter import ast, values
 from pygeofilter.parsers.ecql import parse
 
 
+def test_namespace_attribute_eq_literal():
+    result = parse("ns:attr = 'A'")
+    assert result == ast.Equal(
+        ast.Attribute("ns:attr"),
+        "A",
+    )
+
+
 def test_attribute_eq_literal():
     result = parse("attr = 'A'")
     assert result == ast.Equal(
