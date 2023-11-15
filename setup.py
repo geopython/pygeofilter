@@ -63,7 +63,7 @@ setup(
     if not on_rtd
     else [],
     extras_require={
-        "backend-django": ["django"],
+        "backend-django": ["django>=4.0"],
         "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy<2.0.0"],
         "backend-native": ["shapely"],
         "backend-elasticsearch": ["elasticsearch", "elasticsearch-dsl"],
