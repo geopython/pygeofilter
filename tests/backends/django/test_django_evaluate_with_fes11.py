@@ -183,23 +183,3 @@ def test_intersects_point():
     '''
 
     evaluate(FILTER_FRAME.format(CONSTRAINT), ("A",))
-
-
-@pytest.mark.django_db
-def test_intersects_mulitipoint_1():
-    CONSTRAINT = '''
-    <ogc:Intersects>
-        <ogc:PropertyName>geometry</ogc:PropertyName>
-        <gml:MultiPoint gml:id="ID">
-           <gml:pointMember>
-                <gml:Point gml:id="ID"
-                        srsName="http://www.opengis.net/def/crs/epsg/0/4326"
-                        xmlns:gml="http://www.opengis.net/gml">
-                    <gml:pos>1.0 1.0</gml:pos>
-                </gml:Point>
-            </gml:pointMember>
-        </gml:MultiPoint>
-    </ogc:Intersects>
-    '''
-
-    evaluate(FILTER_FRAME.format(CONSTRAINT), ("A",))

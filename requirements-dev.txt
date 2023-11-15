@@ -1,5 +1,4 @@
 flake8
-pytest
-pytest-django
 wheel
 mypy<=0.982
+django>=3.2,<4.3

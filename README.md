@@ -184,6 +184,7 @@ class MyAPIEvaluator(Evaluator):
 For testing, several requirements must be satisfied. These can be installed, via pip:
 
 ```bash
+pip install -r requirements-base.txt
 pip install -r requirements-dev.txt
 pip install -r requirements-test.txt
 ```
@@ -193,17 +194,17 @@ pip install -r requirements-test.txt
 Start the elasticsearch instance:
 
 ```bash
-docker compose up
+docker compose up es01
 
 ```
 
 ### Excecuting tests
 
 
-The functionality can be tested using `pytest`.
+The functionality can be tested using `tox`. To run tests in a specific python and django version run
 
 ```bash
-python -m pytest
+tox -e py311-django41
 ```
 
 
