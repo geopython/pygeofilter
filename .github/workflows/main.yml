@@ -4,7 +4,7 @@ on: [ push, pull_request ]
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -23,7 +23,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y binutils libproj-dev gdal-bin libgdal-dev libsqlite3-mod-spatialite spatialite-bin
         pip install tox
-        pip install --upgrade pip setuptools==57.5.0
 
         echo -e "gdal==`gdal-config --version`.*\npygdal==`gdal-config --version`.*" >> requirements-gdal.txt
     
