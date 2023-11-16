@@ -9,6 +9,6 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
-    - name: Run elasticsearch docker container 📦
+    - name: Run test suite docker container 📦
       run: |
         docker compose up --build test-gdal-322
