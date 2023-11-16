@@ -5,6 +5,7 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
 [![Build Status](https://github.com/geopython/pygeofilter/workflows/build%20%E2%9A%99%EF%B8%8F/badge.svg)](https://github.com/geopython/pygeofilter/actions)
 [![Documentation Status](https://readthedocs.org/projects/pygeofilter/badge/?version=latest)](https://pygeofilter.readthedocs.io/en/latest/?badge=latest)
 
+* Tested on debian 11 with gdal version 3.2.2 with python versions 3.9, 3.10 in combination with django versions 4.0, 4.1, 4.2.
 
 ## Features
 
@@ -184,6 +185,7 @@ class MyAPIEvaluator(Evaluator):
 For testing, several requirements must be satisfied. These can be installed, via pip:
 
 ```bash
+pip install -r requirements-base.txt
 pip install -r requirements-dev.txt
 pip install -r requirements-test.txt
 ```
@@ -193,24 +195,24 @@ pip install -r requirements-test.txt
 Start the elasticsearch instance:
 
 ```bash
-docker compose up
+docker compose up es01
 
 ```
 
 ### Excecuting tests
 
 
-The functionality can be tested using `pytest`.
+The functionality can be tested using `tox`. To run tests in a specific python and django version run
 
 ```bash
-python -m pytest
+tox -e py311-django41
 ```
 
 
-To execute tests in Docker:
+To execute tests with Docker:
 
 ```bash
-docker compose up --build test
+docker compose up --build test-gdal-322
 ```
 
 

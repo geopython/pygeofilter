@@ -1,28 +1,46 @@
 version: '3.8'
 services:
   
-  test:
+  test-gdal-322:
     build: 
       context: .
-      dockerfile: bullseye-3.9.Dockerfile 
+      dockerfile: docker/test/bullseye.Dockerfile 
     tty: true # To support colorized log output.
     networks:
       - default
+    volumes:
+      - type: bind
+        source: ./pygeofilter
+        target: /app/pygeofilter
+      - type: bind
+        source: ./tests
+        target: /app/tests
+    environment:
+      - ESHOSTNAME=es01
+
     depends_on:
       - es01
-    environment:
-      - eshostname=es01
-  
+
+    # to get debug information run in verbose mode
+    # command: >
+    #  /bin/sh -c "tox run -v -v -v -v"
+
+    # to debug container
+    # command: >
+    #  tail -f /dev/null
+
+    command: >
+      /bin/sh -c "tox run"
+
+
   es01:
     depends_on:
-     setup:
-       condition: service_healthy
+      - setup
 
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     ports:
       - ${ES_PORT}:9200
-    env_file:
-      - .env
+    
     environment:
       - node.name=es01
       - cluster.name=${CLUSTER_NAME}
@@ -44,7 +62,8 @@ services:
     volumes:
      - certs:/usr/share/elasticsearch/config/certs
      - esdata01:/usr/share/elasticsearch/data
-
+    networks:
+      - default
     healthcheck:
      test:
        [

@@ -57,6 +57,10 @@ class DjangoFilterEvaluator(Evaluator):
 
     @handle(ast.Like)
     def like(self, node, lhs):
+        if node.wildcard != "%":
+            # FIXME: this will also replace the singlechar and escapechar,
+            # but they shall not be replaced
+            node.pattern = node.pattern.replace(node.wildcard, "%")
         return filters.like(
             lhs, node.pattern, node.nocase, node.not_, self.mapping_choices
         )
