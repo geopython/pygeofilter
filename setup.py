@@ -63,7 +63,7 @@ setup(
     if not on_rtd
     else [],
     extras_require={
-        "backend-django": ["django"],
+        "backend-django": ["django>=4.0"],
         "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy<2.0.0"],
         "backend-native": ["shapely"],
         "backend-elasticsearch": ["elasticsearch", "elasticsearch-dsl"],
@@ -74,10 +74,8 @@ setup(
         "Intended Audience :: Developers",
         "Topic :: Scientific/Engineering :: GIS",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     tests_require=["pytest"],
 )

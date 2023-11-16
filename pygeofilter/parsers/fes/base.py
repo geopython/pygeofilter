@@ -134,10 +134,6 @@ class FESBaseParser(XMLParser):
     #     # TODO: ast.BBox() seems incompatible
     #     pass
 
-    @handle("ValueReference")
-    def value_reference(self, node):
-        return ast.Attribute(node.text)
-
     @handle("Literal")
     def literal(self, node):
         type_ = node.get("type", "").rpartition(":")[2]
