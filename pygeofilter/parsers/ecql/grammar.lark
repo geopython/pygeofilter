@@ -90,6 +90,7 @@
 
 attribute: NAME
          | DOUBLE_QUOTED
+         | QUALIFIED_NAME
 
 ?literal: number
         | BOOLEAN
@@ -112,6 +113,8 @@ BOOLEAN: ( "TRUE" | "FALSE" )
 
 DOUBLE_QUOTED: "\"" /.*?/ "\""
 SINGLE_QUOTED: "'" /.*?/ "'"
+
+QUALIFIED_NAME: NAME ":" NAME
 
 %import .wkt.ewkt_geometry
 %import .iso8601.DATETIME
