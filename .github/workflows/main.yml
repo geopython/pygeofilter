@@ -28,8 +28,4 @@ jobs:
     
     - name: Run elasticsearch docker container 📦
       run: |
-        docker compose up --build --detach es01
-
-    - name: Run tox targets for ${{ matrix.python-version }}
-      run: tox run -f py$(echo ${{ matrix.python-version }})
-
+        docker compose up --build test-gdal-322

@@ -5,6 +5,7 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
 [![Build Status](https://github.com/geopython/pygeofilter/workflows/build%20%E2%9A%99%EF%B8%8F/badge.svg)](https://github.com/geopython/pygeofilter/actions)
 [![Documentation Status](https://readthedocs.org/projects/pygeofilter/badge/?version=latest)](https://pygeofilter.readthedocs.io/en/latest/?badge=latest)
 
+* Tested on debian 11 with gdal version 3.2.2 with python versions 3.9, 3.10 in combination with django versions 4.0, 4.1, 4.2.
 
 ## Features
 
@@ -208,10 +209,10 @@ tox -e py311-django41
 ```
 
 
-To execute tests in Docker:
+To execute tests with Docker:
 
 ```bash
-docker compose up --build test
+docker compose up --build test-gdal-322
 ```
 
 

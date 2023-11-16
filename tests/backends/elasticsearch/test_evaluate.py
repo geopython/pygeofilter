@@ -53,7 +53,7 @@ class Record(Document):
 
 @pytest.fixture(autouse=True, scope="session")
 def connection():
-    hostname = os.environ.get("eshostname", "localhost")
+    hostname = os.environ.get("ESHOSTNAME", "localhost")
     connections.create_connection(
         hosts=[f"https://{hostname}:9200"],
         ca_certs=False, 
