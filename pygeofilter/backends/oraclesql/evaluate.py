@@ -27,7 +27,7 @@
 
 from typing import Dict, Optional
 
-import shapely.geometry
+import json
 
 from ... import ast, values
 from ..evaluator import Evaluator, handle
@@ -103,10 +103,8 @@ class OracleSQLEvaluator(Evaluator):
     def like(self, node, lhs):
         pattern = node.pattern
         if node.wildcard != "%":
-            # TODO: not preceded by escapechar
             pattern = pattern.replace(node.wildcard, "%")
         if node.singlechar != "_":
-            # TODO: not preceded by escapechar
             pattern = pattern.replace(node.singlechar, "_")
 
         if WITH_BINDS:
@@ -118,7 +116,6 @@ class OracleSQLEvaluator(Evaluator):
             sql = f"{lhs} {'NOT ' if node.not_ else ''}LIKE "
             sql += f"'{pattern}' ESCAPE '{node.escapechar}'"
 
-        # TODO: handle node.nocase
         return sql
 
     @handle(ast.In)
@@ -137,10 +134,28 @@ class OracleSQLEvaluator(Evaluator):
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        bbox = "SDO_GEOMETRY()"
-        param = f"mask={ast.SpatialComparisonOp.INTERSECTS}"
-        func = f"SDO_RELATE({lhs}, {bbox}, '{param}') = 'TRUE'"
-        return func
+        geo_json = json.dumps({
+            "type": "Polygon",
+            "coordinates": [[
+                [node.minx, node.miny],
+                [node.minx, node.maxy],
+                [node.maxx, node.maxy],
+                [node.maxx, node.miny],
+                [node.minx, node.miny]
+            ]]
+        })
+        srid = 4326
+        param = "mask=ANYINTERACT"
+
+        if WITH_BINDS:
+            BIND_VARIABLES["geo_json"] = geo_json
+            BIND_VARIABLES["srid"] = srid
+            geom_sql = "SDO_UTIL.FROM_JSON(geometry => :geo_json, srid => :srid)"
+        else:
+            geom_sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
+
+        sql = f"SDO_RELATE({lhs}, {geom_sql}, '{param}') = 'TRUE'"
+        return sql
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
@@ -165,24 +180,31 @@ class OracleSQLEvaluator(Evaluator):
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
-        wkb_hex = shapely.geometry.shape(node).wkb_hex
+        # TODO Read CRS information from
+        #      node and translate to SRID
+        srid = 4326
+        geo_json = json.dumps(node.geometry)
+        print(geo_json)
         if WITH_BINDS:
-            BIND_VARIABLES["wkb"] = wkb_hex
-            sql = "SDO_UTIL.FROM_WKBGEOMETRY(:wkb)"
+            BIND_VARIABLES["geo_json"] = geo_json
+            BIND_VARIABLES["srid"] = srid
+            sql = "SDO_UTIL.FROM_JSON(geometry => :geo_json, srid => :srid)"
         else:
-            sql = f"SDO_UTIL.FROM_WKBGEOMETRY('{wkb_hex}')"
+            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
         return sql
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
-        wkb_hex = shapely.geometry.box(
-            node.x1, node.y1, node.x2, node.y2
-        ).wkb_hex
+        # TODO Read CRS information from
+        #      node and translate to SRID
+        srid = 4326
+        geo_json = json.dumps(node.geometry)
         if WITH_BINDS:
-            BIND_VARIABLES["wkb"] = wkb_hex
-            sql = "SDO_UTIL.FROM_WKBGEOMETRY(:wkb)"
+            BIND_VARIABLES["geo_json"] = geo_json
+            BIND_VARIABLES["srid"] = srid
+            sql = "SDO_UTIL.FROM_JSON(geometry => :geo_json, srid => :srid)"
         else:
-            sql = f"SDO_UTIL.FROM_WKBGEOMETRY('{wkb_hex}')"
+            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
         return sql
 
 
