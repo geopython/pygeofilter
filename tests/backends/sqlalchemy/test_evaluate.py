@@ -31,7 +31,7 @@ class Record(Base):
             geometry_type="MULTIPOLYGON",
             srid=4326,
             spatial_index=False,
-            management=True,
+            # management=True,
         )
     )
     float_attribute = Column(Float)
