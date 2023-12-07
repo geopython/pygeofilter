@@ -60,10 +60,6 @@ SPATIAL_COMPARISON_OP_MAP = {
     ast.SpatialComparisonOp.EQUALS: "EQUAL",
 }
 
-WITH_BINDS = False
-
-BIND_VARIABLES = {}
-
 
 class OracleSQLEvaluator(Evaluator):
     def __init__(
@@ -71,6 +67,11 @@ class OracleSQLEvaluator(Evaluator):
     ):
         self.attribute_map = attribute_map
         self.function_map = function_map
+
+        self.with_bind_variables = False
+        self.bind_variables = {}
+        # Counter for bind variables
+        self.b_cnt = 0
 
     @handle(ast.Not)
     def not_(self, node, sub):
@@ -82,21 +83,29 @@ class OracleSQLEvaluator(Evaluator):
 
     @handle(ast.Comparison, subclasses=True)
     def comparison(self, node, lhs, rhs):
-        if WITH_BINDS:
-            BIND_VARIABLES[f"{lhs}"] = rhs
-            sql = f"({lhs} {COMPARISON_OP_MAP[node.op]} :{lhs})"
+        if self.with_bind_variables:
+            self.bind_variables[f"{lhs}_{self.b_cnt}"] = rhs
+            sql = f"({lhs} {COMPARISON_OP_MAP[node.op]} :{lhs}_{self.b_cnt})"
+            self.b_cnt += 1
         else:
             sql = f"({lhs} {COMPARISON_OP_MAP[node.op]} {rhs})"
         return sql
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        if WITH_BINDS:
-            BIND_VARIABLES[f"{lhs}_high"] = high
-            BIND_VARIABLES[f"{lhs}_low"] = low
-            sql = f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN :{lhs}_low AND :{lhs}_high)"
+        if self.with_bind_variables:
+            self.bind_variables[f"{lhs}_high_{self.b_cnt}"] = high
+            self.bind_variables[f"{lhs}_low_{self.b_cnt}"] = low
+            sql = (
+                f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN "
+                f":{lhs}_low_{self.b_cnt} AND :{lhs}_high_{self.b_cnt})"
+            )
+            self.b_cnt += 1
         else:
-            sql = f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN {low} AND {high})"
+            sql = (
+                f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN "
+                f"{low} AND {high})"
+            )
         return sql
 
     @handle(ast.Like)
@@ -107,10 +116,10 @@ class OracleSQLEvaluator(Evaluator):
         if node.singlechar != "_":
             pattern = pattern.replace(node.singlechar, "_")
 
-        if WITH_BINDS:
-            BIND_VARIABLES[f"{lhs}"] = pattern
+        if self.with_bind_variables:
+            self.bind_variables[f"{lhs}_{self.b_cnt}"] = pattern
             sql = f"{lhs} {'NOT ' if node.not_ else ''}LIKE "
-            sql += f":{lhs} ESCAPE '{node.escapechar}'"
+            sql += f":{lhs}_{self.b_cnt} ESCAPE '{node.escapechar}'"
 
         else:
             sql = f"{lhs} {'NOT ' if node.not_ else ''}LIKE "
@@ -147,12 +156,19 @@ class OracleSQLEvaluator(Evaluator):
         srid = 4326
         param = "mask=ANYINTERACT"
 
-        if WITH_BINDS:
-            BIND_VARIABLES["geo_json"] = geo_json
-            BIND_VARIABLES["srid"] = srid
-            geom_sql = "SDO_UTIL.FROM_JSON(geometry => :geo_json, srid => :srid)"
+        if self.with_bind_variables:
+            self.bind_variables[f"geo_json_{self.b_cnt}"] = geo_json
+            self.bind_variables[f"srid_{self.b_cnt}"] = srid
+            geom_sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => :geo_json_{self.b_cnt}, "
+                f"srid => :srid_{self.b_cnt})"
+            )
+            self.b_cnt += 1
         else:
-            geom_sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
+            geom_sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', "
+                f"srid => {srid})"
+            )
 
         sql = f"SDO_RELATE({lhs}, {geom_sql}, '{param}') = 'TRUE'"
         return sql
@@ -185,12 +201,19 @@ class OracleSQLEvaluator(Evaluator):
         srid = 4326
         geo_json = json.dumps(node.geometry)
         print(geo_json)
-        if WITH_BINDS:
-            BIND_VARIABLES["geo_json"] = geo_json
-            BIND_VARIABLES["srid"] = srid
-            sql = "SDO_UTIL.FROM_JSON(geometry => :geo_json, srid => :srid)"
+        if self.with_bind_variables:
+            self.bind_variables[f"geo_json_{self.b_cnt}"] = geo_json
+            self.bind_variables[f"srid_{self.b_cnt}"] = srid
+            sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => :geo_json_{self.b_cnt}, "
+                f"srid => :srid_{self.b_cnt})"
+            )
+            self.b_cnt += 1
         else:
-            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
+            sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', "
+                f"srid => {srid})"
+            )
         return sql
 
     @handle(values.Envelope)
@@ -199,12 +222,19 @@ class OracleSQLEvaluator(Evaluator):
         #      node and translate to SRID
         srid = 4326
         geo_json = json.dumps(node.geometry)
-        if WITH_BINDS:
-            BIND_VARIABLES["geo_json"] = geo_json
-            BIND_VARIABLES["srid"] = srid
-            sql = "SDO_UTIL.FROM_JSON(geometry => :geo_json, srid => :srid)"
+        if self.with_bind_variables:
+            self.bind_variables[f"geo_json_{self.b_cnt}"] = geo_json
+            self.bind_variables[f"srid_{self.b_cnt}"] = srid
+            sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => :geo_json_{self.b_cnt}, "
+                f"srid => :srid_{self.b_cnt})"
+            )
+            self.b_cnt += 1
         else:
-            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
+            sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', "
+                f"srid => {srid})"
+            )
         return sql
 
 
@@ -213,19 +243,17 @@ def to_sql_where(
     field_mapping: Dict[str, str],
     function_map: Optional[Dict[str, str]] = None,
 ) -> str:
-    global WITH_BINDS
-    WITH_BINDS = False
-    return OracleSQLEvaluator(field_mapping, function_map or {}).evaluate(root)
+    orcle = OracleSQLEvaluator(field_mapping, function_map or {})
+    orcle.with_bind_variables = False
+    return orcle.evaluate(root)
 
 
-def to_sql_where_with_binds(
+def to_sql_where_with_bind_variables(
     root: ast.Node,
     field_mapping: Dict[str, str],
     function_map: Optional[Dict[str, str]] = None,
 ) -> str:
     orcle = OracleSQLEvaluator(field_mapping, function_map or {})
-    global WITH_BINDS
-    WITH_BINDS = True
-    global BIND_VARIABLES
-    BIND_VARIABLES = {}
-    return orcle.evaluate(root), BIND_VARIABLES
+    orcle.with_bind_variables = True
+    orcle.bind_variables = {}
+    return orcle.evaluate(root), orcle.bind_variables
