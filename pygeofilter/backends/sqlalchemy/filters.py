@@ -6,9 +6,6 @@ from typing import Callable, Dict
 from pygeoif import shape
 from sqlalchemy import and_, func, not_, or_
 
-from ... import values
-
-
 def parse_bbox(box, srid: int = None):
     minx, miny, maxx, maxy = box
     return func.ST_GeomFromEWKT(
