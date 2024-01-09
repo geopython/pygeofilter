@@ -2,9 +2,11 @@
 #
 # Project: pygeofilter <https://github.com/geopython/pygeofilter>
 # Authors: Andreas Kosubek <andreas.kosubek@ama.gv.at>
+#          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # ------------------------------------------------------------------------------
 # Copyright (C) 2023 Agrar Markt Austria
+# Copyright (C) 2024 EOX IT Services GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
