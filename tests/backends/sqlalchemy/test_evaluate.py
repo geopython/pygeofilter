@@ -130,9 +130,9 @@ def seed_database(db_session):
 
 @pytest.fixture(scope="session")
 def setup_database(connection):
-    connection.execute(select([func.InitSpatialMetaData()]))
-    Base.metadata.bind = connection
-    Base.metadata.create_all()
+    connection.execute(select(func.InitSpatialMetaData()))
+    Base.metadata.create_all(connection)
+    connection.commit()
 
     seed_database(
         scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=connection))
@@ -140,7 +140,7 @@ def setup_database(connection):
 
     yield
 
-    Base.metadata.drop_all()
+    Base.metadata.drop_all(connection)
 
 
 @pytest.fixture
