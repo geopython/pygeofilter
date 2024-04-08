@@ -152,9 +152,9 @@ def db_session(setup_database, connection):
     transaction.rollback()
 
 
-def evaluate(session, cql_expr, expected_ids):
+def evaluate(session, cql_expr, expected_ids, filter_option=None):
     ast = parse(cql_expr)
-    filters = to_filter(ast, FIELD_MAPPING)
+    filters = to_filter(ast, FIELD_MAPPING, filter_option)
 
     q = session.query(Record).join(RecordMeta).filter(filters)
     results = [row.identifier for row in q]
@@ -415,3 +415,21 @@ def test_arith_field_plus_mul_1(db_session):
 
 def test_arith_field_plus_mul_2(db_session):
     evaluate(db_session, "intMetaAttribute = 5 + intAttribute * 1.5", ("A",))
+
+
+# handling undefined/invalid attributes
+
+
+def test_undef_comp(db_session):
+    # treat undefined/invalid attribute as null
+    evaluate(db_session, "missingAttribute > 10", (), True)
+
+
+def test_undef_isnull(db_session):
+    evaluate(db_session, "missingAttribute IS NULL", ("A", "B"), True)
+
+
+def test_undef_comp_error(db_session):
+    # error if undefined/invalid attribute
+    with pytest.raises(KeyError):
+        evaluate(db_session, "missingAttribute > 10", (), False)

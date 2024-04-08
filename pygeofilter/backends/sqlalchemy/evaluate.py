@@ -8,8 +8,9 @@ LITERALS = (str, float, int, bool, datetime, date, time, timedelta)
 
 
 class SQLAlchemyFilterEvaluator(Evaluator):
-    def __init__(self, field_mapping):
+    def __init__(self, field_mapping, undefined_as_null):
         self.field_mapping = field_mapping
+        self.undefined_as_null = undefined_as_null
 
     @handle(ast.Not)
     def not_(self, node, sub):
@@ -105,7 +106,7 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
     @handle(ast.Attribute)
     def attribute(self, node):
-        return filters.attribute(node.name, self.field_mapping)
+        return filters.attribute(node.name, self.field_mapping, self.undefined_as_null)
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
@@ -133,15 +134,13 @@ class SQLAlchemyFilterEvaluator(Evaluator):
         return filters.parse_bbox([node.x1, node.y1, node.x2, node.y2])
 
 
-def to_filter(ast, field_mapping=None):
-    """Helper function to translate ECQL AST to Django Query expressions.
+def to_filter(ast, field_mapping={}, undefined_as_null=None):
+    """Helper function to translate ECQL AST to SQLAlchemy Query expressions.
 
     :param ast: the abstract syntax tree
-    :param field_mapping: a dict mapping from the filter name to the Django
+    :param field_mapping: a dict mapping from the filter name to the SQLAlchemy
                           field lookup.
-    :param mapping_choices: a dict mapping field lookups to choices.
     :type ast: :class:`Node`
-    :returns: a Django query object
-    :rtype: :class:`django.db.models.Q`
+    :returns: a SQLAlchemy query object
     """
-    return SQLAlchemyFilterEvaluator(field_mapping).evaluate(ast)
+    return SQLAlchemyFilterEvaluator(field_mapping, undefined_as_null).evaluate(ast)
