@@ -53,6 +53,7 @@
           | expression "LIKE"i SINGLE_QUOTED                                 -> like
           | expression "IN"i "(" expression ( "," expression )* ")"          -> in_
           | expression "IS"i "NULL"i                                         -> null
+          | expression "IS"i "NOT"i "NULL"i                                  -> not_null
           | "INCLUDE"i                                                       -> include
           | "EXCLUDE"i                                                       -> exclude
           | spatial_predicate
