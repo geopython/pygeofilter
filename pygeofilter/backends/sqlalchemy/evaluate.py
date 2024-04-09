@@ -140,6 +140,8 @@ def to_filter(ast, field_mapping={}, undefined_as_null=None):
     :param ast: the abstract syntax tree
     :param field_mapping: a dict mapping from the filter name to the SQLAlchemy
                           field lookup.
+    :param undefined_as_null: whether a name not present in field_mapping
+                          should evaluate to null.
     :type ast: :class:`Node`
     :returns: a SQLAlchemy query object
     """
