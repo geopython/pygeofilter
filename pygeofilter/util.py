@@ -25,6 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
+from collections.abc import Mapping
 import re
 from datetime import date, datetime, timedelta
 
@@ -141,3 +142,15 @@ def like_pattern_to_re(like, nocase, wildcard, single_char, escape_char):
         like_pattern_to_re_pattern(like, wildcard, single_char, escape_char),
         flags=flags,
     )
+
+
+class IdempotentDict(Mapping):
+    "A dict class that always returns the key"
+    def __getitem__(self, key):
+        return key
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 0
