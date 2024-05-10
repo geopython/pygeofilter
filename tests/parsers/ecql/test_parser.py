@@ -41,6 +41,12 @@ def test_namespace_attribute_eq_literal():
         "A",
     )
 
+def test_prefixed_attribute_eq_literal():
+    result = parse("properties.ns:attr = 'A'")
+    assert result == ast.Equal(
+        ast.Attribute("properties.ns:attr"),
+        "A",
+    )
 
 def test_attribute_eq_literal():
     result = parse("attr = 'A'")
