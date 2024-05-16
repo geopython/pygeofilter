@@ -178,8 +178,8 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
     def FLOAT(self, value):
         return float(value)
 
-    def boolean(self, value):
-        return value in ("TRUE", "true", "T", "t", "1")
+    def BOOLEAN(self, value):
+        return value.lower() == "true"
 
     def DOUBLE_QUOTED(self, token):
         return token[1:-1]
