@@ -71,8 +71,8 @@ class NativeEvaluator(Evaluator):
 
     def __init__(
         self,
-        function_map: Dict[str, Callable] = None,
-        attribute_map: Dict[str, str] = None,
+        function_map: Optional[Dict[str, Callable]] = None,
+        attribute_map: Optional[Dict[str, str]] = None,
         use_getattr: bool = True,
         allow_nested_attributes: bool = True,
     ):
