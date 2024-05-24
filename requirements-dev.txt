@@ -3,3 +3,4 @@ pytest
 pytest-django
 wheel
 mypy<=0.982
+types-dateparser

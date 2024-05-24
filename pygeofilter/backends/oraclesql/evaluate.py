@@ -27,9 +27,8 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from typing import Dict, Optional
-
 import json
+from typing import Any, Dict, Optional, Tuple
 
 from ... import ast, values
 from ..evaluator import Evaluator, handle
@@ -64,9 +63,9 @@ SPATIAL_COMPARISON_OP_MAP = {
 
 
 class OracleSQLEvaluator(Evaluator):
-    def __init__(
-        self, attribute_map: Dict[str, str], function_map: Dict[str, str]
-    ):
+    bind_variables: dict[str, Any]
+
+    def __init__(self, attribute_map: Dict[str, str], function_map: Dict[str, str]):
         self.attribute_map = attribute_map
         self.function_map = function_map
 
@@ -104,10 +103,7 @@ class OracleSQLEvaluator(Evaluator):
             )
             self.b_cnt += 1
         else:
-            sql = (
-                f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN "
-                f"{low} AND {high})"
-            )
+            sql = f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN " f"{low} AND {high})"
         return sql
 
     @handle(ast.Like)
@@ -145,16 +141,20 @@ class OracleSQLEvaluator(Evaluator):
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        geo_json = json.dumps({
-            "type": "Polygon",
-            "coordinates": [[
-                [node.minx, node.miny],
-                [node.minx, node.maxy],
-                [node.maxx, node.maxy],
-                [node.maxx, node.miny],
-                [node.minx, node.miny]
-            ]]
-        })
+        geo_json = json.dumps(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [node.minx, node.miny],
+                        [node.minx, node.maxy],
+                        [node.maxx, node.maxy],
+                        [node.maxx, node.miny],
+                        [node.minx, node.miny],
+                    ]
+                ],
+            }
+        )
         srid = 4326
         param = "mask=ANYINTERACT"
 
@@ -168,8 +168,7 @@ class OracleSQLEvaluator(Evaluator):
             self.b_cnt += 1
         else:
             geom_sql = (
-                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', "
-                f"srid => {srid})"
+                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', " f"srid => {srid})"
             )
 
         sql = f"SDO_RELATE({lhs}, {geom_sql}, '{param}') = 'TRUE'"
@@ -212,10 +211,7 @@ class OracleSQLEvaluator(Evaluator):
             )
             self.b_cnt += 1
         else:
-            sql = (
-                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', "
-                f"srid => {srid})"
-            )
+            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', " f"srid => {srid})"
         return sql
 
     @handle(values.Envelope)
@@ -233,10 +229,7 @@ class OracleSQLEvaluator(Evaluator):
             )
             self.b_cnt += 1
         else:
-            sql = (
-                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', "
-                f"srid => {srid})"
-            )
+            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', " f"srid => {srid})"
         return sql
 
 
@@ -254,7 +247,7 @@ def to_sql_where_with_bind_variables(
     root: ast.Node,
     field_mapping: Dict[str, str],
     function_map: Optional[Dict[str, str]] = None,
-) -> str:
+) -> Tuple[str, dict[str, Any]]:
     orcle = OracleSQLEvaluator(field_mapping, function_map or {})
     orcle.with_bind_variables = True
     orcle.bind_variables = {}

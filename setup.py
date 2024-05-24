@@ -54,14 +54,16 @@ setup(
     license="MIT",
     packages=find_packages(),
     include_package_data=True,
-    install_requires=[
-        "dateparser",
-        "lark<1.0",
-        "pygeoif>=1.0.0",
-        "dataclasses;python_version<'3.7'",
-    ]
-    if not on_rtd
-    else [],
+    install_requires=(
+        [
+            "dateparser",
+            "lark<1.0",
+            "pygeoif>=1.0.0",
+            "dataclasses;python_version<'3.7'",
+        ]
+        if not on_rtd
+        else []
+    ),
     extras_require={
         "backend-django": ["django"],
         "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy"],
