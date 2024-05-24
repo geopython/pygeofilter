@@ -126,7 +126,7 @@ func.2: attribute "(" expression ("," expression)* ")" -> function
 
 envelope: "ENVELOPE"i "(" number number number number ")"
 
-BOOLEAN: ( "TRUE" | "FALSE" )
+BOOLEAN.2: ( "TRUE"i | "FALSE"i)
 
 DOUBLE_QUOTED: "\"" /.*?/ "\""
 SINGLE_QUOTED: "'" /.*?/ "'"
