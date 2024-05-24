@@ -62,7 +62,7 @@ class Node:
         raise NotImplementedError
 
     def __eq__(self, other) -> bool:
-        if type(self) != type(other):
+        if not isinstance(other, self.__class__):
             return False
 
         self_dict = {

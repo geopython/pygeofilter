@@ -1,12 +1,13 @@
 from datetime import timedelta
 from functools import reduce
 from inspect import signature
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 from pygeoif import shape
 from sqlalchemy import and_, func, not_, or_
 
-def parse_bbox(box, srid: int = None):
+
+def parse_bbox(box, srid: Optional[int] = None):
     minx, miny, maxx, maxy = box
     return func.ST_GeomFromEWKT(
         f"SRID={4326 if srid is None else srid};POLYGON(("
@@ -17,11 +18,11 @@ def parse_bbox(box, srid: int = None):
 
 
 def parse_geometry(geom: dict):
-    crs_identifier = geom.get(
-        "crs", {}
-    ).get(
-        "properties", {}
-    ).get("name", "urn:ogc:def:crs:EPSG::4326")
+    crs_identifier = (
+        geom.get("crs", {})
+        .get("properties", {})
+        .get("name", "urn:ogc:def:crs:EPSG::4326")
+    )
     srid = crs_identifier.rpartition("::")[-1]
     wkt = shape(geom).wkt
     return func.ST_GeomFromEWKT(f"SRID={srid};{wkt}")
@@ -73,7 +74,7 @@ class Operator:
         "/": lambda f, a: f / a,
     }
 
-    def __init__(self, operator: str = None):
+    def __init__(self, operator: Optional[str] = None):
         if not operator:
             operator = "=="
 

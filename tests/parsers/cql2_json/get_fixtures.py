@@ -1,4 +1,5 @@
 """Get fixtures from the spec."""
+
 import json
 import re
 

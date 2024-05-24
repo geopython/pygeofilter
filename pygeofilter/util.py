@@ -25,8 +25,8 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from collections.abc import Mapping
 import re
+from collections.abc import Mapping
 from datetime import date, datetime, timedelta
 
 from dateparser import parse as _parse_datetime
@@ -146,6 +146,7 @@ def like_pattern_to_re(like, nocase, wildcard, single_char, escape_char):
 
 class IdempotentDict(Mapping):
     "A dict class that always returns the key"
+
     def __getitem__(self, key):
         return key
 

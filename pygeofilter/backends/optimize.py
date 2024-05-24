@@ -27,7 +27,7 @@
 
 import operator
 from datetime import date, datetime, time, timedelta
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import shapely
 
@@ -341,7 +341,9 @@ def relate_intervals(lhs, rhs):  # noqa: C901
     raise ValueError(f"Error relating intervals [{ll}, {lh}] and ({rl}, {rh})")
 
 
-def optimize(root: ast.Node, function_map: Dict[str, Callable] = None) -> ast.Node:
+def optimize(
+    root: ast.Node, function_map: Optional[Dict[str, Callable]] = None
+) -> ast.Node:
     result = OptimizeEvaluator(function_map or {}).evaluate(root)
     if isinstance(result, bool):
         result = ast.Include(not result)
