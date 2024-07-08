@@ -4,7 +4,7 @@ from inspect import signature
 from typing import Callable, Dict, Optional
 
 from pygeoif import shape
-from sqlalchemy import and_, func, not_, or_
+from sqlalchemy import and_, func, not_, or_, null
 
 
 def parse_bbox(box, srid: Optional[int] = None):
@@ -257,15 +257,21 @@ def bbox(lhs, minx, miny, maxx, maxy, crs=4326):
     return lhs.ST_Intersects(parse_bbox([minx, miny, maxx, maxy], crs))
 
 
-def attribute(name, field_mapping=None):
+def attribute(name, field_mapping={}, undefined_as_null: bool = None):
     """Create an attribute lookup expression using a field mapping dictionary.
 
     :param name: the field filter name
     :param field_mapping: the dictionary to use as a lookup.
+    :param undefined_as_null: how to handle a name not present in field_mapping
+        (None (default) - leave as-is; True - treat as null; False - throw error)
     """
-    field = field_mapping.get(name, name)
-
-    return field
+    if undefined_as_null is None:
+        return field_mapping.get(name, name)
+    if undefined_as_null:
+        # return null object if name is not found in field_mapping
+        return field_mapping.get(name, null())
+    # undefined_as_null is False, so raise KeyError if name not found
+    return field_mapping[name]
 
 
 def literal(value):
