@@ -71,8 +71,8 @@ class NativeEvaluator(Evaluator):
 
     def __init__(
         self,
-        function_map: Dict[str, Callable] = None,
-        attribute_map: Dict[str, str] = None,
+        function_map: Optional[Dict[str, Callable]] = None,
+        attribute_map: Optional[Dict[str, str]] = None,
         use_getattr: bool = True,
         allow_nested_attributes: bool = True,
     ):
@@ -280,6 +280,34 @@ MaybeInterval = Union[values.Interval, date, datetime, str, None]
 InternalInterval = Tuple[Optional[datetime], Optional[datetime]]
 
 
+def _interval_to_internal_interval(value: values.Interval) -> InternalInterval:
+    low = value.start
+    high = value.end
+
+    # convert low and high dates to their respective datetime
+    # by using 00:00 time for the low part and 23:59:59 for the high
+    # part
+    if isinstance(low, date):
+        low = datetime.combine(low, time.min, timezone.utc)
+    if isinstance(high, date):
+        high = datetime.combine(high, time.max, timezone.utc)
+
+    # low and high are now either datetimes, timedeltas or None
+
+    if isinstance(low, timedelta):
+        if isinstance(high, datetime):
+            low = high - low
+        else:
+            raise ValueError(f"Cannot combine {low} with {high}")
+    elif isinstance(high, timedelta):
+        if isinstance(low, datetime):
+            high = low + high
+        else:
+            raise ValueError(f"Cannot combine {low} with {high}")
+
+    return (low, high)
+
+
 def to_interval(value: MaybeInterval) -> InternalInterval:
     """Converts the given value to an interval tuple of ``start``/``stop``
     as Python datetime objects.
@@ -304,32 +332,8 @@ def to_interval(value: MaybeInterval) -> InternalInterval:
         if not value.tzinfo:
             value = value.replace(tzinfo=timezone.utc)
 
-    if isinstance(value, values.Interval):
-        low = value.start
-        high = value.end
-
-        # convert low and high dates to their respective datetime
-        # by using 00:00 time for the low part and 23:59:59 for the high
-        # part
-        if isinstance(low, date):
-            low = datetime.combine(low, time.min, timezone.utc)
-        if isinstance(high, date):
-            high = datetime.combine(high, time.max, timezone.utc)
-
-        # low and high are now either datetimes, timedeltas or None
-
-        if isinstance(low, timedelta):
-            if isinstance(high, datetime):
-                low = high - low
-            else:
-                raise ValueError(f"Cannot combine {low} with {high}")
-        elif isinstance(high, timedelta):
-            if isinstance(low, datetime):
-                high = low + high
-            else:
-                raise ValueError(f"Cannot combine {low} with {high}")
-
-        return (low, high)
+    elif isinstance(value, values.Interval):
+        return _interval_to_internal_interval(value)
 
     elif isinstance(value, datetime):
         return (value, value)

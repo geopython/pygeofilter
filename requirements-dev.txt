@@ -2,4 +2,5 @@ flake8
 pytest
 pytest-django
 wheel
-mypy<=0.982
+mypy<=1.10.0
+types-dateparser
