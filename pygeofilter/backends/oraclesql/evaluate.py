@@ -63,7 +63,7 @@ SPATIAL_COMPARISON_OP_MAP = {
 
 
 class OracleSQLEvaluator(Evaluator):
-    bind_variables: dict[str, Any]
+    bind_variables: Dict[str, Any]
 
     def __init__(self, attribute_map: Dict[str, str], function_map: Dict[str, str]):
         self.attribute_map = attribute_map
@@ -247,7 +247,7 @@ def to_sql_where_with_bind_variables(
     root: ast.Node,
     field_mapping: Dict[str, str],
     function_map: Optional[Dict[str, str]] = None,
-) -> Tuple[str, dict[str, Any]]:
+) -> Tuple[str, Dict[str, Any]]:
     orcle = OracleSQLEvaluator(field_mapping, function_map or {})
     orcle.with_bind_variables = True
     orcle.bind_variables = {}
