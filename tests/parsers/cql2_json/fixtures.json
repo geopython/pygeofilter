@@ -33,7 +33,7 @@
     },
     "Example 9": {
         "text": "filter=sentinel:data_coverage > 50 OR landsat:coverage_percent < 10 OR (sentinel:data_coverage IS NULL AND landsat:coverage_percent IS NULL)",
-        "json": "{\"filter-lang\": \"cql2-json\", \"filter\": {\"op\": \"or\", \"args\": [{\"op\": \">\", \"args\": [{\"property\": \"sentinel:data_coverage\"}, 50]}, {\"op\": \"<\", \"args\": [{\"property\": \"landsat:coverage_percent\"}, 10]}, {\"op\": \"and\", \"args\": [{\"op\": \"isNull\", \"args\": {\"property\": \"sentinel:data_coverage\"}}, {\"op\": \"isNull\", \"args\": {\"property\": \"landsat:coverage_percent\"}}]}]}}"
+        "json": "{\"filter-lang\": \"cql2-json\", \"filter\": {\"op\": \"or\", \"args\": [{\"op\": \">\", \"args\": [{\"property\": \"sentinel:data_coverage\"}, 50]}, {\"op\": \"<\", \"args\": [{\"property\": \"landsat:coverage_percent\"}, 10]}, {\"op\": \"and\", \"args\": [{\"op\": \"isNull\", \"args\": [{\"property\": \"sentinel:data_coverage\"}]}, {\"op\": \"isNull\", \"args\": [{\"property\": \"landsat:coverage_percent\"}]}]}]}}"
     },
     "Example 10": {
         "text": "filter=eo:cloud_cover BETWEEN 0 AND 50",
