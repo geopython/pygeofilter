@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.2](https://github.com/geopython/pygeofilter/compare/v0.2.1...v0.2.2) (2024-07-10)
+
+
+### Bug Fixes
+
+* [#85](https://github.com/geopython/pygeofilter/issues/85) ([2f1a38f](https://github.com/geopython/pygeofilter/commit/2f1a38f8bc9dfe2ebf5c318c6121d7f51029a9cf))
+* Addresses [#95](https://github.com/geopython/pygeofilter/issues/95). ([d51dbb0](https://github.com/geopython/pygeofilter/commit/d51dbb0eb7a1066bd97b81cffe99da11ebf3cba4))
+* Addresses [#95](https://github.com/geopython/pygeofilter/issues/95). ([2a51990](https://github.com/geopython/pygeofilter/commit/2a519904c4ac408fabb39459104efcc3e09f3a40))
+* Bump pre-commit dependencies ([90f4aaa](https://github.com/geopython/pygeofilter/commit/90f4aaaafe873c69b0ccd91e897a9ff218ef5110))
+* Bump pre-commit dependencies ([64f7f96](https://github.com/geopython/pygeofilter/commit/64f7f962476665d4ae4eed750099a6c887ad21ca))
+* Bump pre-commit dependencies ([11f1f9a](https://github.com/geopython/pygeofilter/commit/11f1f9ab71811da758aa67b13aeb2f0cce7aaa10))
+* Enable custom handling of undefined field attr in to_filter ([23f172c](https://github.com/geopython/pygeofilter/commit/23f172cf1dd1ddb19791a761f128b001e887b361))
+* Enable custom handling of undefined field attr in to_filter ([f0c7e9f](https://github.com/geopython/pygeofilter/commit/f0c7e9f36d55d80e1d17917a627ae5547c80363c))
+* Enable custom handling of undefined field attr in to_filter ([d829c6b](https://github.com/geopython/pygeofilter/commit/d829c6be5254a45689d8bcdb52b28b8a5ed3b5b2))
+* Support prefixed attribute names in cql2-text and ecql parsing ([dbe4e9e](https://github.com/geopython/pygeofilter/commit/dbe4e9e5c0c48698f312e1cc023a43ea78391f60))
+* Support prefixed attribute names in cql2-text and ecql parsing ([5318c6b](https://github.com/geopython/pygeofilter/commit/5318c6bcf6e2620d39c8bc52fa13cc40e02274ac))
+* Support prefixed attribute names in cql2-text and ecql parsing ([122a5a6](https://github.com/geopython/pygeofilter/commit/122a5a6c5ba746a51bf9eb36a5d9617201d19123))
+* Updating release-please to v4 ([11757ec](https://github.com/geopython/pygeofilter/commit/11757eca4a7ba71fbca575636117b6eb8b3c9e53))
+
 ### [0.2.1](https://www.github.com/geopython/pygeofilter/compare/v0.2.0...v0.2.1) (2023-02-16)
 
 
