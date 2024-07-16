@@ -145,8 +145,8 @@ class SQLEvaluator(Evaluator):
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
-        wkb_hex = shapely.geometry.shape(node).wkb_hex
-        return f"ST_GeomFromWKB(x'{wkb_hex}')"
+        wkt = shapely.geometry.shape(node).wkt
+        return f"ST_SetSRID(ST_GeomFromText('{wkt}'),4326)"
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
