@@ -22,7 +22,7 @@ from pygeofilter import ast
 from pygeofilter.backends.elasticsearch import to_filter
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
-
+from os import environ
 
 class Wildcard(Field):
     name = "wildcard"
@@ -54,7 +54,10 @@ class Record(Document):
 @pytest.fixture(autouse=True, scope="session")
 def connection():
     connections.create_connection(
-        hosts=["http://localhost:9200"],
+        hosts=["http://{}:{}".format(
+            environ.get("PYGEOFILTER_ELASTIC_HOST", "localhost"),
+            environ.get("PYGEOFILTER_ELASTIC_PORT", "9200"),
+        )],
     )
 
 

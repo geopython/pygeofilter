@@ -180,6 +180,8 @@ pip install -r requirements-dev.txt
 pip install -r requirements-test.txt
 ```
 
+GDAL must also be available in the local environment.
+
 The functionality can be tested using `pytest`.
 
 ```bash
@@ -188,11 +190,10 @@ python -m pytest
 
 ### Docker
 
-To execute tests in Docker:
+To execute tests with Docker Compose:
 
 ```
-docker build -t pygeofilter/test -f Dockerfile-3.9 .
-docker run --rm pygeofilter/test
+./execute-tests.sh
 ```
 
 ## Backends
