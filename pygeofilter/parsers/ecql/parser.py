@@ -181,7 +181,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return float(value)
 
     def BOOLEAN(self, value):
-        return value == "TRUE"
+        return value.lower() == "true"
 
     def DOUBLE_QUOTED(self, token):
         return token[1:-1]
