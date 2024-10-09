@@ -145,7 +145,7 @@ def test_attribute_in_list():
 
 
 def test_attribute_is_null():
-    result = parse({"op": "isNull", "args": {"property": "attr"}})
+    result = parse({"op": "isNull", "args": [{"property": "attr"}]})
     assert result == ast.IsNull(ast.Attribute("attr"), False)
 
 
