@@ -48,7 +48,7 @@ SPATIAL_PREDICATES_MAP = {
 }
 
 
-@v_args(inline=True)
+@v_args(meta=False, inline=True)
 class ECQLTransformer(WKTTransformer, ISO8601Transformer):
     def and_(self, lhs, rhs):
         return ast.And(lhs, rhs)

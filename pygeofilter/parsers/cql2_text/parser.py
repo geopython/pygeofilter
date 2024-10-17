@@ -38,7 +38,7 @@ from ..wkt import WKTTransformer
 logger.setLevel(logging.DEBUG)
 
 
-@v_args(inline=True)
+@v_args(meta=False, inline=True)
 class CQLTransformer(WKTTransformer, ISO8601Transformer):
     def and_(self, *args):
         return ast.And.from_items(*args)
