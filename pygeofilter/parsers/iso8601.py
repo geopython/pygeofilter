@@ -30,7 +30,7 @@ from lark import Transformer, v_args
 from ..util import parse_datetime, parse_duration
 
 
-@v_args(inline=True)
+@v_args(meta=False, inline=True)
 class ISO8601Transformer(Transformer):
     def DATETIME(self, dt):
         return parse_datetime(dt)

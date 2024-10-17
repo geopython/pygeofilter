@@ -28,7 +28,7 @@
 from lark import Transformer, v_args
 
 
-@v_args(inline=True)
+@v_args(meta=False, inline=True)
 class WKTTransformer(Transformer):
     def wkt__geometry_with_srid(self, srid, geometry):
         print(srid, geometry)
