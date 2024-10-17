@@ -201,6 +201,7 @@ parser = Lark.open(
     rel_to=__file__,
     parser="lalr",
     debug=True,
+    maybe_placeholders=False,
     transformer=ECQLTransformer(),
     import_paths=[os.path.dirname(os.path.dirname(__file__))],
 )
