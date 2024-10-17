@@ -109,7 +109,7 @@ period: DATETIME "/" DATETIME
 
 envelope: "ENVELOPE" "(" number number number number ")"
 
-BOOLEAN: ( "TRUE" | "FALSE" )
+BOOLEAN.2: ( "TRUE"i | "FALSE"i )
 
 DOUBLE_QUOTED: "\"" /.*?/ "\""
 SINGLE_QUOTED: "'" /.*?/ "'"
