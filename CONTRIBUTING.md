@@ -33,7 +33,7 @@ Before submitting a bug, please do the following:
 
 Make sure your report gets the attention it deserves: bug reports with missing information may be ignored or punted back to you, delaying a fix.  The below constitutes a bare minimum; more info is almost always better:
 
-* __What version of Python are you using?__ For example, are you using Python 2.7, Python 3.7, PyPy 2.0?
+* __What version of Python are you using?__ For example, are you using Python 3.8+, PyPy 2.0?
 * __What operating system are you using?__ Windows (7, 8, 10, 32-bit, 64-bit), Mac OS X,  (10.7.4, 10.9.0), GNU/Linux (which distribution, which version?) Again, more detail is better.
 * __Which version or versions of the software are you using?__ Ideally, you've followed the advice above and are on the latest version, but please confirm this.
 * __How can the we recreate your problem?__ Imagine that we have never used pygeofilter before and have downloaded it for the first time. Exactly what steps do we need to take to reproduce your problem?
