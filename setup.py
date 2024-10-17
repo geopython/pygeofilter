@@ -57,7 +57,7 @@ setup(
     install_requires=(
         [
             "dateparser",
-            "lark",
+            "lark<=1.0.0",
             "pygeoif>=1.0.0",
             "dataclasses;python_version<'3.7'",
         ]
