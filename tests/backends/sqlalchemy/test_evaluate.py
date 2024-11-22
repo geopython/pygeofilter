@@ -22,6 +22,18 @@ from pygeofilter.parsers.ecql import parse
 
 Base = declarative_base()
 
+mod_spatialite = ctypes.util.find_library("mod_spatialite")
+if not mod_spatialite:
+    import pathlib
+    matches = list(pathlib.Path("/usr/lib").glob("*/mod_spatialite.so"))
+    if matches:
+        mod_spatialite = str(matches[0])
+
+import pytest
+pytestmark = pytest.mark.skipif(
+    not mod_spatialite, reason="mod_spatialite.so not available"
+)
+
 
 class Record(Base):
     __tablename__ = "record"
@@ -70,10 +82,7 @@ FIELD_MAPPING = {
 
 def load_spatialite(dbapi_conn, connection_record):
     dbapi_conn.enable_load_extension(True)
-    dbapi_conn.load_extension(
-        ctypes.util.find_library("mod_spatialite")
-        or "/usr/lib/x86_64-linux-gnu/mod_spatialite.so"
-    )
+    dbapi_conn.load_extension(mod_spatialite)
 
 
 @pytest.fixture(scope="session")
