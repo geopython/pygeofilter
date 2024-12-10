@@ -57,7 +57,7 @@ setup(
     install_requires=(
         [
             "dateparser",
-            "lark<1.0",
+            "lark",
             "pygeoif>=1.0.0",
             "dataclasses;python_version<'3.7'",
         ]
@@ -76,10 +76,11 @@ setup(
         "Intended Audience :: Developers",
         "Topic :: Scientific/Engineering :: GIS",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     tests_require=["pytest"],
 )
