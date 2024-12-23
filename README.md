@@ -89,6 +89,8 @@ There are a number of pre-defined backends available, where parsed expressions c
 * Django
 * sqlalchemy
 * (Geo)Pandas
+* Elasticsearch
+* OpenSearch
 * Pure Python object filtering
 
 The usage of those are described in their own documentation.

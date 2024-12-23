@@ -9,6 +9,7 @@ def test_attribute_eq_true_uppercase():
         True,
     )
 
+
 def test_attribute_eq_true_lowercase():
     result = parse("attr = true")
     assert result == ast.Equal(
