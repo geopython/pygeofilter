@@ -69,6 +69,7 @@ setup(
         "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy"],
         "backend-native": ["shapely"],
         "backend-elasticsearch": ["elasticsearch", "elasticsearch-dsl"],
+        "backend-opensearch": ["opensearch-py", "opensearch-dsl"],
         "fes": ["pygml>=0.2"],
     },
     classifiers=[
