@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/geopython/pygeofilter/compare/v0.3.0...v0.3.1) (2024-12-31)
+
+
+### Bug Fixes
+
+* **CI:** using separate file for tracking version to help with release-please action ([1c28b7c](https://github.com/geopython/pygeofilter/commit/1c28b7c45415ecedabd01570b114902f1d8f9310))
+
 ## [0.3.0](https://github.com/geopython/pygeofilter/compare/v0.2.4...v0.3.0) (2024-12-30)
 
 
