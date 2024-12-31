@@ -3,6 +3,19 @@
 ## [0.3.0](https://github.com/geopython/pygeofilter/compare/v0.2.4...v0.3.0) (2024-12-30)
 
 
+### Features
+
+* add support for OpenSearch backend ([#111](https://github.com/geopython/pygeofilter/pull/111))
+* Update lark ([#110](https://github.com/geopython/pygeofilter/pull/110))
+
+
+### Bug Fixes
+
+* Handle boolean in ecql like cql_text ([#108](https://github.com/geopython/pygeofilter/pull/108))
+* Fix compatibility with i386 ([#107](https://github.com/geopython/pygeofilter/pull/107))
+* add FES parser import shortcut as other filter languages  ([#102](https://github.com/geopython/pygeofilter/pull/102))
+
+
 ### Miscellaneous Chores
 
 * release 0.3.0 ([48de1f1](https://github.com/geopython/pygeofilter/commit/48de1f128c4956a99d6760487146636122e119a3))
