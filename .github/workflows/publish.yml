@@ -4,17 +4,17 @@ on:
   push:
     tags:
       - release-*
-      - "v*"
+      - 'v*'
 
 jobs:
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@master
+    - uses: actions/setup-python@v5
       name: Setup Python
       with:
-        python-version: "3.x"
+        python-version: '3.11'
     - name: Install build dependency
       run: pip install wheel setuptools
     - name: Build package

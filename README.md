@@ -27,20 +27,20 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
 The package can be installed via PIP:
 
 ```bash
-pip install pygeofilter
+pip3 install pygeofilter
 ```
 
 Some features require additional dependencies. This currently only affects the backends. To install these, the features have to be listed:
 
 ```bash
 # for the Django backend
-pip install pygeofilter[backend-django]
+pip3 install pygeofilter[backend-django]
 
 # for the sqlalchemy backend
-pip install pygeofilter[backend-sqlalchemy]
+pip3 install pygeofilter[backend-sqlalchemy]
 
 # for the native backend
-pip install pygeofilter[backend-native]
+pip3 install pygeofilter[backend-native]
 ```
 
 ## Usage
@@ -178,8 +178,8 @@ class MyAPIEvaluator(Evaluator):
 For testing, several requirements must be satisfied. These can be installed, via pip:
 
 ```bash
-pip install -r requirements-dev.txt
-pip install -r requirements-test.txt
+pip3 install -r requirements-dev.txt
+pip3 install -r requirements-test.txt
 ```
 
 The functionality can be tested using `pytest`.
