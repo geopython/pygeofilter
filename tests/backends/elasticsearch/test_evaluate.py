@@ -135,35 +135,35 @@ def test_comparison(data):
 
 def test_combination(data):
     result = filter_(parse("int_attribute = 5 AND float_attribute < 6.0"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(parse("int_attribute = 6 OR float_attribute < 6.0"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
 
 def test_between(data):
     result = filter_(parse("float_attribute BETWEEN -1 AND 1"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(parse("int_attribute NOT BETWEEN 4 AND 6"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0].identifier == data[1].identifier
 
 
 def test_like(data):
     result = filter_(parse("str_attribute LIKE 'this is a test'"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(parse("str_attribute LIKE 'this is % test'"))
     assert len(result) == 2
 
     result = filter_(parse("str_attribute NOT LIKE '% another test'"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(parse("str_attribute NOT LIKE 'this is . test'"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0].identifier == data[1].identifier
 
     result = filter_(parse("str_attribute ILIKE 'THIS IS . TEST'"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(parse("str_attribute ILIKE 'THIS IS % TEST'"))
     assert len(result) == 2
@@ -171,18 +171,18 @@ def test_like(data):
 
 def test_in(data):
     result = filter_(parse("int_attribute IN ( 1, 2, 3, 4, 5 )"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(parse("int_attribute NOT IN ( 1, 2, 3, 4, 5 )"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0].identifier == data[1].identifier
 
 
 def test_null(data):
     result = filter_(parse("maybe_str_attribute IS NULL"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(parse("maybe_str_attribute IS NOT NULL"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0].identifier == data[1].identifier
 
 
 def test_has_attr():
@@ -213,7 +213,7 @@ def test_temporal(data):
     result = filter_(
         parse("datetime_attribute AFTER 2000-01-01T00:00:05.00Z"),
     )
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0].identifier == data[1].identifier
 
 
 # def test_array():
