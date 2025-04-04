@@ -25,8 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-""" General utilities for the OpenSearch backend.
-"""
+"""General utilities for the OpenSearch backend."""
 
 import re
 

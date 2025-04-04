@@ -25,8 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-""" OpenSearch backend for pygeofilter.
-"""
+"""OpenSearch backend for pygeofilter."""
 
 from .evaluate import to_filter
 

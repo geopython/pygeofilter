@@ -25,11 +25,11 @@ Base = declarative_base()
 mod_spatialite = ctypes.util.find_library("mod_spatialite")
 if not mod_spatialite:
     import pathlib
+
     matches = list(pathlib.Path("/usr/lib").glob("*/mod_spatialite.so"))
     if matches:
         mod_spatialite = str(matches[0])
 
-import pytest
 pytestmark = pytest.mark.skipif(
     not mod_spatialite, reason="mod_spatialite.so not available"
 )
