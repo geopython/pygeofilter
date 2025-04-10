@@ -684,3 +684,26 @@ def test_function_attr_string_arg():
             ],
         ),
     )
+
+
+def test_function_multi_properties():
+    result =  parse(
+{
+    "op": "t_contains",
+    "args": [
+        {"interval": [{"property": "start_datetime"}, {"property": "end_datetime"}]},
+        {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]},
+    ]
+}
+    )
+
+    assert result == ast.TimeContains(
+        values.Interval(
+            ast.Attribute("start_datetime"),
+            ast.Attribute("end_datetime"),
+        ),
+        values.Interval(
+            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ),
+    )

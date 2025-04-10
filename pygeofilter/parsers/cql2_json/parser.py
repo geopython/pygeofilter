@@ -83,8 +83,11 @@ def walk_cql_json(node: JsonType):  # noqa: C901
         return parse_datetime(node["timestamp"])
 
     elif "interval" in node:
-        parsed: List[Union[date, datetime, timedelta, None]] = []
+        parsed: List[Union[ast.Attribute, date, datetime, timedelta, None]] = []
         for value in node["interval"]:
+            if isinstance(value, dict) and "property" in value:
+                parsed.append(ast.Attribute(value["property"]))
+                continue
             if value == "..":
                 parsed.append(None)
                 continue
