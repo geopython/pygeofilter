@@ -109,7 +109,7 @@
      | "-" atom                                                             -> neg
      | "(" expression ")"
 
-func.2: attribute "(" expression ("," expression)* ")" -> function
+func: attribute "(" expression ("," expression)* ")" -> function
 
 
 ?literal: timestamp
@@ -132,9 +132,15 @@ BOOLEAN.2: ( "TRUE"i | "FALSE"i)
 DOUBLE_QUOTED: "\"" /.*?/ "\""
 SINGLE_QUOTED: "'" /.*?/ "'"
 
+DATE: /[0-9]{4}-?[0-1][0-9]-?[0-3][0-9]/
 DATETIME: /[0-9]{4}-?[0-1][0-9]-?[0-3][0-9][T ][0-2][0-9]:?[0-5][0-9]:?[0-5][0-9](\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})?/
 ?timestamp: "TIMESTAMP" "(" "'" DATETIME "'" ")"
-?interval: "INTERVAL" "("  "'" DATETIME "'" "," "'" DATETIME "'" ")"
+?interval: "INTERVAL" "(" instant_parameter "," instant_parameter ")"
+?instant_parameter: "'" DATE "'"
+                  | "'" DATETIME "'"
+                  | "'..'"
+                  | attribute
+                  | func
 
 
 
