@@ -44,14 +44,21 @@ from .util import like_to_wildcard
 
 VERSION_9_8_1 = Version("9.8.1")
 
+python
 
 COMPARISON_OP_MAP = {
-    ast.ComparisonOp.LT: "lt",
-    ast.ComparisonOp.LE: "lte",
-    ast.ComparisonOp.GT: "gt",
-    ast.ComparisonOp.GE: "gte",
+    ast.ComparisonOp.EQ: "{}:{}",
+    ast.ComparisonOp.NE: "-{}:{}",
+    ast.ComparisonOp.GT: "{}:{{{} TO *}}",
+    ast.ComparisonOp.GE: "{}:[{} TO *]",
+    ast.ComparisonOp.LT: "{}:[* TO {}]",
+    ast.ComparisonOp.LE: "{}:[* TO {}]",
+    ast.ComparisonOp.IN: "({})",
+    ast.ComparisonOp.LIKE: "{{!complexphrase}}{}:\"{}*\"",
+    ast.ComparisonOp.BETWEEN: "{}:[{} TO {}]",
+    ast.ComparisonOp.IS_NULL: "(*:* -{}:*)",
+    ast.ComparisonOp.IS_NOT_NULL: "{}:*",
 }
-
 
 ARITHMETIC_OP_MAP = {
     ast.ArithmeticOp.ADD: "+",
@@ -59,7 +66,6 @@ ARITHMETIC_OP_MAP = {
     ast.ArithmeticOp.MUL: "*",
     ast.ArithmeticOp.DIV: "/",
 }
-
 
 class ElasticSearchDSLEvaluator(Evaluator):
     """A filter evaluator for Apache SolR"""
