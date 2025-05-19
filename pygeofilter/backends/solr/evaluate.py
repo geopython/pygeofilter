@@ -54,7 +54,7 @@ COMPARISON_OP_MAP = {
     ast.ComparisonOp.LT: "{}:[* TO {}]",
     ast.ComparisonOp.LE: "{}:[* TO {}]",
     ast.ComparisonOp.IN: "({})",
-    ast.ComparisonOp.LIKE: "{{!complexphrase}}{}:\"{}*\"",
+    ast.ComparisonOp.LIKE: "{}:\"{}*\"",
     ast.ComparisonOp.BETWEEN: "{}:[{} TO {}]",
     ast.ComparisonOp.IS_NULL: "(*:* -{}:*)",
     ast.ComparisonOp.IS_NOT_NULL: "{}:*",
