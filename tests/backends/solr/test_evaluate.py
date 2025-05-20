@@ -4,47 +4,45 @@ import pytest
 import pysolr
 
 from pygeofilter import ast
-from pygeofilter.solr import to_filter
+from pygeofilter.backends.solr import to_filter
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
 
+# input documents for testing
+input_docs = [{
+    {
+        "id": "A",
+        "geometry": "MULTIPOLYGON(((0 0, 0 5, 5 5,5 0,0 0)))",
+        "center": "POINT(2.5 2.5)",
+        "float_attribute": 0.0,
+        "int_attrinute": 5,
+        "str_attribute": "this is a test",
+        "datetime_attribute": "2000-01-01T00:00:00Z",
+        "daterange_attribute": "[2000-01-01T00:00:00Z TO 2000-01-02T00:00:00Z]",
 
-class Wildcard(Field):
-    name = "wildcard"
+    },
+    {
+        "id": "B",
+        "geometry": "MULTIPOLYGON(((5 5, 5 10, 10 10,10 5,5 5)))",
+        "center": "POINT(7.5 7.5)",
+        "float_attribute": 30.0,
+        "str_attribute": "this is another test",
+        "maybe_str_attribute": "some value",
+        "datetime_attribute": "2000-01-01T00:00:10Z",
+        "daterange_attribute": "[2000-01-04T00:00:00Z TO 2000-01-05T00:00:00Z]",
+    },
+}]
 
-
-class RecordMeta(InnerDoc):
-    float_meta_attribute = Float()
-    int_meta_attribute = Integer()
-    str_meta_attribute = Text()
-    datetime_meta_attribute = Date()
-
-
-class Record(Document):
-    identifier = Text()
-    geometry = GeoShape()
-    center = GeoPoint()
-    float_attribute = Float()
-    int_attribute = Integer()
-    str_attribute = Wildcard()
-    maybe_str_attribute = Text()
-    datetime_attribute = Date()
-    daterange_attribute = DateRange()
-    record_metas = Nested(RecordMeta)
-
-    class Index:
-        name = "record"
 
 
 @pytest.fixture(autouse=True, scope="session")
 def connection():
-    pysolr.Solr("http://localhost:8983/solr/adc")
+    pysolr.Solr("http://localhost:8985/solr/gettingstarted")
 
 
 @pytest.fixture(autouse=True, scope="session")
 def index(connection):
-    Record.init()
-    index = Index(Record.Index.name)
+    index = connection.add(input_docs)
     yield index
     index.delete()
 
@@ -89,7 +87,7 @@ def data(index):
 
 
 def filter_(ast_):
-    query = to_filter(ast_, version="8.2")
+    query = to_filter(ast_, version="9.8.1")
     print(query)
     result = Record.search().query(query).execute()
     print([r.identifier for r in result])

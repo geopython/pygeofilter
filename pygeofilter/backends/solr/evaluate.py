@@ -45,12 +45,12 @@ from .util import like_to_wildcard
 VERSION_9_8_1 = Version("9.8.1")
 
 COMPARISON_OP_MAP = {
-    ast.ComparisonOp.EQ: "{}:{}",
-    ast.ComparisonOp.NE: "-{}:{}",
-    ast.ComparisonOp.GT: "{}:{{{} TO *}}",
-    ast.ComparisonOp.GE: "{}:[{} TO *]",
-    ast.ComparisonOp.LT: "{}:[* TO {}]",
-    ast.ComparisonOp.LE: "{}:[* TO {}]",
+    ast.ComparisonOp.EQ: "{lhs}:{rhs}",
+    ast.ComparisonOp.NE: "-{lhs}:{rhs}",
+    ast.ComparisonOp.GT: "{lhs}:{{{rhs} TO *]",
+    ast.ComparisonOp.GE: "{lhs}:[{rhs} TO *]",
+    ast.ComparisonOp.LT: "{lhs}:[* TO {rhs}}}",
+    ast.ComparisonOp.LE: "{lhs}:[* TO {rhs}]",
 #    ast.ComparisonOp.IN: "({})",
 #    ast.ComparisonOp.LIKE: "{}:\"{}*\"",
 #    ast.ComparisonOp.BETWEEN: "{}:[{} TO {}]",
@@ -89,12 +89,15 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.LessThan, ast.LessEqual, ast.GreaterThan, ast.GreaterEqual)
     def comparison(self, node, lhs, rhs):
         """Creates a `range` filter."""
-        return COMPARISON_OP_MAP[node.op].format(rhs)
+        return f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs)
 
     @handle(ast.Between)
     def between(self, node: ast.Between, lhs, low, high):
         """Creates a `range` filter."""
-        return f"{lhs}:[{low} TO {high}]"
+        q = f"{lhs}:[{low} TO {high}]"
+        if node.not_:
+            q = f"-{q}"
+        return q
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
@@ -162,18 +165,6 @@ class SOLRDSLEvaluator(Evaluator):
             q = f"-{q}"
         return q
 
-    @handle(ast.LessThan, ast.LessEqual, ast.GreaterThan, ast.GreaterEqual)
-    def comparison(self, node, lhs, rhs):
-        """Creates a `range` filter."""
-        return '{lhs}: {COMPARISON_OP_MAP[node.op]}: rhs}}'
-
-    @handle(ast.Between)
-    def between(self, node: ast.Between, lhs, low, high):
-        """Creates a `range` filter."""
-        q = Q("range", **{lhs: {"gte": low, "lte": high}})
-        if node.not_:
-            q = ~q
-        return q
 
     @handle(ast.Like)
     def like(self, node: ast.Like, lhs):
@@ -369,7 +360,7 @@ def to_filter(
     attribute_map: Optional[Dict[str, str]] = None,
     version: Optional[str] = None,
 ):
-    """Shorthand function to convert a pygeofilter AST to an Elasticsearch
+    """Shorthand function to convert a pygeofilter AST to an Apache SolR
     filter structure.
     """
     return SOLRDSLEvaluator(
