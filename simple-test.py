@@ -176,9 +176,37 @@ print('\n')
 # LIKE
 print('Testing LIKE')
 ast = parse("str_attribute LIKE 'this is a test'")
-print('AST NOT IN: ', ast)
+print('AST LIKE: ', ast)
 
 solr_filter = to_filter(ast)
-print('SOLR filter NOT IN: ', solr_filter)
+print('SOLR filter LIKE: ', solr_filter)
 print('\n')
 
+
+# LIKE %
+print('Testing LIKE %')
+ast = parse("str_attribute LIKE 'this is % test'")
+print('AST LIKE %: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter LIKE %: ', solr_filter)
+print('\n')
+
+# NOT LIKE %
+print('Testing NOT LIKE %')
+ast = parse("str_attribute NOT LIKE '% another test'")
+print('AST NOT LIKE %: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter NOT LIKE %: ', solr_filter)
+print('\n')
+
+
+# NOT LIKE .
+print('Testing NOT LIKE .')
+ast = parse("str_attribute NOT LIKE 'this is . test'")
+print('AST NOT LIKE .: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter NOT LIKE .: ', solr_filter)
+print('\n')

@@ -60,6 +60,12 @@ ARITHMETIC_OP_MAP = {
     ast.ArithmeticOp.DIV: "/",
 }
 
+class SolrDSLQuery(dict):
+    def __init__(self, query=None, filter=None):
+        super().__init__()
+        self['query'] = query
+        self['filter'] = filter
+
 class SOLRDSLEvaluator(Evaluator):
     """A filter evaluator for Apache SolR"""
 
@@ -74,17 +80,17 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.And)
     def and_(self, _, lhs, rhs):
         """Joins two filter objects with an `and` operator."""
-        return f"{lhs} AND {rhs}"
+        return SolrDSLQuery(f"{lhs} AND {rhs}")
 
     @handle(ast.Or)
     def or_(self, _, lhs, rhs):
         """Joins two filter objects with an `or` operator."""
-        return f"{lhs} OR {rhs}"
+        return SolrDSLQuery(f"{lhs} OR {rhs}")
 
     @handle(ast.LessThan, ast.LessEqual, ast.GreaterThan, ast.GreaterEqual)
     def comparison(self, node, lhs, rhs):
         """Creates a `range` filter."""
-        return f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs)
+        return SolrDSLQuery(f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs))
 
     @handle(ast.Between)
     def between(self, node: ast.Between, lhs, low, high):
@@ -92,7 +98,7 @@ class SOLRDSLEvaluator(Evaluator):
         q = f"{lhs}:[{low} TO {high}]"
         if node.not_:
             q = f"-{q}"
-        return q
+        return SolrDSLQuery(q)
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
@@ -101,7 +107,7 @@ class SOLRDSLEvaluator(Evaluator):
         q = f"{lhs}:({options_str})"
         if node.not_:
             q = f"-{q}"
-        return q
+        return SolrDSLQuery(q)
 
     @handle(ast.IsNull)
     def null(self, node: ast.IsNull, lhs):
@@ -109,12 +115,12 @@ class SOLRDSLEvaluator(Evaluator):
         q = f"(*:* -{lhs}:*)"
         if node.not_:
             q = f"{lhs}:*"
-        return q
+        return SolrDSLQuery(q)
 
     @handle(ast.Exists)
     def exists(self, node: ast.Exists, lhs):
         """Performs an existense check."""
-        return f"{lhs}:[* TO *]" if node.not_ else f"-{lhs}:[* TO *]"
+        return SolrDSLQuery(f"{lhs}:[* TO *]" if node.not_ else f"-{lhs}:[* TO *]")
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
@@ -134,7 +140,7 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.Not)
     def not_(self, _, sub):
         """Inverts a filter object."""
-        return f"-{sub}"
+        return SolrDSLQuery(f"-{sub}")
 
     @handle(ast.Like)
     def like(self, node: ast.Like, lhs):
@@ -144,10 +150,11 @@ class SOLRDSLEvaluator(Evaluator):
         pattern = like_to_wildcard(
             node.pattern, node.wildcard, node.singlechar, node.escapechar
         )
-        q = f"{lhs}:{pattern}"
+        # q = f"{{!complexphrase}}{lhs}:\"{pattern}\""
+        q = f"{lhs}:\"{pattern}\""
         if node.not_:
             q = f"-{q}"
-        return q
+        return SolrDSLQuery(q)
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
@@ -161,28 +168,8 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.Equal, ast.NotEqual)
     def equality(self, node, lhs, rhs):
         """Creates a match filter."""
-        return f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs)
+        return SolrDSLQuery(f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs))
 
-
-    @handle(ast.Like)
-    def like(self, node: ast.Like, lhs):
-        """Transforms the provided LIKE pattern to an Elasticsearch wildcard
-        pattern. Thus, this only works properly on "wildcard" fields.
-        Ignores case-sensitivity when Elasticsearch version is below 7.10.0.
-        """
-        pattern = like_to_wildcard(
-            node.pattern, node.wildcard, node.singlechar, node.escapechar
-        )
-        expr: Dict[str, Union[str, bool]] = {
-            "value": pattern,
-        }
-        if self.version >= VERSION_7_10_0:
-            expr["case_insensitive"] = node.nocase
-
-        q = Q("wildcard", **{lhs: expr})
-        if node.not_:
-            q = ~q
-        return q
 
     @handle(ast.Exists)
     def exists(self, node: ast.Exists, lhs):
