@@ -1,7 +1,7 @@
 # pylint: disable=W0621,C0114,C0115,C0116
 
 import pytest
-from pysolr import PySolr
+import pysolr
 
 from pygeofilter import ast
 from pygeofilter.solr import to_filter
@@ -38,9 +38,7 @@ class Record(Document):
 
 @pytest.fixture(autouse=True, scope="session")
 def connection():
-    connections.create_connection(
-        hosts=["http://localhost:8983"],
-    )
+    pysolr.Solr("http://localhost:8983/solr/adc")
 
 
 @pytest.fixture(autouse=True, scope="session")
