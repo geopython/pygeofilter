@@ -51,11 +51,6 @@ COMPARISON_OP_MAP = {
     ast.ComparisonOp.GE: "{lhs}:[{rhs} TO *]",
     ast.ComparisonOp.LT: "{lhs}:[* TO {rhs}}}",
     ast.ComparisonOp.LE: "{lhs}:[* TO {rhs}]",
-#    ast.ComparisonOp.IN: "({})",
-#    ast.ComparisonOp.LIKE: "{}:\"{}*\"",
-#    ast.ComparisonOp.BETWEEN: "{}:[{} TO {}]",
-#    ast.ComparisonOp.IS_NULL: "(*:* -{}:*)",
-#    ast.ComparisonOp.IS_NOT_NULL: "{}:*",
 }
 
 ARITHMETIC_OP_MAP = {
@@ -102,13 +97,19 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.In)
     def in_(self, node, lhs, *options):
         """Creates a `terms` filter."""
-        options_str = " ".join(str(option) for option in options)
-        return f"{lhs}:({options_str})"
+        options_str = " OR ".join(str(option) for option in options)
+        q = f"{lhs}:({options_str})"
+        if node.not_:
+            q = f"-{q}"
+        return q
 
     @handle(ast.IsNull)
     def null(self, node: ast.IsNull, lhs):
         """Performs a null check."""
-        return f"-{lhs}:[* TO *]" if node.not_ else f"{lhs}:[* TO *]"
+        q = f"(*:* -{lhs}:*)"
+        if node.not_:
+            q = f"{lhs}:*"
+        return q
 
     @handle(ast.Exists)
     def exists(self, node: ast.Exists, lhs):
@@ -160,10 +161,7 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.Equal, ast.NotEqual)
     def equality(self, node, lhs, rhs):
         """Creates a match filter."""
-        q = f"{lhs}:{rhs}"
-        if node.op == ast.ComparisonOp.NE:
-            q = f"-{q}"
-        return q
+        return f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs)
 
 
     @handle(ast.Like)
@@ -183,24 +181,6 @@ class SOLRDSLEvaluator(Evaluator):
 
         q = Q("wildcard", **{lhs: expr})
         if node.not_:
-            q = ~q
-        return q
-
-    @handle(ast.In)
-    def in_(self, node, lhs, *options):
-        """Creates a `terms` filter."""
-        q = Q("terms", **{lhs: options})
-        if node.not_:
-            q = ~q
-        return q
-
-    @handle(ast.IsNull)
-    def null(self, node: ast.IsNull, lhs):
-        """Performs a null check, by using the `exists` query on the given
-        field.
-        """
-        q = Q("exists", field=lhs)
-        if not node.not_:
             q = ~q
         return q
 

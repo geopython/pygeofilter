@@ -3,12 +3,12 @@
 # URL: .../items?filter=title = 'test' AND description = 'test2'
 
 from pygeofilter.backends.solr import to_filter
-from pygeofilter.parsers.cql2_text import parse
+from pygeofilter.parsers.ecql import parse
 
 
 # AND
 print('Testing AND')
-ast = parse("title = 'test' and description = 'test2'")
+ast = parse("title = 'test' AND description = 'test2'")
 
 print('AST AND: ', ast)
 
@@ -19,7 +19,7 @@ print('\n')
 
 # OR
 print('Testing OR')
-ast = parse("title = 'test' or description = 'test2'")
+ast = parse("title = 'test' OR description = 'test2'")
 
 print('AST OR: ', ast)
 
@@ -116,6 +116,15 @@ print('SOLR filter BETWEEN: ', solr_filter)
 print('\n')
 
 
+# NOT Between
+print('Testing NOT BETWEEN')
+ast = parse("int_attribute NOT BETWEEN 4 AND 6")
+print('AST NOT BETWEEN: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter NOT BETWEEN: ', solr_filter)
+print('\n')
+
 
 # NOT Between
 print('Testing NOT BETWEEN')
@@ -125,3 +134,51 @@ print('AST NOT BETWEEN: ', ast)
 solr_filter = to_filter(ast)
 print('SOLR filter NOT BETWEEN: ', solr_filter)
 print('\n')
+
+
+# IS_NULL
+print('Testing IS_NULL')
+ast = parse("maybe_str_attribute IS NULL")
+print('AST IS_NULL: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter IS_NULL: ', solr_filter)
+print('\n')
+
+
+# IS_NOT_NULL
+print('Testing IS_NOT_NULL')
+ast = parse("maybe_str_attribute IS NOT NULL")
+print('AST IS_NOT_NULL: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter IS_NOT_NULL: ', solr_filter)
+print('\n')
+
+# IS_IN
+print('Testing IN')
+ast = parse("int_attribute IN ( 1, 2, 3, 4, 5 )")
+print('AST IN: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter IN: ', solr_filter)
+print('\n')
+
+# IS_NOT_IN
+print('Testing NOT IN')
+ast = parse("int_attribute NOT IN ( 1, 2, 3, 4, 5 )")
+print('AST NOT IN: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter NOT IN: ', solr_filter)
+print('\n')
+
+# LIKE
+print('Testing LIKE')
+ast = parse("str_attribute LIKE 'this is a test'")
+print('AST NOT IN: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter NOT IN: ', solr_filter)
+print('\n')
+
