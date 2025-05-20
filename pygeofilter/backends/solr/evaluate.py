@@ -44,8 +44,6 @@ from .util import like_to_wildcard
 
 VERSION_9_8_1 = Version("9.8.1")
 
-python
-
 COMPARISON_OP_MAP = {
     ast.ComparisonOp.EQ: "{}:{}",
     ast.ComparisonOp.NE: "-{}:{}",
@@ -53,11 +51,11 @@ COMPARISON_OP_MAP = {
     ast.ComparisonOp.GE: "{}:[{} TO *]",
     ast.ComparisonOp.LT: "{}:[* TO {}]",
     ast.ComparisonOp.LE: "{}:[* TO {}]",
-    ast.ComparisonOp.IN: "({})",
-    ast.ComparisonOp.LIKE: "{}:\"{}*\"",
-    ast.ComparisonOp.BETWEEN: "{}:[{} TO {}]",
-    ast.ComparisonOp.IS_NULL: "(*:* -{}:*)",
-    ast.ComparisonOp.IS_NOT_NULL: "{}:*",
+#    ast.ComparisonOp.IN: "({})",
+#    ast.ComparisonOp.LIKE: "{}:\"{}*\"",
+#    ast.ComparisonOp.BETWEEN: "{}:[{} TO {}]",
+#    ast.ComparisonOp.IS_NULL: "(*:* -{}:*)",
+#    ast.ComparisonOp.IS_NOT_NULL: "{}:*",
 }
 
 ARITHMETIC_OP_MAP = {
@@ -67,7 +65,7 @@ ARITHMETIC_OP_MAP = {
     ast.ArithmeticOp.DIV: "/",
 }
 
-class ElasticSearchDSLEvaluator(Evaluator):
+class SOLRDSLEvaluator(Evaluator):
     """A filter evaluator for Apache SolR"""
 
     def __init__(
@@ -151,7 +149,8 @@ class ElasticSearchDSLEvaluator(Evaluator):
     def geometry(self, node: values.Geometry):
         """Geometry values are converted to a Solr spatial query.
         This assumes that 'geom' is the field in Solr schema which holds the geometry data.
-        """self.attribute_map[node.name]
+        """
+        self.attribute_map[node.name]
         return f"{lhs}:\"Intersects({node.geometry})\""
 
 
@@ -373,6 +372,6 @@ def to_filter(
     """Shorthand function to convert a pygeofilter AST to an Elasticsearch
     filter structure.
     """
-    return ElasticSearchDSLEvaluator(
+    return SOLRDSLEvaluator(
         attribute_map, Version(version) if version else None
     ).evaluate(root)
