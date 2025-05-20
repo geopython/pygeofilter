@@ -1,4 +1,4 @@
-from pygeofilter.backends.elasticsearch.util import like_to_wildcard
+from pygeofilter.backends.solr.util import like_to_wildcard
 
 
 def test_like_to_wildcard():
