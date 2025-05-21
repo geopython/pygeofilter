@@ -81,11 +81,15 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.And)
     def and_(self, _, lhs, rhs):
         """Joins two filter objects with an `and` operator."""
+        lhs = fix_query(lhs)
+        rhs = fix_query(rhs)
         return SolrDSLQuery(f"{lhs} AND {rhs}")
 
     @handle(ast.Or)
     def or_(self, _, lhs, rhs):
         """Joins two filter objects with an `or` operator."""
+        lhs = fix_query(lhs)
+        rhs = fix_query(rhs)
         return SolrDSLQuery(f"{lhs} OR {rhs}")
 
     @handle(ast.LessThan, ast.LessEqual, ast.GreaterThan, ast.GreaterEqual)
@@ -269,6 +273,14 @@ class SOLRDSLEvaluator(Evaluator):
         min_y = min(node.y1, node.y2)
         max_y = max(node.y1, node.y2)
         return f"ENVELOPE({min_x}, {max_x}, {max_y}, {min_y})"
+
+
+
+def fix_query(q):
+    if isinstance(q, dict):
+        if q['query']:
+            return q['query']
+
 
 def to_filter(
     root,

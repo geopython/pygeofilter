@@ -1,21 +1,27 @@
 # pylint: disable=W0621,C0114,C0115,C0116
 
+import json
 import pytest
-import pysolr
+import requests
 
 from pygeofilter import ast
 from pygeofilter.backends.solr import to_filter
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
 
+SOLR_BASE_URL = "http://localhost:8983/solr/test"  # replace with your Solr URL
+HEADERS = {
+    'Content-type': 'application/json',
+}
+
 # input documents for testing
-input_docs = [
+INPUT_DOCS = [
     {
         "id": "A",
         "geometry": "MULTIPOLYGON(((0 0, 0 5, 5 5,5 0,0 0)))",
         "center": "POINT(2.5 2.5)",
         "float_attribute": 0.0,
-        "int_attrinute": 5,
+        "int_attribute": 5,
         "str_attribute": "this is a test",
         "datetime_attribute": "2000-01-01T00:00:00Z",
         "daterange_attribute": "[2000-01-01T00:00:00Z TO 2000-01-02T00:00:00Z]",
@@ -34,89 +40,102 @@ input_docs = [
 
 
 
-@pytest.fixture(autouse=True, scope="session")
-def connection():
-    solr_conn = pysolr.Solr("http://localhost:8985/solr/gettingstarted", always_commit=True)
-    return solr_conn
 
 @pytest.fixture(autouse=True, scope="session")
-def index(connection):
-    index = connection.add(input_docs)
-    yield connection
-    del index
-
+def index():
+    # Add test documents
+    response = requests.post(SOLR_BASE_URL + '/update', data=json.dumps(INPUT_DOCS), headers=HEADERS)
+    print(response.json())
+    # Commit index
+    res = requests.get(SOLR_BASE_URL + '/update?commit=true')
+    print(res.json())
 
 @pytest.fixture(autouse=True, scope="session")
 def data(index):
     """Fixture to add initial data to the search index."""
-    res_a = index.search("id:A")
-    for doc in res_a:
-        record_a = doc
-    res_b = index.search("id:B")
-    for doc in res_b:
-        record_b = doc
+    data = {
+        "query": "id:A",  # Query
+    }
+    response = requests.get(SOLR_BASE_URL+'/query', data=json.dumps(data), headers=HEADERS)
+    response_json = response.json()
+    if response_json['responseHeader']['status'] == 0:
+        # Print the response
+        record_a = response_json['response']['docs'][0]
+
+    data = {
+        "query": "id:B",  # Query
+    }
+    response = requests.post(SOLR_BASE_URL+'/query', data=json.dumps(data), headers=HEADERS)
+    response_json = response.json()
+    if response_json['responseHeader']['status'] == 0:
+        # Print the response
+        record_b = response_json['response']['docs'][0]
+
     yield [record_a, record_b]
 
 
 def filter_(ast_):
     query = to_filter(ast_, version="9.8.1")
     print(query)
-    result = Record.search().query(query).execute()
-    print([r.identifier for r in result])
-    return result
+    response = requests.post(SOLR_BASE_URL+'/query', data=json.dumps(query), headers=HEADERS)
+    response_json = response.json()
+    print(response_json)
+    return response_json['response']['docs']
 
 
 def test_comparison(data):
+    print('DATA: %s' % data)
     result = filter_(parse("int_attribute = 5"))
-    assert len(result) == 1 and result[0].identifier == data[0].identifier
+    print('RESULT: %s,' % result[0]['id'])
+    assert len(result) == 1 and result[0]['id'] == data[0]['id']
 
     result = filter_(parse("float_attribute < 6"))
-    assert len(result) == 1 and result[0].identifier == data[0].identifier
+    assert len(result) == 1 and result[0]['id'] == data[0]['id']
 
     result = filter_(parse("float_attribute > 6"))
-    assert len(result) == 1 and result[0].identifier == data[1].identifier
+    assert len(result) == 1 and result[0]['id'] == data[1]['id']
 
     result = filter_(parse("int_attribute <= 5"))
-    assert len(result) == 1 and result[0].identifier == data[0].identifier
+    assert len(result) == 1 and result[0]['id'] == data[0]['id']
 
     result = filter_(parse("float_attribute >= 8"))
-    assert len(result) == 1 and result[0].identifier == data[1].identifier
+    assert len(result) == 1 and result[0]['id'] == data[1]['id']
 
     result = filter_(parse("float_attribute <> 0.0"))
-    assert len(result) == 1 and result[0].identifier == data[1].identifier
+    assert len(result) == 1 and result[0]['id'] == data[1]['id']
 
 
 def test_combination(data):
     result = filter_(parse("int_attribute = 5 AND float_attribute < 6.0"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(parse("int_attribute = 6 OR float_attribute < 6.0"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
 
 def test_between(data):
     result = filter_(parse("float_attribute BETWEEN -1 AND 1"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(parse("int_attribute NOT BETWEEN 4 AND 6"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0]['id'] is data[1]['id']
 
 
 def test_like(data):
     result = filter_(parse("str_attribute LIKE 'this is a test'"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(parse("str_attribute LIKE 'this is % test'"))
     assert len(result) == 2
 
     result = filter_(parse("str_attribute NOT LIKE '% another test'"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(parse("str_attribute NOT LIKE 'this is . test'"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0]['id'] is data[1]['id']
 
     result = filter_(parse("str_attribute ILIKE 'THIS IS . TEST'"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(parse("str_attribute ILIKE 'THIS IS % TEST'"))
     assert len(result) == 2
@@ -124,18 +143,18 @@ def test_like(data):
 
 def test_in(data):
     result = filter_(parse("int_attribute IN ( 1, 2, 3, 4, 5 )"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(parse("int_attribute NOT IN ( 1, 2, 3, 4, 5 )"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0]['id'] is data[1]['id']
 
 
 def test_null(data):
     result = filter_(parse("maybe_str_attribute IS NULL"))
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(parse("maybe_str_attribute IS NOT NULL"))
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0]['id'] is data[1]['id']
 
 
 def test_has_attr():
@@ -156,17 +175,17 @@ def test_temporal(data):
             ],
         )
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(
         parse("datetime_attribute BEFORE 2000-01-01T00:00:05.00Z"),
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     result = filter_(
         parse("datetime_attribute AFTER 2000-01-01T00:00:05.00Z"),
     )
-    assert len(result) == 1 and result[0].identifier is data[1].identifier
+    assert len(result) == 1 and result[0]['id'] is data[1]['id']
 
 
 # def test_array():
@@ -211,14 +230,14 @@ def test_spatial(data):
     result = filter_(
         parse("INTERSECTS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))"),
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     # TODO: test more spatial queries
 
     result = filter_(
         parse("BBOX(center, 2, 2, 3, 3)"),
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
 
 # def test_arithmetic():
