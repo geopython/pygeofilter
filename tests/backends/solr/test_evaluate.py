@@ -9,7 +9,7 @@ from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
 
 # input documents for testing
-input_docs = [{
+input_docs = [
     {
         "id": "A",
         "geometry": "MULTIPOLYGON(((0 0, 0 5, 5 5,5 0,0 0)))",
@@ -19,7 +19,6 @@ input_docs = [{
         "str_attribute": "this is a test",
         "datetime_attribute": "2000-01-01T00:00:00Z",
         "daterange_attribute": "[2000-01-01T00:00:00Z TO 2000-01-02T00:00:00Z]",
-
     },
     {
         "id": "B",
@@ -31,58 +30,31 @@ input_docs = [{
         "datetime_attribute": "2000-01-01T00:00:10Z",
         "daterange_attribute": "[2000-01-04T00:00:00Z TO 2000-01-05T00:00:00Z]",
     },
-}]
+]
 
 
 
 @pytest.fixture(autouse=True, scope="session")
 def connection():
-    pysolr.Solr("http://localhost:8985/solr/gettingstarted")
-
+    solr_conn = pysolr.Solr("http://localhost:8985/solr/gettingstarted", always_commit=True)
+    return solr_conn
 
 @pytest.fixture(autouse=True, scope="session")
 def index(connection):
     index = connection.add(input_docs)
-    yield index
-    index.delete()
+    yield connection
+    del index
 
 
 @pytest.fixture(autouse=True, scope="session")
 def data(index):
     """Fixture to add initial data to the search index."""
-    record_a = Record(
-        identifier="A",
-        geometry="MULTIPOLYGON(((0 0, 0 5, 5 5,5 0,0 0)))",
-        center="POINT(2.5 2.5)",
-        float_attribute=0.0,
-        int_attribute=5,
-        str_attribute="this is a test",
-        maybe_str_attribute=None,
-        datetime_attribute=parse_datetime("2000-01-01T00:00:00Z"),
-        daterange_attribute=Range(
-            gte=parse_datetime("2000-01-01T00:00:00Z"),
-            lte=parse_datetime("2000-01-02T00:00:00Z"),
-        ),
-    )
-    record_a.save()
-
-    record_b = Record(
-        identifier="B",
-        geometry="MULTIPOLYGON(((5 5, 5 10, 10 10,10 5,5 5)))",
-        center="POINT(7.5 7.5)",
-        float_attribute=30.0,
-        int_attribute=None,
-        str_attribute="this is another test",
-        maybe_str_attribute="some value",
-        datetime_attribute=parse_datetime("2000-01-01T00:00:10Z"),
-        daterange_attribute=Range(
-            gte=parse_datetime("2000-01-04T00:00:00Z"),
-            lte=parse_datetime("2000-01-05T00:00:00Z"),
-        ),
-    )
-    record_b.save()
-    index.refresh()
-
+    res_a = index.search("id:A")
+    for doc in res_a:
+        record_a = doc
+    res_b = index.search("id:B")
+    for doc in res_b:
+        record_b = doc
     yield [record_a, record_b]
 
 

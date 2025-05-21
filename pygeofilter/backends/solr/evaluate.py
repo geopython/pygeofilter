@@ -120,7 +120,10 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.Exists)
     def exists(self, node: ast.Exists, lhs):
         """Performs an existense check."""
-        return SolrDSLQuery(f"{lhs}:[* TO *]" if node.not_ else f"-{lhs}:[* TO *]")
+        q = f"{lhs}:[* TO *]"
+        if node.not_:
+            q = f"-{lhs}:[* TO *]"
+        return SolrDSLQuery(q)
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
@@ -170,16 +173,6 @@ class SOLRDSLEvaluator(Evaluator):
         """Creates a match filter."""
         return SolrDSLQuery(f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs))
 
-
-    @handle(ast.Exists)
-    def exists(self, node: ast.Exists, lhs):
-        """Performs an existense check, by using the `exists` query on the
-        given field
-        """
-        q = Q("exists", field=lhs)
-        if node.not_:
-            q = ~q
-        return q
 
     @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node: ast.TemporalPredicate, lhs, rhs):

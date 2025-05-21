@@ -210,3 +210,43 @@ print('AST NOT LIKE .: ', ast)
 solr_filter = to_filter(ast)
 print('SOLR filter NOT LIKE .: ', solr_filter)
 print('\n')
+
+
+# ILIKE .
+print('Testing ILIKE .')
+ast = parse("str_attribute ILIKE 'THIS IS . TEST'")
+print('AST ILIKE .: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter ILIKE .: ', solr_filter)
+print('\n')
+
+
+# ILIKE %
+print('Testing ILIKE %')
+ast = parse("str_attribute ILIKE 'THIS IS % TEST'")
+print('AST ILIKE %: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter ILIKE %: ', solr_filter)
+print('\n')
+
+
+# EXISTS
+print('Testing EXISTS')
+ast = parse("extra_attr EXISTS")
+print('AST EXISTS: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter EXISTS: ', solr_filter)
+print('\n')
+
+
+# DOES-NOT-EXIST
+print('Testing DOES-NOT-EXIST')
+ast = parse("extra_attr DOES-NOT-EXIST")
+print('AST DOES-NOT-EXIST: ', ast)
+
+solr_filter = to_filter(ast)
+print('SOLR filter DOES-NOT-EXIST: ', solr_filter)
+print('\n')
