@@ -158,10 +158,28 @@ class SOLRDSLEvaluator(Evaluator):
         pattern = like_to_wildcard(
             node.pattern, node.wildcard, node.singlechar, node.escapechar
         )
-        # q = f"{{!complexphrase}}{lhs}:\"{pattern}\""
-        q = f"{lhs}:\"{pattern}\""
-        if node.not_:
-            q = f"-{q}"
+        print("Pattern: ", pattern)
+        if '*' in pattern:
+            p = pattern.split('*')
+            if p[0] == '':
+                q = f"{{!complexphrase}}{lhs}:*{p[1].strip()}"
+                if node.not_:
+                    q = f"{{!complexphrase}}-{lhs}:\"*{p[1].strip()}\""
+            elif p[1] == '':
+                q = f"{{!complexphrase}}{lhs}:\"{p[0].strip()}*\""
+                if node.not_:
+                    q = f"{{!complexphrase}}-{lhs}:{p[0].strip()}*"
+            else:    
+                q = f"{{!complexphrase}}{lhs}:\"{p[0].strip()}\"*\"{p[1].strip()}\""
+        elif '?' in pattern:
+            q = f"{{!complexphrase}}{lhs}:\"{pattern}\""
+            if node.not_:
+                q = f"{{!complexphrase}}-{lhs}:\"{pattern}\""
+
+        else:
+            q = f"{lhs}:\"{pattern}\""
+            if node.not_:
+                q = f"-{q}"
         return SolrDSLQuery(q)
 
     @handle(values.Geometry)

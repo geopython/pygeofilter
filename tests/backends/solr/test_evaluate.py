@@ -89,16 +89,16 @@ def test_comparison(data):
     print('RESULT: %s,' % result[0]['id'])
     assert len(result) == 1 and result[0]['id'] == data[0]['id']
 
-    result = filter_(parse("float_attribute < 6"))
+    result = filter_(parse("float_attribute < 6.0"))
     assert len(result) == 1 and result[0]['id'] == data[0]['id']
 
-    result = filter_(parse("float_attribute > 6"))
+    result = filter_(parse("float_attribute > 6.0"))
     assert len(result) == 1 and result[0]['id'] == data[1]['id']
 
     result = filter_(parse("int_attribute <= 5"))
     assert len(result) == 1 and result[0]['id'] == data[0]['id']
 
-    result = filter_(parse("float_attribute >= 8"))
+    result = filter_(parse("float_attribute >= 8.0"))
     assert len(result) == 1 and result[0]['id'] == data[1]['id']
 
     result = filter_(parse("float_attribute <> 0.0"))
