@@ -346,3 +346,5 @@ print('AST Spatial BBOX:', ast)
 solr_filter = to_filter(ast)
 print('Spatial BBOX: ', solr_filter)
 print('\n')
+
+#BUMP
