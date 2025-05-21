@@ -38,6 +38,10 @@ jobs:
         host node port: 9300
         node port: 9300
         discovery type: 'single-node'
+    - name: Install and run Solr 📦 
+      uses: OSGeo/solr-action@main
+      with:
+        version: latest
     - name: Install and run OpenSearch 📦
       uses: esmarkowski/opensearch-github-action@v1.0.0
       with:
