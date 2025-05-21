@@ -274,16 +274,75 @@ print('\n')
 
 
 #Testing temporal AFTER
-print('Testing datetime attribute AFTER')
-ast = ast.TimeDisjoint(
-            ast.Attribute("datetime_attribute"),
-            [
-                parse_datetime("2000-01-01T00:00:05.00Z"),
-                parse_datetime("2000-01-01T00:00:15.00Z"),
-            ],
-        )
-print('AST AFTER:', ast)
+# print('Testing datetime attribute DISJOINT')
+# ast = ast.TimeDisjoint(
+#             ast.Attribute("datetime_attribute"),
+#             [
+#                 parse_datetime("2000-01-01T00:00:05.00Z"),
+#                 parse_datetime("2000-01-01T00:00:15.00Z"),
+#             ],
+#         )
+# print('AST AFTER:', ast)
+
+# solr_filter = to_filter(ast)
+# print('datetime attribute AFTER: ', solr_filter)
+# print('\n')
+
+
+# Test spatial Intersects
+print('Testing Spatial Intersects')
+ast = parse("INTERSECTS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))")
+print('AST Spatial Intersects:', ast)
 
 solr_filter = to_filter(ast)
-print('datetime attribute AFTER: ', solr_filter)
+print('Spatial Intersects: ', solr_filter)
+print('\n')
+
+
+# Test spatial Disjoint
+print('Testing Spatial Disjoint')
+ast = parse("DISJOINT(geometry, ENVELOPE (0.0 1.0 0.0 1.0))")
+print('AST Spatial Disjoint:', ast)
+
+solr_filter = to_filter(ast)
+print('Spatial Disjoint: ', solr_filter)
+print('\n')
+
+
+# Test spatial Within
+print('Testing Spatial Within')
+ast = parse("WITHIN(geometry, ENVELOPE (0.0 1.0 0.0 1.0))")
+print('AST Spatial Within:', ast)
+
+solr_filter = to_filter(ast)
+print('Spatial Within: ', solr_filter)
+print('\n')
+
+
+# Test spatial Contains
+print('Testing Spatial Contains')
+ast = parse("CONTAINS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))")
+print('AST Spatial Contains:', ast)
+
+solr_filter = to_filter(ast)
+print('Spatial Contains: ', solr_filter)
+print('\n')
+
+# Test spatial Equals
+print('Testing Spatial Equals')
+ast = parse("EQUALS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))")
+print('AST Spatial Equals:', ast)
+
+solr_filter = to_filter(ast)
+print('Spatial Equals: ', solr_filter)
+print('\n')
+
+
+# Test spatial BBOX
+print('Testing Spatial BBOX')
+ast = parse("BBOX(center, 2, 2, 3, 3)")
+print('AST Spatial BBOX:', ast)
+
+solr_filter = to_filter(ast)
+print('Spatial BBOX: ', solr_filter)
 print('\n')

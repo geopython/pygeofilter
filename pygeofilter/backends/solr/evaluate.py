@@ -225,28 +225,28 @@ class SOLRDSLEvaluator(Evaluator):
         ast.GeometryDisjoint,
         ast.GeometryWithin,
         ast.GeometryContains,
+        ast.GeometryEquals
     )
     def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs: str, rhs):
-        """Creates a geo_shape query for the give spatial comparison
+        """Creates a spatial query for the given spatial comparison
         predicate.
         """
-        return Q(
-            "geo_shape",
-            **{
-                lhs: {
-                    "shape": rhs,
-                    "relation": node.op.value.lower(),
-                },
-            },
-        )
+        # Solr need capitalized first letter of operator
+        op = node.op.value.lower().capitalize()
+        query = f"{{!field f={lhs}}}{op}({rhs})"
+        return SolrDSLQuery(query)
+
 
     @handle(ast.BBox)
     def bbox(self, node: ast.BBox, lhs):
-        """Performs a geo_shape query for the given bounding box.
-        Ignores CRS parameter, as it is not supported by Elasticsearch.
+        """Performs a spatial query for the given bounding box.
+        Ignores CRS parameter, as it is not supported by SolR.
         """
-        print(node.op)
-        return 'notimplemented'
+        bbox = self.envelope(
+            values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
+            )
+        query = f"{{!field f={lhs}}}Intersects({bbox})"
+        return SolrDSLQuery(query)
         
 
     # @handle(ast.Arithmetic, subclasses=True)
