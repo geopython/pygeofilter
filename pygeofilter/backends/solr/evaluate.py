@@ -61,10 +61,11 @@ ARITHMETIC_OP_MAP = {
 }
 
 class SolrDSLQuery(dict):
-    def __init__(self, query=None, filter=None):
+    def __init__(self, query='*:*', filter=None):
         super().__init__()
         self['query'] = query
-        self['filter'] = filter
+        if filter is not None:
+            self['filter'] = filter
 
 class SOLRDSLEvaluator(Evaluator):
     """A filter evaluator for Apache SolR"""
@@ -164,6 +165,7 @@ class SOLRDSLEvaluator(Evaluator):
         """Geometry values are converted to a Solr spatial query.
         This assumes that 'geom' is the field in Solr schema which holds the geometry data.
         """
+        print(node.op)
         self.attribute_map[node.name]
         return f"{lhs}:\"Intersects({node.geometry})\""
 
@@ -179,35 +181,30 @@ class SOLRDSLEvaluator(Evaluator):
         """Creates a filter to match the given temporal predicate"""
         op = node.op
         if isinstance(rhs, (date, datetime)):
-            low = high = rhs
+            low = high = rhs.strftime('%Y-%m-%dT%H:%M:%SZ')
         else:
-            low, high = rhs
+            low, high = rhs[0].strftime('%Y-%m-%dT%H:%M:%SZ'), rhs[1].strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        query = "range"
-        not_ = False
-        predicate: Dict[str, Union[date, datetime, str]]
+        query = None
         if op == ast.TemporalComparisonOp.DISJOINT:
-            not_ = True
-            predicate = {"gte": low, "lte": high}
+            query = f"-{lhs}:[{low} TO {high}]"
         elif op == ast.TemporalComparisonOp.AFTER:
-            predicate = {"gt": high}
+            query = f"{lhs}:{{{high} TO *]"
         elif op == ast.TemporalComparisonOp.BEFORE:
-            predicate = {"lt": low}
+            query = f"{lhs}:[* TO {low}}}"
         elif (
             op == ast.TemporalComparisonOp.TOVERLAPS
             or op == ast.TemporalComparisonOp.OVERLAPPEDBY
         ):
-            predicate = {"gte": low, "lte": high}
+            query = f"{lhs}:[{low} TO {high}]"
         elif op == ast.TemporalComparisonOp.BEGINS:
-            query = "term"
-            predicate = {"value": low}
+            query = f"{lhs}:{low}"
         elif op == ast.TemporalComparisonOp.BEGUNBY:
-            query = "term"
-            predicate = {"value": high}
+            query = f"{lhs}:{high}"
         elif op == ast.TemporalComparisonOp.DURING:
-            predicate = {"gt": low, "lt": high, "relation": "WITHIN"}
+            query = f"{lhs}:{{{low} TO {high}}}"
         elif op == ast.TemporalComparisonOp.TCONTAINS:
-            predicate = {"gt": low, "lt": high, "relation": "CONTAINS"}
+            query = f"{lhs}:[{low} TO {high}]"
         # elif op == ast.TemporalComparisonOp.ENDS:
         #     pass
         # elif op == ast.TemporalComparisonOp.ENDEDBY:
@@ -221,13 +218,7 @@ class SOLRDSLEvaluator(Evaluator):
         else:
             raise NotImplementedError(f"Unsupported temporal operator: {op}")
 
-        q = Q(
-            query,
-            **{lhs: predicate},
-        )
-        if not_:
-            q = ~q
-        return q
+        return SolrDSLQuery(query)
 
     @handle(
         ast.GeometryIntersects,
@@ -254,27 +245,9 @@ class SOLRDSLEvaluator(Evaluator):
         """Performs a geo_shape query for the given bounding box.
         Ignores CRS parameter, as it is not supported by Elasticsearch.
         """
-        return Q(
-            "geo_shape",
-            **{
-                lhs: {
-                    "shape": self.envelope(
-                        values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
-                    ),
-                    "relation": "intersects",
-                },
-            },
-        )
-
-    @handle(ast.Attribute)
-    def attribute(self, node: ast.Attribute):
-        """Attribute mapping from filter fields to elasticsearch fields.
-        If an attribute mapping is provided, it is used to look up the
-        field name from there.
-        """
-        if self.attribute_map is not None:
-            return self.attribute_map[node.name]
-        return node.name
+        print(node.op)
+        return 'notimplemented'
+        
 
     # @handle(ast.Arithmetic, subclasses=True)
     # def arithmetic(self, node: ast.Arithmetic, lhs, rhs):
@@ -286,34 +259,16 @@ class SOLRDSLEvaluator(Evaluator):
     #     func = self.function_map[node.name]
     #     return f"{func}({','.join(arguments)})"
 
-    @handle(*values.LITERALS)
-    def literal(self, node):
-        """Literal values are directly passed to elasticsearch-dsl"""
-        return node
-
-    @handle(values.Geometry)
-    def geometry(self, node: values.Geometry):
-        """Geometry values are converted to a GeoJSON object"""
-        return node.geometry
+   
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
-        """Envelope values are converted to an GeoJSON Elasticsearch
-        extension object."""
-        return {
-            "type": "envelope",
-            "coordinates": [
-                [
-                    min(node.x1, node.x2),
-                    max(node.y1, node.y2),
-                ],
-                [
-                    max(node.x1, node.x2),
-                    min(node.y1, node.y2),
-                ],
-            ],
-        }
-
+        """Envelope values are converted to an WKT ENVELOPE for SolR."""
+        min_x = min(node.x1, node.x2)
+        max_x = max(node.x1, node.x2)
+        min_y = min(node.y1, node.y2)
+        max_y = max(node.y1, node.y2)
+        return f"ENVELOPE({min_x}, {max_x}, {max_y}, {min_y})"
 
 def to_filter(
     root,

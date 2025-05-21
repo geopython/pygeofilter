@@ -2,6 +2,7 @@
 # tester
 # URL: .../items?filter=title = 'test' AND description = 'test2'
 
+from pygeofilter import ast
 from pygeofilter.backends.solr import to_filter
 from pygeofilter.parsers.ecql import parse
 
@@ -249,4 +250,40 @@ print('AST DOES-NOT-EXIST: ', ast)
 
 solr_filter = to_filter(ast)
 print('SOLR filter DOES-NOT-EXIST: ', solr_filter)
+print('\n')
+
+
+#Testing temporal BEFORE
+print('Testing datetime attribute BEFORE')
+ast = parse("datetime_attribute BEFORE 2000-01-01T00:00:05.00Z")
+print('AST BEFORE:', ast)
+
+solr_filter = to_filter(ast)
+print('datetime attribute BEFORE: ', solr_filter)
+print('\n')
+
+
+#Testing temporal AFTER
+print('Testing datetime attribute AFTER')
+ast = parse("datetime_attribute AFTER 2000-01-01T00:00:05.00Z")
+print('AST AFTER:', ast)
+
+solr_filter = to_filter(ast)
+print('datetime attribute AFTER: ', solr_filter)
+print('\n')
+
+
+#Testing temporal AFTER
+print('Testing datetime attribute AFTER')
+ast = ast.TimeDisjoint(
+            ast.Attribute("datetime_attribute"),
+            [
+                parse_datetime("2000-01-01T00:00:05.00Z"),
+                parse_datetime("2000-01-01T00:00:15.00Z"),
+            ],
+        )
+print('AST AFTER:', ast)
+
+solr_filter = to_filter(ast)
+print('datetime attribute AFTER: ', solr_filter)
 print('\n')
