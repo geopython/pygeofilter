@@ -16,9 +16,9 @@ jobs:
       with:
         python-version: '3.11'
     - name: Install build dependency
-      run: pip install wheel setuptools
+      run: pip3 install wheel setuptools
     - name: Build package
-      run: python setup.py sdist bdist_wheel --universal
+      run: python3 setup.py sdist bdist_wheel --universal
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@release/v1
