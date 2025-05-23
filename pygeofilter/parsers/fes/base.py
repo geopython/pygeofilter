@@ -134,6 +134,10 @@ class FESBaseParser(XMLParser):
     #     # TODO: ast.BBox() seems incompatible
     #     pass
 
+    @handle("PropertyName")
+    def property_name(self, node):
+        return ast.Attribute(node.text)
+
     @handle("ValueReference")
     def value_reference(self, node):
         return ast.Attribute(node.text)

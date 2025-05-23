@@ -9,11 +9,11 @@ def test_and():
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:And>
         <ogc:PropertyIsLessThan>
-          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:PropertyName>attr</ogc:PropertyName>
           <ogc:Literal type="xsd:int">30</ogc:Literal>
         </ogc:PropertyIsLessThan>
         <ogc:PropertyIsGreaterThan>
-          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:PropertyName>attr</ogc:PropertyName>
           <ogc:Literal type="xsd:int">10</ogc:Literal>
         </ogc:PropertyIsGreaterThan>
       </ogc:And>
@@ -39,11 +39,11 @@ def test_or():
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Or>
         <ogc:PropertyIsLessThanOrEqualTo>
-          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:PropertyName>attr</ogc:PropertyName>
           <ogc:Literal type="xsd:double">30.5</ogc:Literal>
         </ogc:PropertyIsLessThanOrEqualTo>
         <ogc:PropertyIsGreaterThanOrEqualTo>
-          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:PropertyName>attr</ogc:PropertyName>
           <ogc:Literal type="xsd:double">10.5</ogc:Literal>
         </ogc:PropertyIsGreaterThanOrEqualTo>
       </ogc:Or>
@@ -69,7 +69,7 @@ def test_not():
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Not>
         <ogc:PropertyIsEqualTo>
-          <ogc:ValueReference>attr</ogc:ValueReference>
+          <ogc:PropertyName>attr</ogc:PropertyName>
           <ogc:Literal type="xsd:string">value</ogc:Literal>
         </ogc:PropertyIsEqualTo>
       </ogc:Not>
@@ -90,7 +90,7 @@ def test_not_equal():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsNotEqualTo>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <ogc:Literal type="xsd:string">value</ogc:Literal>
       </ogc:PropertyIsNotEqualTo>
     </ogc:Filter>
@@ -112,7 +112,7 @@ def test_is_like():
           singleChar="."
           escapeChar="\\"
           matchCase="true">
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <ogc:Literal type="xsd:string">some%</ogc:Literal>
       </ogc:PropertyIsLike>
     </ogc:Filter>
@@ -138,7 +138,7 @@ def test_is_like():
           singleChar="."
           escapeChar="\\"
           matchCase="false">
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <ogc:Literal type="xsd:string">some%</ogc:Literal>
       </ogc:PropertyIsLike>
     </ogc:Filter>
@@ -161,7 +161,7 @@ def test_is_null():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsNull>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
       </ogc:PropertyIsNull>
     </ogc:Filter>
     """
@@ -178,7 +178,7 @@ def test_is_between():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:PropertyIsBetween>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <ogc:LowerBoundary>
           <ogc:Literal type="xsd:double">10.5</ogc:Literal>
         </ogc:LowerBoundary>
@@ -203,7 +203,7 @@ def test_geom_equals():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Equals>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <gml:Point gml:id="ID"
             srsName="http://www.opengis.net/def/crs/epsg/0/4326"
             xmlns:gml="http://www.opengis.net/gml">
@@ -236,7 +236,7 @@ def test_geom_disjoint():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Disjoint>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <gml:LineString xmlns:gml="http://www.opengis.net/gml">
           <gml:posList>1.0 1.0 2.0 2.0</gml:posList>
         </gml:LineString>
@@ -264,7 +264,7 @@ def test_geom_touches():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Touches>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <gml:Polygon xmlns:gml="http://www.opengis.net/gml">
             <gml:exterior>
                 <gml:LinearRing>
@@ -301,7 +301,7 @@ def test_geom_within():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Within>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <gml:Envelope xmlns:gml="http://www.opengis.net/gml">
           <gml:lowerCorner>0.0 1.0</gml:lowerCorner>
           <gml:upperCorner>2.0 3.0</gml:upperCorner>
@@ -335,7 +335,7 @@ def test_geom_overlaps():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Overlaps>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <gml:MultiSurface xmlns:gml="http://www.opengis.net/gml">
             <gml:surfaceMember>
                 <gml:Polygon>
@@ -402,7 +402,7 @@ def test_geom_crosses():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Crosses>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <georss:line xmlns:georss="http://www.georss.org/georss">
             1.0 2.0 2.0 1.0
         </georss:line>
@@ -424,7 +424,7 @@ def test_geom_intersects():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Intersects>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <georss:box xmlns:georss="http://www.georss.org/georss">
             1.0 0.5 2.0 1.5
         </georss:box>
@@ -452,7 +452,7 @@ def test_geom_contains():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:Contains>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <georss:polygon xmlns:georss="http://www.georss.org/georss">
             1.0 0.5 2.0 0.5 2.0 1.5 1.0 1.5 1.0 0.5
         </georss:polygon>
@@ -479,7 +479,7 @@ def test_geom_dwithin():
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">
       <ogc:DWithin>
-        <ogc:ValueReference>attr</ogc:ValueReference>
+        <ogc:PropertyName>attr</ogc:PropertyName>
         <georss:point xmlns:georss="http://www.georss.org/georss">
             1.0 1.0
         </georss:point>
