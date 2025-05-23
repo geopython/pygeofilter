@@ -15,18 +15,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
-    - name: Install GDAL with Python bindings
-      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
-      with:
-        packages: gdal-bin libgdal-dev
-        version: 3.8.4
     - name: Install requirements
       run: |
         sudo apt-get update
-        sudo apt-get install -y binutils libproj-dev libsqlite3-mod-spatialite spatialite-bin
+        sudo apt-get install -y binutils gdal-bin libgdal-dev libproj-dev libsqlite3-mod-spatialite spatialite-bin
         pip install -r requirements-test.txt
         pip install -r requirements-dev.txt
-        pip install --global-option=build_ext --global-option="-I/usr/include/gdal" GDAL==`gdal-config --version`
+        pip install gdal=="`gdal-config --version`.*"
         pip install .
     - name: Configure sysctl limits
       run: |
