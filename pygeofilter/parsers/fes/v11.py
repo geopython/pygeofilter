@@ -30,6 +30,10 @@ class FES11Parser(FESBaseParser):
     ) -> ast.Node:
         return ast.Div(lhs, rhs)
 
+    @handle("PropertyName")
+    def property_name(self, node):
+        return ast.Attribute(node.text)
+
 
 def parse(input_: ParseInput) -> ast.Node:
     return FES11Parser().parse(input_)
