@@ -25,8 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-""" Elasticsearch backend for pygeofilter.
-"""
+"""Elasticsearch backend for pygeofilter."""
 
 from .evaluate import to_filter
 
