@@ -173,6 +173,37 @@ class MyAPIEvaluator(Evaluator):
     # ...further ast handlings removed for brevity
 ```
 
+### Command line utility
+
+pygeofilter also includes a command-line utility (`pygeofilter`).  Current functionality includes testing filter parsing into the native AST.  Examples:
+
+```bash
+# display installed version
+pygeofilter --version
+
+# parse subcommand functionality
+pygeofilter parse 
+Usage: pygeofilter parse [OPTIONS] {cql_json|cql2_json|cql2_text|ecql|fes|jfe}
+                         QUERY
+
+  Parse a query into an abstract syntax tree
+
+Options:
+  -v, --verbosity [ERROR|WARNING|INFO|DEBUG]
+                                  Verbosity
+  --help                          Show this message and exit.
+
+# parse a CQL2 text string into AST
+pygeofilter parse cql2_text "title = "birds'"
+Parsing cql2_text query into AST
+Equal(lhs=ATTRIBUTE title, rhs='birds')
+
+# parse a FES text string into AST 
+pygeofilter parse fes "<Filter xmlns=\"http://www.opengis.net/ogc\"><PropertyIsEqualTo><PropertyName>title</PropertyName><Literal>birds</Literal></PropertyIsEqualTo></Filter>"
+Parsing fes query into AST
+Equal(lhs=ATTRIBUTE title, rhs='birds')
+```
+
 ## Testing
 
 For testing, several requirements must be satisfied. These can be installed, via pip:
