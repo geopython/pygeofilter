@@ -4,21 +4,21 @@ on:
   push:
     tags:
       - release-*
-      - "v*"
+      - 'v*'
 
 jobs:
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@master
+    - uses: actions/setup-python@v5
       name: Setup Python
       with:
-        python-version: "3.x"
+        python-version: '3.11'
     - name: Install build dependency
-      run: pip install wheel setuptools
+      run: pip3 install wheel setuptools
     - name: Build package
-      run: python setup.py sdist bdist_wheel --universal
+      run: python3 setup.py sdist bdist_wheel --universal
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@release/v1
