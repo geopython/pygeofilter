@@ -26,7 +26,7 @@
 # ------------------------------------------------------------------------------
 
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
@@ -162,6 +162,20 @@ def test_attribute_before():
     assert result == ast.TimeBefore(
         ast.Attribute("attr"),
         datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+    )
+
+    result = parse(
+        {
+            "op": "t_before",
+            "args": [
+                {"property": "attr"},
+                {"date": "2000-01-01"},
+            ],
+        }
+    )
+    assert result == ast.TimeBefore(
+        ast.Attribute("attr"),
+        date(2000, 1, 1),
     )
 
 
