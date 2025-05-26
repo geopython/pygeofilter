@@ -75,7 +75,10 @@ class CQL2Evaluator(Evaluator):
 
     @handle(ast.IsNull)
     def isnull(self, node, arg):
-        return {"op": "isNull", "args": [arg]}
+        ret = {"op": "isNull", "args": [arg]}
+        if node.not_:
+            ret = {"op": "not", "args": [ret]}
+        return ret
 
     @handle(ast.Function)
     def function(self, node, *args):
