@@ -34,7 +34,7 @@ import re
 def like_to_wildcard(
     value: str, wildcard: str, single_char: str, escape_char: str = "\\"
 ) -> str:
-    """Adapts a "LIKE" pattern to create an elasticsearch "wildcard"
+    """Adapts a "LIKE" pattern to create a Solr "wildcard"
     pattern.
     """
 
