@@ -264,7 +264,7 @@ class SOLRDSLEvaluator(Evaluator):
         bbox = self.envelope(
             values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
         )
-        query = f"{{!field f={lhs}}}Intersects({bbox})"
+        query = f"{{!field f={lhs} v='Intersects({bbox})'}}"
         return SolrDSLQuery(query)
 
     # @handle(ast.Arithmetic, subclasses=True)
