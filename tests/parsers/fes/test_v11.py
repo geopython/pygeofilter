@@ -446,6 +446,44 @@ def test_geom_intersects():
     )
 
 
+def test_geom_bbox():
+    result = parse(
+        """
+    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes"
+        xmlns:gml="http://www.opengis.net/gml">
+      <ogc:BBOX>
+        <ogc:PropertyName>attr</ogc:PropertyName>
+        <gml:Envelope srsName="http://www.opengis.net/gml/srs/epsg.xml#63266405">
+          <gml:lowerCorner>13.0983 31.5899</gml:lowerCorner>
+          <gml:upperCorner>35.5472 42.8143</gml:upperCorner>
+        </gml:Envelope>
+      </ogc:BBOX>
+    </ogc:Filter>
+    """
+    )
+
+    assert result == ast.Not(
+        ast.GeometryDisjoint(
+            ast.Attribute("attr"),
+            values.Geometry(
+                geometry={
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            (13.0983, 31.5899),
+                            (13.0983, 42.8143),
+                            (35.5472, 42.8143),
+                            (35.5472, 31.5899),
+                            (13.0983, 31.5899),
+                        ]
+                    ],
+                }
+            ),
+        )
+    )
+
+
 def test_geom_contains():
     result = parse(
         """
