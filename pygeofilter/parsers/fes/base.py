@@ -84,7 +84,14 @@ class FESBaseParser(XMLParser):
         return expression
 
     @handle("BBOX")
-    def geometry_bbox(self, node: Element, lhs, rhs):
+    def geometry_bbox(self, node: Element, *args):
+        if len(args) == 2:
+            # PropertyName, Envelope
+            lhs, rhs = args
+        else:
+            # No PropertyName
+            lhs = None
+            rhs = args[0]
         return ast.Not(ast.GeometryDisjoint(lhs, rhs))
 
     @handle("Equals")
