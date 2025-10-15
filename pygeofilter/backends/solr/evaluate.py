@@ -253,7 +253,7 @@ class SOLRDSLEvaluator(Evaluator):
         """
         # Solr need capitalized first letter of operator
         op = node.op.value.lower().capitalize()
-        query = f"{{!field f={lhs}}}{op}({rhs})"
+        query = f"{{!field f={lhs} v='{op}({rhs})'}}"
         return SolrDSLQuery(query)
 
     @handle(ast.BBox)
