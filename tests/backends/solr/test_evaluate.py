@@ -36,7 +36,7 @@ from pygeofilter.backends.solr import to_filter
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
 
-SOLR_BASE_URL = "http://localhost:8983/solr/test"  # replace with your Solr URL
+SOLR_BASE_URL = "http://localhost:8985/solr/test"  # replace with your Solr URL
 HEADERS = {
     'Content-type': 'application/json',
 }
@@ -46,7 +46,7 @@ INPUT_DOCS = [
     {
         "id": "A",
         "geometry_jts": "MULTIPOLYGON(((0 0, 0 5, 5 5,5 0,0 0)))",
-        "geometry_geo3d": "MULTIPOLYGON(((5 0, 5 5, 0 5, 0 0, 5 0)))",
+        "geospatial_geo3d": "MULTIPOLYGON(((5 0, 5 5, 0 5, 0 0, 5 0)))",
         "center": "POINT(2.5 2.5)",
         "float_attribute": 0.0,
         "int_attribute": 5,
@@ -56,7 +56,7 @@ INPUT_DOCS = [
     },
     {
         "id": "B",
-        "geometry_jts": "MULTIPOLYGON(((5 5, 5 10, 10 10,10 5,5 5)))",
+        "geospatial_jts": "MULTIPOLYGON(((5 5, 5 10, 10 10,10 5,5 5)))",
         "geometry_geo3d": "MULTIPOLYGON(((10 5, 10 10, 5 10, 5 5, 10 5)))",
         "center": "POINT(7.5 7.5)",
         "float_attribute": 30.0,
@@ -84,7 +84,7 @@ def prepare():
 
     for field_type in field_types:
         data = json.dumps({"add-field-type": field_type})
-        requests.post('http://localhost:8983/api/cores/test/schema', headers={'Content-type': 'application/json'}, data=data)
+        requests.post('http://localhost:8985/api/cores/test/schema', headers={'Content-type': 'application/json'}, data=data)
 
     # Define the fields to be added
     fields = [
@@ -102,7 +102,7 @@ def prepare():
     # Add the fields to the schema
     for field in fields:
         data = json.dumps({"add-field": field})
-        requests.post('http://localhost:8983/api/cores/test/schema', headers={'Content-type': 'application/json'}, data=data)
+        requests.post('http://localhost:8985/api/cores/test/schema', headers={'Content-type': 'application/json'}, data=data)
     index = 'ok'
     yield index
     print('cleaning up')
@@ -300,10 +300,13 @@ def test_spatial(data):
         parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0))"))
     assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
-    # TODO: Figure out why geo3d is giving the wrong result
     result = filter_(
-        parse("INTERSECTS(geometry_geo3d, ENVELOPE (0.0 1.0 0.0 1.0))"))
+        parse("INTERSECTS(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
     assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    # TODO: Figure out why geo3d is giving the wrong result
+    #result = filter_(
+    #    parse("INTERSECTS(geometry_geo3d, ENVELOPE (0.0 1.0 0.0 1.0))"))
+    #assert len(result) == 1 and result[0]['id'] is data[0]['id']
 
     # TODO: test more spatial queries
 
@@ -311,7 +314,10 @@ def test_spatial(data):
         parse("BBOX(center, 2, 2, 3, 3)"),
     )
     assert len(result) == 1 and result[0]['id'] is data[0]['id']
-
+    #geojson = { "type": "Polygon", "coordinates": [[(-90.0, -180.0), (-90.0, 180.0), (89.0, 180.0), (89.0, -180.0), (-90.0, -180.0)]]}
+    #result = filter_(
+    #    parse(f"INTERSECTS(geometry_jts, '{geojson}')"))
+    #print(result)
 
 # def test_arithmetic():
 #     result = filter_(

@@ -38,10 +38,12 @@ from datetime import date, datetime
 from typing import Dict, Optional
 
 from packaging.version import Version
-
+import json
+import shapely.geometry
 from ... import ast, values
 from ..evaluator import Evaluator, handle
 from .util import like_to_wildcard
+from pygeoif import shape
 
 VERSION_9_8_1 = Version("9.8.1")
 
@@ -189,7 +191,16 @@ class SOLRDSLEvaluator(Evaluator):
         """Geometry values are converted to a Solr spatial query.
         This assumes that 'geom' is the field in Solr schema which holds the geometry data.
         """
-        return node.geometry
+        print("Geometry function")
+        print(node.geometry)
+        print(shape(node).wkt)
+        #try:
+        #   # Assume node is a GeoJSON string
+        #   geom = shapely.from_geojson(json.dumps(node.geometry))
+        #   return geom.wkt
+        #except Exception as e:
+        #   raise ValueError(f"Invalid GeoJSON: {e}")
+        return shape(node).wkt
 
     @handle(ast.Equal, ast.NotEqual)
     def equality(self, node, lhs, rhs):
@@ -252,8 +263,14 @@ class SOLRDSLEvaluator(Evaluator):
         predicate.
         """
         # Solr need capitalized first letter of operator
+        print("Spatial comparison")
+        print(type(rhs))
+        #if type(rhs) == str and not rhs.startswith('ENVELOPE'):
+        #    rhs_geom = self.geometry(rhs)
+        #else:
+        rhs_geom = rhs
         op = node.op.value.lower().capitalize()
-        query = f"{{!field f={lhs} v='{op}({rhs})'}}"
+        query = f"{{!field f={lhs} v='{op}({rhs_geom})'}}"
         return SolrDSLQuery(query)
 
     @handle(ast.BBox)
