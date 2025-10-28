@@ -31,11 +31,9 @@ Apache Solr filter evaluator.
 Uses native Python to return dict of JSON request payload
 """
 
-
 # pylint: disable=E1130,C0103,W0223
-
 from datetime import date, datetime
-
+from typing import Optional
 import shapely.wkt
 from packaging.version import Version
 from pygeoif import shape
@@ -112,8 +110,8 @@ class SOLRDSLEvaluator(Evaluator):
 
     def __init__(
         self,
-        attribute_map: dict[str, str] | None = None,
-        version: Version | None = None,
+        attribute_map: Optional[dict[str, str]] = None,
+        version: Optional[Version] = None,
     ):
         self.attribute_map = attribute_map
         self.version = version or Version("9.8.1")
@@ -421,8 +419,8 @@ def handle_combination_query(q):
 
 def to_filter(
     root,
-    attribute_map: dict[str, str] | None = None,
-    version: str | None = None,
+    attribute_map: Optional[dict[str, str]] = None,
+    version: Optional[Version] = None,
 ):
     """Shorthand function to convert a pygeofilter AST to an Apache Solr
     filter structure.
