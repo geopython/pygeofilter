@@ -34,6 +34,7 @@ Uses native Python to return dict of JSON request payload
 # pylint: disable=E1130,C0103,W0223
 from datetime import date, datetime
 from typing import Optional
+
 import shapely.wkt
 from packaging.version import Version
 from pygeoif import shape
@@ -73,7 +74,6 @@ class SolrDSLQuery(dict):
         if isinstance(query, (str, dict)):
             self["query"] = query
         else:
-            print("Unsupported query", query)
             raise ValueError(f"Unsupported query type: {type(query)}")
 
         if filters is not None:
@@ -84,8 +84,6 @@ class SolrDSLQuery(dict):
             if isinstance(filters, list):
                 self["filter"] = filters
 
-        print("DSL q", self)
-
     def add_filter(self, filter_query):
         """
         Adds a filter query to the JSON DSL.
@@ -95,7 +93,6 @@ class SolrDSLQuery(dict):
         if "filter" not in self:
             self["filter"] = []
         self["filter"].append(filter_query)
-        print("DSL addfilter", self)
 
 
 class SOLRDSLEvaluator(Evaluator):
@@ -242,7 +239,7 @@ class SOLRDSLEvaluator(Evaluator):
         field name from there.
         """
         if self.attribute_map is not None:
-            return self.attribute_map[node.name]
+            return self.attribute_map.get(node.name, node.name)
         return node.name
 
     @handle(*values.LITERALS)
@@ -253,8 +250,6 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.Not)
     def not_(self, _, sub):
         """Inverts a filter object."""
-        print("NOT sub", sub)
-        print("Not node", _)
         # Extract the inner query if sub is a SolrDSLQuery
         sub_query = sub["query"] if isinstance(sub, SolrDSLQuery) else sub
 
@@ -298,16 +293,11 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
         """Geometry values are converted to a Solr spatial query."""
-        print("Geometry function")
-        print(shape(node).wkt)
         """Convert to wkt and make sure polygons are counter clockwise"""
         geom_wkt = shape(node).wkt
         geom = shapely.wkt.loads(geom_wkt)
-        print("Geomtype:", geom.geom_type)
         if geom.geom_type == "Polygon" or geom.geom_type == "MultiPolygon":
             geom = geom.reverse() if not geom.exterior.is_ccw else geom
-        print("Is ccw:", geom.exterior.is_ccw)
-        print("Transformed:", geom)
         return geom.wkt
 
     @handle(ast.Equal, ast.NotEqual)
@@ -370,10 +360,7 @@ class SOLRDSLEvaluator(Evaluator):
         """
         query = {}
         # Solr need capitalized first letter of operator
-        print("Spatial comparison")
-        print("RHS: ", rhs)
         op = node.op.value.lower().capitalize()
-        print("Predicate: ", op)
         if op == "Disjoint":
             geo_filter = f"{{!field f={lhs} v='Intersects({rhs})'}}"
             query = {"bool": {"must_not": [geo_filter]}}
@@ -411,12 +398,6 @@ class SOLRDSLEvaluator(Evaluator):
         return f"ENVELOPE({min_x}, {max_x}, {max_y}, {min_y})"
 
 
-def handle_combination_query(q):
-    if isinstance(q, dict):
-        if q["query"]:
-            return q["query"]
-
-
 def to_filter(
     root,
     attribute_map: Optional[dict[str, str]] = None,
@@ -434,8 +415,3 @@ def unwrap_query(obj):
         # Return the inner query only if it is not empty
         return obj.get("query", {})
     return obj
-
-
-def flip(x, y):
-    """Flips the x and y coordinate values"""
-    return y, x

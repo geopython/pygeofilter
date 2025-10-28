@@ -34,11 +34,11 @@ import requests
 
 from pygeofilter import ast
 from pygeofilter.backends.solr import to_filter
-from pygeofilter.backends.solr.evaluate import SolrDSLQuery
+from pygeofilter.backends.solr.evaluate import SOLRDSLEvaluator, SolrDSLQuery
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
 
-SOLR_BASE_URL = "http://localhost:8983/solr/test"  # replace with your Solr URL
+SOLR_BASE_URL = "http://localhost:8985/solr/test"  # replace with your Solr URL
 HEADERS = {
     "Content-type": "application/json",
 }
@@ -73,7 +73,7 @@ def prepare():
     """Prepare the Solr instance. Add the fields needed for testing"""
     # print('Preparing core')
     # Create a new core
-    # res = requests.get('http://localhost:8983/solr/admin/cores?action=CREATE&name=test&configSet= /opt/solr/server/solr/configsets/_default/conf')
+    # res = requests.get('http://localhost:8985/solr/admin/cores?action=CREATE&name=test&configSet= /opt/solr/server/solr/configsets/_default/conf')
     # print(res)
     # Add the field types
     field_types = [
@@ -93,7 +93,7 @@ def prepare():
     for field_type in field_types:
         data = json.dumps({"add-field-type": field_type})
         requests.post(
-            "http://localhost:8983/api/cores/test/schema", headers={"Content-type": "application/json"}, data=data
+            "http://localhost:8985/api/cores/test/schema", headers={"Content-type": "application/json"}, data=data
         )
 
     # Define the fields to be added
@@ -112,7 +112,7 @@ def prepare():
     for field in fields:
         data = json.dumps({"add-field": field})
         requests.post(
-            "http://localhost:8983/api/cores/test/schema", headers={"Content-type": "application/json"}, data=data
+            "http://localhost:8985/api/cores/test/schema", headers={"Content-type": "application/json"}, data=data
         )
     index = "ok"
     yield index
@@ -155,11 +155,13 @@ def data(index):
 
 
 def filter_(ast_):
+    print("Ast Query: ", ast.get_repr(ast_))
     query = to_filter(ast_, version="9.8.1")
-    print("Solr Query:", query)
+    print("Solr Query: ", query)
     response = requests.post(SOLR_BASE_URL + "/select", json=query)
     response_json = response.json()
-    print("Solr response", response_json)
+    print("Solr response: ", response_json)
+    print("\n")
     return response_json["response"]["docs"]
 
 
@@ -167,10 +169,7 @@ def test_comparison(data):
     result = filter_(parse("int_attribute = 5"))
     assert len(result) == 1 and result[0]["id"] == data[0]["id"]
 
-    print("ast:", parse("float_attribute < 6.0"))
     result = filter_(parse("float_attribute < 6.0"))
-    print("solrq:", result)
-
     assert len(result) == 1 and result[0]["id"] == data[0]["id"]
 
     result = filter_(parse("float_attribute > 6.0"))
@@ -187,7 +186,6 @@ def test_comparison(data):
 
 
 def test_combination(data):
-    print("COMB ast", parse("int_attribute = 6 OR float_attribute < 6.0"))
     result = filter_(parse("int_attribute = 5 AND float_attribute < 6.0"))
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
@@ -227,8 +225,6 @@ def test_like(data):
 
 
 def test_combination_like_not(data):
-    print("COMB LIKE ast", ast.get_repr(parse("str_attribute LIKE 'test' AND NOT str_attribute LIKE 'another'")))
-
     result = filter_(parse("NOT str_attribute LIKE 'another'"))
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
@@ -301,38 +297,51 @@ def test_temporal(data):
 def test_dsl_query_obj():
     """test the solr DSL query object"""
     q = SolrDSLQuery()
-    print("DSL", q)
     assert q == {"query": "*:*"}
+
     q.add_filter("status:active")
     assert q == {"query": "*:*", "filter": ["status:active"]}
 
     q = SolrDSLQuery("text:ice")
-    print("DSL", q)
     assert q == {"query": "text:ice"}
+
     q.add_filter("status:active")
     assert q == {"query": "text:ice", "filter": ["status:active"]}
 
     q = SolrDSLQuery(filters="collection:ice")
-    print("DSL", q)
     assert q == {"query": "*:*", "filter": ["collection:ice"]}
+
     q.add_filter("status:active")
     assert q == {"query": "*:*", "filter": ["collection:ice", "status:active"]}
 
     q = SolrDSLQuery("text:ice", filters="collection:ice")
-    print("DSL", q)
     assert q == {"query": "text:ice", "filter": ["collection:ice"]}
 
     q = SolrDSLQuery("text:ice", filters="collection:ice")
-    print("DSL", q)
     assert q == {"query": "text:ice", "filter": ["collection:ice"]}
+
     q.add_filter("status:active")
     assert q == {"query": "text:ice", "filter": ["collection:ice", "status:active"]}
 
     q = SolrDSLQuery(filters=["collection:ice", "int_field:[3 TO 10]"])
-    print("DSL", q)
     assert q == {"query": "*:*", "filter": ["collection:ice", "int_field:[3 TO 10]"]}
+
     q.add_filter("status:active")
     assert q == {"query": "*:*", "filter": ["collection:ice", "int_field:[3 TO 10]", "status:active"]}
+
+
+def test_attribute_mapping_fallback():
+    # attribute_map does not contain 'dc:subject'
+    evaluator = SOLRDSLEvaluator(attribute_map={"foo": "bar"})
+    node = ast.Attribute("dc:subject")
+    result = evaluator.attribute(node)
+    assert result == "dc:subject"
+
+    # attribute_map contains the key
+    evaluator2 = SOLRDSLEvaluator(attribute_map={"dc:subject": "subject_s"})
+    node2 = ast.Attribute("dc:subject")
+    result2 = evaluator2.attribute(node2)
+    assert result2 == "subject_s"
 
 
 # def test_array():
@@ -375,7 +384,6 @@ def test_dsl_query_obj():
 
 def test_spatial_and_text(data):
     ast = parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0)) AND str_attribute LIKE 'this is a test'")
-    print("AST", ast)
     result = filter_(ast)
     assert len(result) == 1
 
