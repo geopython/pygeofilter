@@ -28,17 +28,19 @@
 # pylint: disable=W0621,C0114,C0115,C0116
 
 import json
+
 import pytest
 import requests
 
 from pygeofilter import ast
 from pygeofilter.backends.solr import to_filter
+from pygeofilter.backends.solr.evaluate import SolrDSLQuery
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
 
-SOLR_BASE_URL = "http://localhost:8985/solr/test"  # replace with your Solr URL
+SOLR_BASE_URL = "http://localhost:8983/solr/test"  # replace with your Solr URL
 HEADERS = {
-    'Content-type': 'application/json',
+    "Content-type": "application/json",
 }
 
 # input documents for testing
@@ -46,7 +48,6 @@ INPUT_DOCS = [
     {
         "id": "A",
         "geometry_jts": "MULTIPOLYGON(((0 0, 0 5, 5 5,5 0,0 0)))",
-        "geospatial_geo3d": "MULTIPOLYGON(((5 0, 5 5, 0 5, 0 0, 5 0)))",
         "center": "POINT(2.5 2.5)",
         "float_attribute": 0.0,
         "int_attribute": 5,
@@ -57,7 +58,6 @@ INPUT_DOCS = [
     {
         "id": "B",
         "geospatial_jts": "MULTIPOLYGON(((5 5, 5 10, 10 10,10 5,5 5)))",
-        "geometry_geo3d": "MULTIPOLYGON(((10 5, 10 10, 5 10, 5 5, 10 5)))",
         "center": "POINT(7.5 7.5)",
         "float_attribute": 30.0,
         "str_attribute": "this is another test",
@@ -77,14 +77,24 @@ def prepare():
     # print(res)
     # Add the field types
     field_types = [
-        {"name": "spatial_geo3d", "class": "solr.SpatialRecursivePrefixTreeFieldType", "geo": "true", "spatialContextFactory": "Geo3D", "prefixTree": "s2", "planetModel": "WGS84"},
-        {"name": "spatial_jts", "class": "solr.SpatialRecursivePrefixTreeFieldType", "autoIndex": "true", "spatialContextFactory": "JTS", "validationRule": "repairBuffer0", "distErrPct": "0.025", "maxDistErr": "0.001", "distanceUnits": "kilometers"},
-        {"name": "date_range", "class": "solr.DateRangeField"}
+        {
+            "name": "spatial_jts",
+            "class": "solr.SpatialRecursivePrefixTreeFieldType",
+            "autoIndex": "true",
+            "spatialContextFactory": "JTS",
+            "validationRule": "repairBuffer0",
+            "distErrPct": "0.025",
+            "maxDistErr": "0.001",
+            "distanceUnits": "kilometers",
+        },
+        {"name": "date_range", "class": "solr.DateRangeField"},
     ]
 
     for field_type in field_types:
         data = json.dumps({"add-field-type": field_type})
-        requests.post('http://localhost:8985/api/cores/test/schema', headers={'Content-type': 'application/json'}, data=data)
+        requests.post(
+            "http://localhost:8983/api/cores/test/schema", headers={"Content-type": "application/json"}, data=data
+        )
 
     # Define the fields to be added
     fields = [
@@ -95,27 +105,28 @@ def prepare():
         {"name": "str_attribute", "type": "text_general"},
         {"name": "center", "type": "location"},
         {"name": "geometry_jts", "type": "spatial_jts", "multiValued": "false"},
-        {"name": "geometry_geo3d", "type": "spatial_geo3d", "multiValued": "false"},
-        {"name": "daterange_attribute", "type": "date_range"}
+        {"name": "daterange_attribute", "type": "date_range"},
     ]
 
     # Add the fields to the schema
     for field in fields:
         data = json.dumps({"add-field": field})
-        requests.post('http://localhost:8985/api/cores/test/schema', headers={'Content-type': 'application/json'}, data=data)
-    index = 'ok'
+        requests.post(
+            "http://localhost:8983/api/cores/test/schema", headers={"Content-type": "application/json"}, data=data
+        )
+    index = "ok"
     yield index
-    print('cleaning up')
-    requests.get(SOLR_BASE_URL + '/admin/cores?action=UNLOAD&core=test&deleteIndex=true')
+    print("cleaning up")
+    requests.get(SOLR_BASE_URL + "/admin/cores?action=UNLOAD&core=test&deleteIndex=true")
 
 
 @pytest.fixture(autouse=True, scope="session")
 def index(prepare):
     # Add test documents
-    response = requests.post(SOLR_BASE_URL + '/update', data=json.dumps(INPUT_DOCS), headers=HEADERS)
+    response = requests.post(SOLR_BASE_URL + "/update", data=json.dumps(INPUT_DOCS), headers=HEADERS)
     print(response.json())
     # Commit index
-    res = requests.get(SOLR_BASE_URL + '/update?commit=true')
+    res = requests.get(SOLR_BASE_URL + "/update?commit=true")
     print(res.json())
 
 
@@ -125,105 +136,135 @@ def data(index):
     data = {
         "query": "id:A",  # Query
     }
-    response = requests.get(SOLR_BASE_URL + '/query', data=json.dumps(data), headers=HEADERS)
+    response = requests.get(SOLR_BASE_URL + "/query", data=json.dumps(data), headers=HEADERS)
     response_json = response.json()
-    if response_json['responseHeader']['status'] == 0:
+    if response_json["responseHeader"]["status"] == 0:
         # Print the response
-        record_a = response_json['response']['docs'][0]
+        record_a = response_json["response"]["docs"][0]
 
     data = {
         "query": "id:B",  # Query
     }
-    response = requests.post(SOLR_BASE_URL + '/query', data=json.dumps(data), headers=HEADERS)
+    response = requests.post(SOLR_BASE_URL + "/query", json=data)
     response_json = response.json()
-    if response_json['responseHeader']['status'] == 0:
+    if response_json["responseHeader"]["status"] == 0:
         # Print the response
-        record_b = response_json['response']['docs'][0]
+        record_b = response_json["response"]["docs"][0]
 
     yield [record_a, record_b]
 
 
 def filter_(ast_):
     query = to_filter(ast_, version="9.8.1")
-    print(query)
-    response = requests.post(SOLR_BASE_URL + '/query', data=json.dumps(query), headers=HEADERS)
+    print("Solr Query:", query)
+    response = requests.post(SOLR_BASE_URL + "/select", json=query)
     response_json = response.json()
-    print(response_json)
-    return response_json['response']['docs']
+    print("Solr response", response_json)
+    return response_json["response"]["docs"]
 
 
 def test_comparison(data):
-    print('DATA: %s' % data)
     result = filter_(parse("int_attribute = 5"))
-    print('RESULT: %s,' % result[0]['id'])
-    assert len(result) == 1 and result[0]['id'] == data[0]['id']
+    assert len(result) == 1 and result[0]["id"] == data[0]["id"]
 
+    print("ast:", parse("float_attribute < 6.0"))
     result = filter_(parse("float_attribute < 6.0"))
-    assert len(result) == 1 and result[0]['id'] == data[0]['id']
+    print("solrq:", result)
+
+    assert len(result) == 1 and result[0]["id"] == data[0]["id"]
 
     result = filter_(parse("float_attribute > 6.0"))
-    assert len(result) == 1 and result[0]['id'] == data[1]['id']
+    assert len(result) == 1 and result[0]["id"] == data[1]["id"]
 
     result = filter_(parse("int_attribute <= 5"))
-    assert len(result) == 1 and result[0]['id'] == data[0]['id']
+    assert len(result) == 1 and result[0]["id"] == data[0]["id"]
 
     result = filter_(parse("float_attribute >= 8.0"))
-    assert len(result) == 1 and result[0]['id'] == data[1]['id']
+    assert len(result) == 1 and result[0]["id"] == data[1]["id"]
 
     result = filter_(parse("float_attribute <> 0.0"))
-    assert len(result) == 1 and result[0]['id'] == data[1]['id']
+    assert len(result) == 1 and result[0]["id"] == data[1]["id"]
 
 
 def test_combination(data):
+    print("COMB ast", parse("int_attribute = 6 OR float_attribute < 6.0"))
     result = filter_(parse("int_attribute = 5 AND float_attribute < 6.0"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(parse("int_attribute = 6 OR float_attribute < 6.0"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
 
 def test_between(data):
     result = filter_(parse("float_attribute BETWEEN -1 AND 1"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(parse("int_attribute NOT BETWEEN 4 AND 6"))
-    assert len(result) == 1 and result[0]['id'] is data[1]['id']
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
+
+    result = filter_(parse("int_attribute = 6 OR float_attribute < 6.0"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
 
 def test_like(data):
     result = filter_(parse("str_attribute LIKE 'this is a test'"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(parse("str_attribute LIKE 'this is % test'"))
     assert len(result) == 2
 
     result = filter_(parse("str_attribute NOT LIKE '% another test'"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(parse("str_attribute NOT LIKE 'this is . test'"))
-    assert len(result) == 1 and result[0]['id'] is data[1]['id']
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
 
     result = filter_(parse("str_attribute ILIKE 'THIS IS . TEST'"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(parse("str_attribute ILIKE 'THIS IS % TEST'"))
     assert len(result) == 2
 
 
+def test_combination_like_not(data):
+    print("COMB LIKE ast", ast.get_repr(parse("str_attribute LIKE 'test' AND NOT str_attribute LIKE 'another'")))
+
+    result = filter_(parse("NOT str_attribute LIKE 'another'"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+    result = filter_(parse("str_attribute LIKE 'test' AND NOT str_attribute LIKE 'another'"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+    result = filter_(parse("NOT str_attribute LIKE 'another' AND str_attribute LIKE 'test'"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+    result = filter_(parse("NOT str_attribute LIKE 'test' AND str_attribute LIKE 'another'"))
+    assert len(result) == 0
+
+    result = filter_(parse("str_attribute LIKE 'test' OR NOT str_attribute LIKE 'another'"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+    result = filter_(parse("str_attribute LIKE 'test' OR NOT str_attribute LIKE 'another'"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+    result = filter_(parse("NOT str_attribute LIKE 'another' OR str_attribute LIKE 'test'"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+
 def test_in(data):
     result = filter_(parse("int_attribute IN ( 1, 2, 3, 4, 5 )"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(parse("int_attribute NOT IN ( 1, 2, 3, 4, 5 )"))
-    assert len(result) == 1 and result[0]['id'] is data[1]['id']
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
 
 
 def test_null(data):
     result = filter_(parse("maybe_str_attribute IS NULL"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(parse("maybe_str_attribute IS NOT NULL"))
-    assert len(result) == 1 and result[0]['id'] is data[1]['id']
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
 
 
 def test_has_attr():
@@ -244,17 +285,54 @@ def test_temporal(data):
             ],
         )
     )
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(
         parse("datetime_attribute BEFORE 2000-01-01T00:00:05.00Z"),
     )
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(
         parse("datetime_attribute AFTER 2000-01-01T00:00:05.00Z"),
     )
-    assert len(result) == 1 and result[0]['id'] is data[1]['id']
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
+
+
+def test_dsl_query_obj():
+    """test the solr DSL query object"""
+    q = SolrDSLQuery()
+    print("DSL", q)
+    assert q == {"query": "*:*"}
+    q.add_filter("status:active")
+    assert q == {"query": "*:*", "filter": ["status:active"]}
+
+    q = SolrDSLQuery("text:ice")
+    print("DSL", q)
+    assert q == {"query": "text:ice"}
+    q.add_filter("status:active")
+    assert q == {"query": "text:ice", "filter": ["status:active"]}
+
+    q = SolrDSLQuery(filters="collection:ice")
+    print("DSL", q)
+    assert q == {"query": "*:*", "filter": ["collection:ice"]}
+    q.add_filter("status:active")
+    assert q == {"query": "*:*", "filter": ["collection:ice", "status:active"]}
+
+    q = SolrDSLQuery("text:ice", filters="collection:ice")
+    print("DSL", q)
+    assert q == {"query": "text:ice", "filter": ["collection:ice"]}
+
+    q = SolrDSLQuery("text:ice", filters="collection:ice")
+    print("DSL", q)
+    assert q == {"query": "text:ice", "filter": ["collection:ice"]}
+    q.add_filter("status:active")
+    assert q == {"query": "text:ice", "filter": ["collection:ice", "status:active"]}
+
+    q = SolrDSLQuery(filters=["collection:ice", "int_field:[3 TO 10]"])
+    print("DSL", q)
+    assert q == {"query": "*:*", "filter": ["collection:ice", "int_field:[3 TO 10]"]}
+    q.add_filter("status:active")
+    assert q == {"query": "*:*", "filter": ["collection:ice", "int_field:[3 TO 10]", "status:active"]}
 
 
 # def test_array():
@@ -295,29 +373,31 @@ def test_temporal(data):
 #     assert len(result) == 1 and result[0] is data[1]
 
 
+def test_spatial_and_text(data):
+    ast = parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0)) AND str_attribute LIKE 'this is a test'")
+    print("AST", ast)
+    result = filter_(ast)
+    assert len(result) == 1
+
+
 def test_spatial(data):
-    result = filter_(
-        parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0))"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
+    result = filter_(parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0))"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
-    result = filter_(
-        parse("INTERSECTS(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
-    # TODO: Figure out why geo3d is giving the wrong result
-    #result = filter_(
-    #    parse("INTERSECTS(geometry_geo3d, ENVELOPE (0.0 1.0 0.0 1.0))"))
-    #assert len(result) == 1 and result[0]['id'] is data[0]['id']
-
-    # TODO: test more spatial queries
+    result = filter_(parse("INTERSECTS(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(
         parse("BBOX(center, 2, 2, 3, 3)"),
     )
-    assert len(result) == 1 and result[0]['id'] is data[0]['id']
-    #geojson = { "type": "Polygon", "coordinates": [[(-90.0, -180.0), (-90.0, 180.0), (89.0, 180.0), (89.0, -180.0), (-90.0, -180.0)]]}
-    #result = filter_(
-    #    parse(f"INTERSECTS(geometry_jts, '{geojson}')"))
-    #print(result)
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+    result = filter_(parse("DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
+
+    result = filter_(parse("NOT DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
 
 # def test_arithmetic():
 #     result = filter_(
