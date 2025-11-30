@@ -31,13 +31,13 @@ Apache Solr filter evaluator.
 Uses native Python to return dict of JSON request payload
 """
 
-
 # pylint: disable=E1130,C0103,W0223
-
 from datetime import date, datetime
-from typing import Dict, Optional
+from typing import Optional
 
+import shapely.wkt
 from packaging.version import Version
+from pygeoif import shape
 
 from ... import ast, values
 from ..evaluator import Evaluator, handle
@@ -63,19 +63,51 @@ ARITHMETIC_OP_MAP = {
 
 
 class SolrDSLQuery(dict):
-    def __init__(self, query='*:*', filter=None):
+    def __init__(self, query="*:*", filters=None):
+        """
+        Initialize a Solr JSON DSL query object.
+
+        :param query: The main query (default is '*:*').
+        :param filters: Optional filters to apply.
+        """
         super().__init__()
-        self['query'] = query
-        if filter is not None:
-            self['filter'] = filter
+        if isinstance(query, (str, dict)):
+            self["query"] = query
+        else:
+            raise ValueError(f"Unsupported query type: {type(query)}")
+
+        if filters is not None:
+            if "filter" not in self:
+                self["filter"] = []
+            if isinstance(filters, str):
+                self.add_filter(filters)
+            if isinstance(filters, list):
+                self["filter"] = filters
+
+    def add_filter(self, filter_query):
+        """
+        Adds a filter query to the JSON DSL.
+
+        :param filter_query: The filter query to add.
+        """
+        if "filter" not in self:
+            self["filter"] = []
+        self["filter"].append(filter_query)
 
 
 class SOLRDSLEvaluator(Evaluator):
-    """A filter evaluator for Apache Solr"""
+    """
+    A filter evaluator for Apache Solr
+
+    This evaluator uses the solr.SpatialRecursivePrefixTreeFieldType
+    with the JTS context for querying on geometries, and the solr.DateRangeField
+    for querying date ranges. See the test_evaluator py in this project
+    for field definitions.
+    """
 
     def __init__(
         self,
-        attribute_map: Optional[Dict[str, str]] = None,
+        attribute_map: Optional[dict[str, str]] = None,
         version: Optional[Version] = None,
     ):
         self.attribute_map = attribute_map
@@ -84,54 +116,121 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.And)
     def and_(self, _, lhs, rhs):
         """Joins two filter objects with an `and` operator."""
-        lhs = handle_combination_query(lhs)
-        rhs = handle_combination_query(rhs)
-        return SolrDSLQuery(f"{lhs} AND {rhs}")
+        # Extract the inner queries if lhs or rhs are SolrDSLQuery objects
+        lhs = unwrap_query(lhs)
+        rhs = unwrap_query(rhs)
+
+        # Merge `must` and `must_not` properly
+        combined_query = {"bool": {"must": []}}
+
+        if "bool" in lhs and "must_not" in lhs["bool"]:
+            # If `lhs` has a must_not clause, merge it
+            combined_query["bool"]["must_not"] = lhs["bool"]["must_not"]
+            lhs_must = {key: value for key, value in lhs["bool"].items() if key != "must_not"}
+            if lhs_must:
+                combined_query["bool"]["must"].append()
+        else:
+            # If `lhs` has no must_not clause, append it to must
+            combined_query["bool"]["must"].append(lhs)
+
+        if "bool" in rhs and "must_not" in rhs["bool"]:
+            # If `rhs` has a must_not clause, merge it
+            if "must_not" in combined_query["bool"]:
+                combined_query["bool"]["must_not"].extend(rhs["bool"]["must_not"])
+            else:
+                combined_query["bool"]["must_not"] = rhs["bool"]["must_not"]
+                rhs_must = {key: value for key, value in rhs["bool"].items() if key != "must_not"}
+                if rhs_must:
+                    combined_query["bool"]["must"].append()
+        else:
+            # If `rhs` has no must_not clause, append it to must
+            combined_query["bool"]["must"].append(rhs)
+
+        return SolrDSLQuery(combined_query)
 
     @handle(ast.Or)
     def or_(self, _, lhs, rhs):
-        """Joins two filter objects with an `or` operator."""
-        lhs = handle_combination_query(lhs)
-        rhs = handle_combination_query(rhs)
-        return SolrDSLQuery(f"{lhs} OR {rhs}")
+        # Extract the inner queries if lhs or rhs are SolrDSLQuery objects
+        lhs = unwrap_query(lhs)
+        rhs = unwrap_query(rhs)
+
+        # Merge `must` and `must_not` properly
+        combined_query = {"bool": {"should": []}}
+
+        if "bool" in lhs and "must_not" in lhs["bool"]:
+            # If `lhs` has a must_not clause, merge it
+            combined_query["bool"]["must_not"] = lhs["bool"]["must_not"]
+            lhs_must = {key: value for key, value in lhs["bool"].items() if key != "must_not"}
+            if lhs_must:
+                combined_query["bool"]["should"].append()
+        else:
+            # If `lhs` has no must_not clause, append it to must
+            combined_query["bool"]["should"].append(lhs)
+
+        if "bool" in rhs and "must_not" in rhs["bool"]:
+            # If `rhs` has a must_not clause, merge it
+            if "must_not" in combined_query["bool"]:
+                combined_query["bool"]["must_not"].extend(rhs["bool"]["must_not"])
+            else:
+                combined_query["bool"]["must_not"] = rhs["bool"]["must_not"]
+                rhs_must = {key: value for key, value in rhs["bool"].items() if key != "must_not"}
+                if rhs_must:
+                    combined_query["bool"]["should"].append()
+        else:
+            # If `rhs` has no must_not clause, append it to must
+            combined_query["bool"]["should"].append(rhs)
+
+        return SolrDSLQuery(combined_query)
 
     @handle(ast.LessThan, ast.LessEqual, ast.GreaterThan, ast.GreaterEqual)
     def comparison(self, node, lhs, rhs):
-        """Creates a `range` filter."""
+        """
+        Creates a range query for comparison operators.
+        """
         return SolrDSLQuery(f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs))
 
     @handle(ast.Between)
     def between(self, node: ast.Between, lhs, low, high):
-        """Creates a `range` filter."""
-        q = f"{lhs}:[{low} TO {high}]"
+        """
+        Creates a range query for between conditions.
+        """
+        range_query = f"{lhs}:[{low} TO {high}]"
         if node.not_:
-            q = f"-{q}"
-        return SolrDSLQuery(q)
+            # Negate the range query for NOT Between
+            return SolrDSLQuery({"bool": {"must_not": [range_query]}})
+        return SolrDSLQuery({"bool": {"must": [range_query]}})
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
-        """Creates a `terms` filter."""
+        """
+        Creates a terms query for `IN` conditions.
+        """
         options_str = " OR ".join(str(option) for option in options)
-        q = f"{lhs}:({options_str})"
+        terms_query = f"{lhs}:({options_str})"
         if node.not_:
-            q = f"-{q}"
-        return SolrDSLQuery(q)
+            # Negate the terms query for NOT IN
+            return SolrDSLQuery({"bool": {"must_not": [terms_query]}})
+        return SolrDSLQuery({"bool": {"must": [terms_query]}})
 
     @handle(ast.IsNull)
     def null(self, node: ast.IsNull, lhs):
-        """Performs a null check."""
-        q = f"(*:* -{lhs}:*)"
+        """
+        Creates a query to check for null values.
+        """
+        exists_query = f"(*:* -{lhs}:*)"
         if node.not_:
-            q = f"{lhs}:*"
-        return SolrDSLQuery(q)
+            exists_query = f"{lhs}:*"
+        return SolrDSLQuery(exists_query)
 
     @handle(ast.Exists)
     def exists(self, node: ast.Exists, lhs):
-        """Performs an existense check."""
-        q = f"{lhs}:[* TO *]"
+        """
+        Creates a query to check if a field exists.
+        """
+        exists_query = f"{lhs}:[* TO *]"
         if node.not_:
-            q = f"-{lhs}:[* TO *]"
-        return SolrDSLQuery(q)
+            exists_query = f"-{lhs}:[* TO *]"
+        return SolrDSLQuery(exists_query)
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
@@ -140,7 +239,7 @@ class SOLRDSLEvaluator(Evaluator):
         field name from there.
         """
         if self.attribute_map is not None:
-            return self.attribute_map[node.name]
+            return self.attribute_map.get(node.name, node.name)
         return node.name
 
     @handle(*values.LITERALS)
@@ -151,59 +250,76 @@ class SOLRDSLEvaluator(Evaluator):
     @handle(ast.Not)
     def not_(self, _, sub):
         """Inverts a filter object."""
-        return SolrDSLQuery(f"-{sub}")
+        # Extract the inner query if sub is a SolrDSLQuery
+        sub_query = sub["query"] if isinstance(sub, SolrDSLQuery) else sub
+
+        # Handle the case where the sub-query is already a "must_not"
+        if isinstance(sub_query, dict) and "bool" in sub_query and "must_not" in sub_query["bool"]:
+            # If the sub-query is already a must_not, remove the negation
+            return SolrDSLQuery({"bool": {"must": sub_query["bool"]["must_not"]}})
+
+        # Otherwise, create a new must_not clause
+        return SolrDSLQuery({"bool": {"must_not": [sub_query]}})
 
     @handle(ast.Like)
     def like(self, node: ast.Like, lhs):
         """Transforms the provided LIKE pattern to a Solr wildcard
         pattern. This only works properly on fields that are not tokenized.
         """
-        pattern = like_to_wildcard(
-            node.pattern, node.wildcard, node.singlechar, node.escapechar
-        )
-        if '*' in pattern:
-            p = pattern.split('*')
-            if p[0] == '':
+        pattern = like_to_wildcard(node.pattern, node.wildcard, node.singlechar, node.escapechar)
+        if "*" in pattern:
+            p = pattern.split("*")
+            if p[0] == "":
                 q = f"{{!complexphrase}}{lhs}:*{p[1].strip()}"
                 if node.not_:
-                    q = f"{{!complexphrase}}-{lhs}:\"*{p[1].strip()}\""
-            elif p[1] == '':
-                q = f"{{!complexphrase}}{lhs}:\"{p[0].strip()}*\""
+                    q = f'{{!complexphrase}}-{lhs}:"*{p[1].strip()}"'
+            elif p[1] == "":
+                q = f'{{!complexphrase}}{lhs}:"{p[0].strip()}*"'
                 if node.not_:
                     q = f"{{!complexphrase}}-{lhs}:{p[0].strip()}*"
             else:
-                q = f"{{!complexphrase}}{lhs}:\"{p[0].strip()}\"*\"{p[1].strip()}\""
-        elif '?' in pattern:
-            q = f"{{!complexphrase}}{lhs}:\"{pattern}\""
+                q = f'{{!complexphrase}}{lhs}:"{p[0].strip()}"*"{p[1].strip()}"'
+        elif "?" in pattern:
+            q = f'{{!complexphrase}}{lhs}:"{pattern}"'
             if node.not_:
-                q = f"{{!complexphrase}}-{lhs}:\"{pattern}\""
+                q = f'{{!complexphrase}}-{lhs}:"{pattern}"'
 
         else:
-            q = f"{lhs}:\"{pattern}\""
+            q = f'{lhs}:"{pattern}"'
             if node.not_:
                 q = f"-{q}"
         return SolrDSLQuery(q)
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
-        """Geometry values are converted to a Solr spatial query.
-        This assumes that 'geom' is the field in Solr schema which holds the geometry data.
-        """
-        return node.geometry
+        """Geometry values are converted to a Solr spatial query."""
+        """Convert to wkt and make sure polygons are counter clockwise"""
+        geom_wkt = shape(node).wkt
+        geom = shapely.wkt.loads(geom_wkt)
+        if geom.geom_type == "Polygon" or geom.geom_type == "MultiPolygon":
+            geom = geom.reverse() if not geom.exterior.is_ccw else geom
+        return geom.wkt
 
     @handle(ast.Equal, ast.NotEqual)
     def equality(self, node, lhs, rhs):
-        """Creates a match filter."""
-        return SolrDSLQuery(f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs))
+        """
+        Creates a term query for equality or inequality conditions.
+        """
+        if node.op == ast.ComparisonOp.EQ:
+            # Use a term query for equality
+            return SolrDSLQuery(f"{lhs}:{rhs}")
+        elif node.op == ast.ComparisonOp.NE:
+            # Use a boolean must_not query for inequality
+            return SolrDSLQuery(f"-{lhs}:{rhs}")
 
     @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node: ast.TemporalPredicate, lhs, rhs):
         """Creates a filter to match the given temporal predicate"""
         op = node.op
         if isinstance(rhs, (date, datetime)):
-            low = high = rhs.strftime('%Y-%m-%dT%H:%M:%SZ')
+            low = high = rhs.strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
-            low, high = rhs[0].strftime('%Y-%m-%dT%H:%M:%SZ'), rhs[1].strftime('%Y-%m-%dT%H:%M:%SZ')
+            low, high = rhs[0].strftime("%Y-%m-%dT%H:%M:%SZ"), rhs[1].strftime("%Y-%m-%dT%H:%M:%SZ")
 
         query = None
         if op == ast.TemporalComparisonOp.DISJOINT:
@@ -212,10 +328,7 @@ class SOLRDSLEvaluator(Evaluator):
             query = f"{lhs}:{{{high} TO *]"
         elif op == ast.TemporalComparisonOp.BEFORE:
             query = f"{lhs}:[* TO {low}}}"
-        elif (
-            op == ast.TemporalComparisonOp.TOVERLAPS
-            or op == ast.TemporalComparisonOp.OVERLAPPEDBY
-        ):
+        elif op == ast.TemporalComparisonOp.TOVERLAPS or op == ast.TemporalComparisonOp.OVERLAPPEDBY:
             query = f"{lhs}:[{low} TO {high}]"
         elif op == ast.TemporalComparisonOp.BEGINS:
             query = f"{lhs}:{low}"
@@ -240,20 +353,20 @@ class SOLRDSLEvaluator(Evaluator):
 
         return SolrDSLQuery(query)
 
-    @handle(
-        ast.GeometryIntersects,
-        ast.GeometryDisjoint,
-        ast.GeometryWithin,
-        ast.GeometryContains,
-        ast.GeometryEquals
-    )
+    @handle(ast.GeometryIntersects, ast.GeometryDisjoint, ast.GeometryWithin, ast.GeometryContains, ast.GeometryEquals)
     def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs: str, rhs):
         """Creates a spatial query for the given spatial comparison
         predicate.
         """
+        query = {}
         # Solr need capitalized first letter of operator
         op = node.op.value.lower().capitalize()
-        query = f"{{!field f={lhs}}}{op}({rhs})"
+        if op == "Disjoint":
+            geo_filter = f"{{!field f={lhs} v='Intersects({rhs})'}}"
+            query = {"bool": {"must_not": [geo_filter]}}
+            return SolrDSLQuery(query)
+
+        query = f"{{!field f={lhs} v='{op}({rhs})'}}"
         return SolrDSLQuery(query)
 
     @handle(ast.BBox)
@@ -261,9 +374,7 @@ class SOLRDSLEvaluator(Evaluator):
         """Performs a spatial query for the given bounding box.
         Ignores CRS parameter, as it is not supported by Solr.
         """
-        bbox = self.envelope(
-            values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
-        )
+        bbox = self.envelope(values.Envelope(node.minx, node.maxx, node.miny, node.maxy))
         query = f"{{!field f={lhs} v='Intersects({bbox})'}}"
         return SolrDSLQuery(query)
 
@@ -287,20 +398,20 @@ class SOLRDSLEvaluator(Evaluator):
         return f"ENVELOPE({min_x}, {max_x}, {max_y}, {min_y})"
 
 
-def handle_combination_query(q):
-    if isinstance(q, dict):
-        if q['query']:
-            return q['query']
-
-
 def to_filter(
     root,
-    attribute_map: Optional[Dict[str, str]] = None,
-    version: Optional[str] = None,
+    attribute_map: Optional[dict[str, str]] = None,
+    version: Optional[Version] = None,
 ):
     """Shorthand function to convert a pygeofilter AST to an Apache Solr
     filter structure.
     """
-    return SOLRDSLEvaluator(
-        attribute_map, Version(version) if version else None
-    ).evaluate(root)
+    return SOLRDSLEvaluator(attribute_map, Version(version) if version else None).evaluate(root)
+
+
+def unwrap_query(obj):
+    """Extract the inner query from a SolrDSLQuery or return the object directly."""
+    if isinstance(obj, SolrDSLQuery):
+        # Return the inner query only if it is not empty
+        return obj.get("query", {})
+    return obj
