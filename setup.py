@@ -56,10 +56,10 @@ setup(
     include_package_data=True,
     install_requires=(
         [
+            "click",
             "dateparser",
             "lark",
-            "pygeoif>=1.0.0",
-            "dataclasses;python_version<'3.7'",
+            "pygeoif>=1.0.0"
         ]
         if not on_rtd
         else []
@@ -84,5 +84,10 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ],
-    tests_require=["pytest"],
+    entry_points={
+        'console_scripts': [
+            'pygeofilter=pygeofilter.cli:cli'
+        ]
+    },
+    tests_require=["pytest"]
 )

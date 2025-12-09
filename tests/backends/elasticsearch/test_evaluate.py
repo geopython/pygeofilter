@@ -203,12 +203,12 @@ def test_temporal(data):
             ],
         )
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(
         parse("datetime_attribute BEFORE 2000-01-01T00:00:05.00Z"),
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     result = filter_(
         parse("datetime_attribute AFTER 2000-01-01T00:00:05.00Z"),
@@ -224,7 +224,7 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] is data[0]
+#     assert len(result) == 1 and result[0] == data[0]
 
 #     result = filter_(
 #         ast.ArrayContains(
@@ -233,7 +233,7 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] is data[1]
+#     assert len(result) == 1 and result[0] == data[1]
 
 #     result = filter_(
 #         ast.ArrayContainedBy(
@@ -242,7 +242,7 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] is data[0]
+#     assert len(result) == 1 and result[0] == data[0]
 
 #     result = filter_(
 #         ast.ArrayOverlaps(
@@ -251,21 +251,21 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] is data[1]
+#     assert len(result) == 1 and result[0] == data[1]
 
 
 def test_spatial(data):
     result = filter_(
         parse("INTERSECTS(geometry, ENVELOPE (0.0 1.0 0.0 1.0))"),
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
     # TODO: test more spatial queries
 
     result = filter_(
         parse("BBOX(center, 2, 2, 3, 3)"),
     )
-    assert len(result) == 1 and result[0].identifier is data[0].identifier
+    assert len(result) == 1 and result[0].identifier == data[0].identifier
 
 
 # def test_arithmetic():
@@ -279,7 +279,7 @@ def test_spatial(data):
 #         parse('int_attr = 5 + 20 / 2 - 10'),
 #         data,
 #     )
-#     assert len(result) == 1 and result[0] is data[0]
+#     assert len(result) == 1 and result[0] == data[0]
 
 
 # def test_function():
@@ -287,7 +287,7 @@ def test_spatial(data):
 #         parse('sin(float_attr) BETWEEN -0.75 AND -0.70'),
 #         data,
 #     )
-#     assert len(result) == 1 and result[0] is data[0]
+#     assert len(result) == 1 and result[0] == data[0]
 
 
 # def test_nested():
@@ -295,4 +295,4 @@ def test_spatial(data):
 #         parse('"nested_attr.str_attr" = \'this is a test\''),
 #         data,
 #     )
-#     assert len(result) == 1 and result[0] is data[0]
+#     assert len(result) == 1 and result[0] == data[0]

@@ -27,20 +27,20 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
 The package can be installed via PIP:
 
 ```bash
-pip install pygeofilter
+pip3 install pygeofilter
 ```
 
 Some features require additional dependencies. This currently only affects the backends. To install these, the features have to be listed:
 
 ```bash
 # for the Django backend
-pip install pygeofilter[backend-django]
+pip3 install pygeofilter[backend-django]
 
 # for the sqlalchemy backend
-pip install pygeofilter[backend-sqlalchemy]
+pip3 install pygeofilter[backend-sqlalchemy]
 
 # for the native backend
-pip install pygeofilter[backend-native]
+pip3 install pygeofilter[backend-native]
 ```
 
 ## Usage
@@ -173,13 +173,44 @@ class MyAPIEvaluator(Evaluator):
     # ...further ast handlings removed for brevity
 ```
 
+### Command line utility
+
+pygeofilter also includes a command-line utility (`pygeofilter`).  Current functionality includes testing filter parsing into the native AST.  Examples:
+
+```bash
+# display installed version
+pygeofilter --version
+
+# parse subcommand functionality
+pygeofilter parse 
+Usage: pygeofilter parse [OPTIONS] {cql_json|cql2_json|cql2_text|ecql|fes|jfe}
+                         QUERY
+
+  Parse a query into an abstract syntax tree
+
+Options:
+  -v, --verbosity [ERROR|WARNING|INFO|DEBUG]
+                                  Verbosity
+  --help                          Show this message and exit.
+
+# parse a CQL2 text string into AST
+pygeofilter parse cql2_text "title = "birds'"
+Parsing cql2_text query into AST
+Equal(lhs=ATTRIBUTE title, rhs='birds')
+
+# parse a FES text string into AST 
+pygeofilter parse fes "<Filter xmlns=\"http://www.opengis.net/ogc\"><PropertyIsEqualTo><PropertyName>title</PropertyName><Literal>birds</Literal></PropertyIsEqualTo></Filter>"
+Parsing fes query into AST
+Equal(lhs=ATTRIBUTE title, rhs='birds')
+```
+
 ## Testing
 
 For testing, several requirements must be satisfied. These can be installed, via pip:
 
 ```bash
-pip install -r requirements-dev.txt
-pip install -r requirements-test.txt
+pip3 install -r requirements-dev.txt
+pip3 install -r requirements-test.txt
 ```
 
 The functionality can be tested using `pytest`.

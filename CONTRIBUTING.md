@@ -90,7 +90,7 @@ The project is using [`pre-commit`](https://pre-commit.com) to automatically run
 
 ```bash
 # Install pre-commit
-pip install pre-commit
+pip3 install pre-commit
 
 # Enable pre-commit
 cd /pygeofilter

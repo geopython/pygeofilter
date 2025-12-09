@@ -83,6 +83,17 @@ class FESBaseParser(XMLParser):
     def boundary(self, node: Element, expression):
         return expression
 
+    @handle("BBOX")
+    def geometry_bbox(self, node: Element, *args):
+        if len(args) == 2:
+            # PropertyName, Envelope
+            lhs, rhs = args
+        else:
+            # No PropertyName
+            lhs = None
+            rhs = args[0]
+        return ast.Not(ast.GeometryDisjoint(lhs, rhs))
+
     @handle("Equals")
     def geometry_equals(self, node: Element, lhs, rhs):
         return ast.GeometryEquals(lhs, rhs)
@@ -129,10 +140,9 @@ class FESBaseParser(XMLParser):
     def distance(self, node: Element):
         return (float(node.text), node.attrib["uom"])
 
-    # @handle('BBOX')
-    # def geometry_bbox(self, node: Element, lhs, rhs):
-    #     # TODO: ast.BBox() seems incompatible
-    #     pass
+    @handle("PropertyName")
+    def property_name(self, node):
+        return ast.Attribute(node.text)
 
     @handle("ValueReference")
     def value_reference(self, node):
