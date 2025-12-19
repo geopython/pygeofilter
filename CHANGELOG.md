@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/geopython/pygeofilter/compare/v0.3.1...v0.3.2) (2025-12-19)
+
+
+### Bug Fixes
+
+* **#68:** adds missing predicate expressions in lark grammar for NOT ... ([326fe0c](https://github.com/geopython/pygeofilter/commit/326fe0cf9c4c8d62198dee5686b749fc7f3ce613))
+* **cql2_json:** missing envelope in instance check ([18c382b](https://github.com/geopython/pygeofilter/commit/18c382b6632598b3ea6186f0c03a6b5a56d828cd))
+
 ## [0.3.1](https://github.com/geopython/pygeofilter/compare/v0.3.0...v0.3.1) (2024-12-31)
 
 
