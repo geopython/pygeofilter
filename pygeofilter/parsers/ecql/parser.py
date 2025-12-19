@@ -48,7 +48,7 @@ SPATIAL_PREDICATES_MAP = {
 }
 
 
-@v_args(inline=True)
+@v_args(meta=False, inline=True)
 class ECQLTransformer(WKTTransformer, ISO8601Transformer):
     def and_(self, lhs, rhs):
         return ast.And(lhs, rhs)
@@ -181,7 +181,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return float(value)
 
     def BOOLEAN(self, value):
-        return value == "TRUE"
+        return value.lower() == "true"
 
     def DOUBLE_QUOTED(self, token):
         return token[1:-1]
@@ -201,6 +201,7 @@ parser = Lark.open(
     rel_to=__file__,
     parser="lalr",
     debug=True,
+    maybe_placeholders=False,
     transformer=ECQLTransformer(),
     import_paths=[os.path.dirname(os.path.dirname(__file__))],
 )

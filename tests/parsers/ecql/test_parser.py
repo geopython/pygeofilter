@@ -41,12 +41,14 @@ def test_namespace_attribute_eq_literal():
         "A",
     )
 
+
 def test_prefixed_attribute_eq_literal():
     result = parse("properties.ns:attr = 'A'")
     assert result == ast.Equal(
         ast.Attribute("properties.ns:attr"),
         "A",
     )
+
 
 def test_attribute_eq_literal():
     result = parse("attr = 'A'")
@@ -594,4 +596,36 @@ def test_function_attr_string_arg():
                 "abc",
             ],
         ),
+    )
+
+
+def test_attribute_eq_true_uppercase():
+    result = parse("attr = TRUE")
+    assert result == ast.Equal(
+        ast.Attribute("attr"),
+        True,
+    )
+
+
+def test_attribute_eq_true_lowercase():
+    result = parse("attr = true")
+    assert result == ast.Equal(
+        ast.Attribute("attr"),
+        True,
+    )
+
+
+def test_attribute_eq_false_uppercase():
+    result = parse("attr = FALSE")
+    assert result == ast.Equal(
+        ast.Attribute("attr"),
+        False,
+    )
+
+
+def test_attribute_eq_false_lowercase():
+    result = parse("attr = false")
+    assert result == ast.Equal(
+        ast.Attribute("attr"),
+        False,
     )

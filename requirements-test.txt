@@ -10,3 +10,5 @@ dateparser
 lark
 elasticsearch
 elasticsearch-dsl
+opensearch-py
+opensearch-dsl

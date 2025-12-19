@@ -1,10 +1,10 @@
 # ------------------------------------------------------------------------------
 #
 # Project: pygeofilter <https://github.com/geopython/pygeofilter>
-# Authors: Fabian Schindler <fabian.schindler@eox.at>
+# Authors: Magnar Martinsen <magnarem@met.no>
 #
 # ------------------------------------------------------------------------------
-# Copyright (C) 2021 EOX IT Services GmbH
+# Copyright (C) 2025 Norwegian Meteorological Institute
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,15 +25,9 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from lark import Transformer, v_args
+""" Apache Solr backend for pygeofilter
+"""
 
-from ..util import parse_datetime, parse_duration
+from .evaluate import to_filter
 
-
-@v_args(meta=False, inline=True)
-class ISO8601Transformer(Transformer):
-    def DATETIME(self, dt):
-        return parse_datetime(dt)
-
-    def DURATION(self, duration):
-        return parse_duration(duration)
+__all__ = ["to_filter"]

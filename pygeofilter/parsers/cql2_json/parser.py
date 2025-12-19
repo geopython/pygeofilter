@@ -51,6 +51,7 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             datetime,
             values.Geometry,
             values.Interval,
+            values.Envelope,
             ast.Node,
         ),
     ):
@@ -125,7 +126,10 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             return ast.Not(cast(ast.Node, walk_cql_json(args)))
 
         elif op == "isNull":
-            return ast.IsNull(cast(ast.Node, walk_cql_json(args)), False)
+            # like with "not", allow both arrays and objects
+            if isinstance(args, list):
+                args = args[0]
+            return ast.IsNull(cast(ast.Node, walk_cql_json(args)), not_=False)
 
         elif op == "between":
             return ast.Between(
@@ -150,12 +154,6 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             return ast.In(
                 cast(ast.AstType, walk_cql_json(args[0])),
                 cast(List[ast.AstType], walk_cql_json(args[1])),
-                not_=False,
-            )
-
-        elif op == "isNull":
-            return ast.IsNull(
-                walk_cql_json(args),
                 not_=False,
             )
 

@@ -25,8 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-""" General utilities for the Elasticsearch backend.
-"""
+"""General utilities for the Elasticsearch backend."""
 
 import re
 

@@ -1,7 +1,7 @@
 # pylint: disable=W0621,C0114,C0115,C0116
 
 import pytest
-from elasticsearch_dsl import (
+from opensearch_dsl import (
     Date,
     DateRange,
     Document,
@@ -19,10 +19,10 @@ from elasticsearch_dsl import (
 )
 
 from pygeofilter import ast
-from pygeofilter.backends.elasticsearch import to_filter
+from pygeofilter.backends.opensearch import to_filter
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
-from os import environ
+
 
 class Wildcard(Field):
     name = "wildcard"
@@ -54,10 +54,7 @@ class Record(Document):
 @pytest.fixture(autouse=True, scope="session")
 def connection():
     connections.create_connection(
-        hosts=["http://{}:{}".format(
-            environ.get("PYGEOFILTER_ELASTIC_HOST", "localhost"),
-            environ.get("PYGEOFILTER_ELASTIC_PORT", "9200"),
-        )],
+        hosts=["http://localhost:9209"],
     )
 
 
@@ -227,7 +224,7 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] == data[0]
+#     assert len(result) == 1 and result[0] is data[0]
 
 #     result = filter_(
 #         ast.ArrayContains(
@@ -236,7 +233,7 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] == data[1]
+#     assert len(result) == 1 and result[0] is data[1]
 
 #     result = filter_(
 #         ast.ArrayContainedBy(
@@ -245,7 +242,7 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] == data[0]
+#     assert len(result) == 1 and result[0] is data[0]
 
 #     result = filter_(
 #         ast.ArrayOverlaps(
@@ -254,7 +251,7 @@ def test_temporal(data):
 #         ),
 #         data
 #     )
-#     assert len(result) == 1 and result[0] == data[1]
+#     assert len(result) == 1 and result[0] is data[1]
 
 
 def test_spatial(data):
@@ -282,7 +279,7 @@ def test_spatial(data):
 #         parse('int_attr = 5 + 20 / 2 - 10'),
 #         data,
 #     )
-#     assert len(result) == 1 and result[0] == data[0]
+#     assert len(result) == 1 and result[0] is data[0]
 
 
 # def test_function():
@@ -290,7 +287,7 @@ def test_spatial(data):
 #         parse('sin(float_attr) BETWEEN -0.75 AND -0.70'),
 #         data,
 #     )
-#     assert len(result) == 1 and result[0] == data[0]
+#     assert len(result) == 1 and result[0] is data[0]
 
 
 # def test_nested():
@@ -298,4 +295,4 @@ def test_spatial(data):
 #         parse('"nested_attr.str_attr" = \'this is a test\''),
 #         data,
 #     )
-#     assert len(result) == 1 and result[0] == data[0]
+#     assert len(result) == 1 and result[0] is data[0]

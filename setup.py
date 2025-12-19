@@ -56,10 +56,10 @@ setup(
     include_package_data=True,
     install_requires=(
         [
+            "click",
             "dateparser",
-            "lark<1.0",
-            "pygeoif>=1.0.0",
-            "dataclasses;python_version<'3.7'",
+            "lark",
+            "pygeoif>=1.0.0"
         ]
         if not on_rtd
         else []
@@ -69,6 +69,7 @@ setup(
         "backend-sqlalchemy": ["geoalchemy2", "sqlalchemy"],
         "backend-native": ["shapely"],
         "backend-elasticsearch": ["elasticsearch", "elasticsearch-dsl"],
+        "backend-opensearch": ["opensearch-py", "opensearch-dsl"],
         "fes": ["pygml>=0.2"],
     },
     classifiers=[
@@ -76,10 +77,17 @@ setup(
         "Intended Audience :: Developers",
         "Topic :: Scientific/Engineering :: GIS",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
-    tests_require=["pytest"],
+    entry_points={
+        'console_scripts': [
+            'pygeofilter=pygeofilter.cli:cli'
+        ]
+    },
+    tests_require=["pytest"]
 )

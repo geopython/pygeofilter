@@ -4,7 +4,7 @@
 # Authors: Fabian Schindler <fabian.schindler@eox.at>
 #
 # ------------------------------------------------------------------------------
-# Copyright (C) 2021 EOX IT Services GmbH
+# Copyright (C) 2022 EOX IT Services GmbH
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,15 +25,38 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from lark import Transformer, v_args
+"""General utilities for the OpenSearch backend."""
 
-from ..util import parse_datetime, parse_duration
+import re
 
 
-@v_args(meta=False, inline=True)
-class ISO8601Transformer(Transformer):
-    def DATETIME(self, dt):
-        return parse_datetime(dt)
+def like_to_wildcard(
+    value: str, wildcard: str, single_char: str, escape_char: str = "\\"
+) -> str:
+    """Adapts a "LIKE" pattern to create an OpenSearch "wildcard"
+    pattern.
+    """
 
-    def DURATION(self, duration):
-        return parse_duration(duration)
+    x_wildcard = re.escape(wildcard)
+    x_single_char = re.escape(single_char)
+
+    if escape_char == "\\":
+        x_escape_char = "\\\\\\\\"
+    else:
+        x_escape_char = re.escape(escape_char)
+
+    if wildcard != "*":
+        value = re.sub(
+            f"(?<!{x_escape_char}){x_wildcard}",
+            "*",
+            value,
+        )
+
+    if single_char != "?":
+        value = re.sub(
+            f"(?<!{x_escape_char}){x_single_char}",
+            "?",
+            value,
+        )
+
+    return value
