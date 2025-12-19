@@ -51,6 +51,7 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             datetime,
             values.Geometry,
             values.Interval,
+            values.Envelope,
             ast.Node,
         ),
     ):
