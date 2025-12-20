@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/geopython/pygeofilter/compare/v0.3.2...v0.3.3) (2025-12-20)
+
+
+### Bug Fixes
+
+* **sql:** make the use of `ILIKE` opt-in ([472a416](https://github.com/geopython/pygeofilter/commit/472a41663c66dfc318c269d9886816990d3de138))
+
 ## [0.3.2](https://github.com/geopython/pygeofilter/compare/v0.3.1...v0.3.2) (2025-12-19)
 
 
