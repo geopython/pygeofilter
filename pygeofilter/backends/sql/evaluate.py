@@ -62,9 +62,15 @@ SPATIAL_COMPARISON_OP_MAP = {
 
 
 class SQLEvaluator(Evaluator):
-    def __init__(self, attribute_map: Dict[str, str], function_map: Dict[str, str]):
+    def __init__(
+        self,
+        attribute_map: Dict[str, str],
+        function_map: Dict[str, str],
+        use_ilike: bool = False,
+    ):
         self.attribute_map = attribute_map
         self.function_map = function_map
+        self.use_ilike = use_ilike
 
     @handle(ast.Not)
     def not_(self, node, sub):
@@ -92,7 +98,7 @@ class SQLEvaluator(Evaluator):
             # TODO: not preceded by escapechar
             pattern = pattern.replace(node.singlechar, "_")
 
-        if node.nocase:
+        if node.nocase and self.use_ilike:
             return (
                 f"{lhs} {'NOT ' if node.not_ else ''}ILIKE "
                 f"'{pattern}' ESCAPE '{node.escapechar}'"
@@ -162,5 +168,8 @@ def to_sql_where(
     root: ast.Node,
     field_mapping: Dict[str, str],
     function_map: Optional[Dict[str, str]] = None,
+    use_ilike: bool = False,
 ) -> str:
-    return SQLEvaluator(field_mapping, function_map or {}).evaluate(root)
+    return SQLEvaluator(
+        field_mapping, function_map or {}, use_ilike=use_ilike
+    ).evaluate(root)
