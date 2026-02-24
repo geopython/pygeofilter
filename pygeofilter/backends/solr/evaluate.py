@@ -307,10 +307,10 @@ class SOLRDSLEvaluator(Evaluator):
         """
         if node.op == ast.ComparisonOp.EQ:
             # Use a term query for equality
-            return SolrDSLQuery(f"{lhs}:{rhs}")
+            return SolrDSLQuery(f"{lhs}:\"{rhs}\"")
         elif node.op == ast.ComparisonOp.NE:
             # Use a boolean must_not query for inequality
-            return SolrDSLQuery(f"-{lhs}:{rhs}")
+            return SolrDSLQuery(f"-{lhs}:\"{rhs}\"")
 
     @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node: ast.TemporalPredicate, lhs, rhs):
