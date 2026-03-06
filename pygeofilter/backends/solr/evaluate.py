@@ -36,6 +36,7 @@ from datetime import date, datetime
 from typing import Optional
 
 import shapely.wkt
+import json
 from packaging.version import Version
 from pygeoif import shape
 
@@ -205,7 +206,7 @@ class SOLRDSLEvaluator(Evaluator):
         """
         Creates a terms query for `IN` conditions.
         """
-        options_str = " OR ".join(str(option) for option in options)
+        options_str = " OR ".join(json.dumps(str(option)) for option in options)
         terms_query = f"{lhs}:({options_str})"
         if node.not_:
             # Negate the terms query for NOT IN
