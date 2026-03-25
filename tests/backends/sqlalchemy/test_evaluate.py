@@ -297,7 +297,7 @@ def test_string_not_null(db_session):
 
 # CASEI
 def test_casei(db_session):
-    evaluate(db_session, "CASEI(strAttribute) = 'aaa'", ("A",), None, parse_cql_text)
+    evaluate(db_session, "CASEI(strAttribute) = CASEI('aaa')", ("A",), None, parse_cql_text)
 
 
 # temporal predicates
