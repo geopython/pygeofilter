@@ -294,6 +294,10 @@ def test_string_null(db_session):
 def test_string_not_null(db_session):
     evaluate(db_session, "intAttribute IS NOT NULL", ("A",))
 
+# CASEI
+def test_casei(db_session):
+    evaluate(db_session, "strAttribute = CASEI('aaa')", ("A",))
+
 
 # temporal predicates
 

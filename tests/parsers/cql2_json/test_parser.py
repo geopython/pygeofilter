@@ -148,6 +148,13 @@ def test_attribute_is_null():
     result = parse({"op": "isNull", "args": [{"property": "attr"}]})
     assert result == ast.IsNull(ast.Attribute("attr"), False)
 
+def test_attribute_casei():
+    result = parse('{"op": "casei", "args": [{"property": "attr"}]}')
+    assert result == ast.Function("lower", [ast.Attribute("attr")])
+
+def test_literal_casei():
+    result = parse('{"op": "casei", "args": ["literal"]}')
+    assert result == ast.Function("lower", ["literal"])
 
 def test_attribute_before():
     result = parse(

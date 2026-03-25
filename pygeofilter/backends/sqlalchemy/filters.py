@@ -27,6 +27,10 @@ def parse_geometry(geom: dict):
     wkt = shape(geom).wkt
     return func.ST_GeomFromEWKT(f"SRID={srid};{wkt}")
 
+# TODO: map functions
+function_map = {
+    "lower": func.lower
+}
 
 # ------------------------------------------------------------------------------
 # Filters
