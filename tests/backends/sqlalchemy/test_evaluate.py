@@ -18,7 +18,8 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import func, select
 
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.parsers.ecql import parse as parse_ecql
+from pygeofilter.parsers.cql2_text import parse as parse_cql_text
 
 Base = declarative_base()
 
@@ -161,8 +162,8 @@ def db_session(setup_database, connection):
     transaction.rollback()
 
 
-def evaluate(session, cql_expr, expected_ids, filter_option=None):
-    ast = parse(cql_expr)
+def evaluate(session, cql_expr, expected_ids, filter_option=None, parser=parse_ecql):
+    ast = parser(cql_expr)
     filters = to_filter(ast, FIELD_MAPPING, filter_option)
 
     q = session.query(Record).join(RecordMeta).filter(filters)
@@ -293,6 +294,10 @@ def test_string_null(db_session):
 
 def test_string_not_null(db_session):
     evaluate(db_session, "intAttribute IS NOT NULL", ("A",))
+
+# CASEI
+def test_casei(db_session):
+    evaluate(db_session, "CASEI(strAttribute) = CASEI('aaa')", ("A",), None, parse_cql_text)
 
 
 # temporal predicates

@@ -112,10 +112,9 @@ class SQLAlchemyFilterEvaluator(Evaluator):
     def arithmetic(self, node, lhs, rhs):
         return filters.runop(lhs, rhs, node.op.value)
 
-    # TODO: map functions
-    # @handle(ast.FunctionExpressionNode)
-    # def function(self, node, *arguments):
-    #     return self.function_map[node.name](*arguments)
+    @handle(ast.Function)
+    def function(self, node, *arguments):
+        return filters.function_map[node.name](*arguments)
 
     @handle(*values.LITERALS)
     def literal(self, node):
