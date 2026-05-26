@@ -286,7 +286,11 @@ class SOLRDSLEvaluator(Evaluator):
         """
         Creates a terms query for `IN` conditions.
         """
-        options_str = " OR ".join(str(option) for option in options)
+        def _quote(v):
+            if isinstance(v, str):
+                return '"' + v.replace('"', '\\"') + '"'
+            return str(v)
+        options_str = " OR ".join(_quote(option) for option in options)
         terms_query = f"{lhs}:({options_str})"
         if node.not_:
             # Negate the terms query for NOT IN
