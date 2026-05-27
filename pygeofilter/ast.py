@@ -225,7 +225,7 @@ class Like(Predicate):
     """Node class to represent a wildcard sting matching predicate."""
 
     lhs: Node
-    pattern: str
+    pattern: str | AstType
     nocase: bool
     wildcard: str
     singlechar: str

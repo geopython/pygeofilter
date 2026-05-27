@@ -20,6 +20,7 @@ from sqlalchemy.sql import func, select
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 from pygeofilter.parsers.ecql import parse as parse_ecql
 from pygeofilter.parsers.cql2_text import parse as parse_cql_text
+from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 
 Base = declarative_base()
 
@@ -307,6 +308,9 @@ def test_casei_notlike(db_session):
 
 def test_casei_in(db_session):
     evaluate(db_session, "CASEI(strAttribute) IN (CASEI('aaa'), CASEI('bbb'))", ("A", "B", ), None, parse_cql_text)
+
+def test_casei_json_like(db_session):
+    evaluate(db_session, '{"op": "like", "args": [ {"op": "casei", "args": [{"property": "strAttribute"}]}, {"op": "casei", "args": ["AAA"]} ] }', ("A", ), None, parse_cql2_json)
 
 # temporal predicates
 
