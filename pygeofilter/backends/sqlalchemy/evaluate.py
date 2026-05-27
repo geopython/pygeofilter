@@ -34,6 +34,8 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
     @handle(ast.Like)
     def like(self, node, lhs):
+        if (isinstance(node.pattern, ast.Function)):
+            node.pattern = filters.function_map[node.pattern.name](*node.pattern.arguments)
         return filters.like(
             lhs,
             node.pattern,

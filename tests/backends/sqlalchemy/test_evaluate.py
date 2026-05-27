@@ -296,9 +296,17 @@ def test_string_not_null(db_session):
     evaluate(db_session, "intAttribute IS NOT NULL", ("A",))
 
 # CASEI
-def test_casei(db_session):
+def test_casei_equals(db_session):
     evaluate(db_session, "CASEI(strAttribute) = CASEI('aaa')", ("A",), None, parse_cql_text)
 
+def test_casei_like(db_session):
+    evaluate(db_session, "CASEI(strAttribute) LIKE CASEI('aaa')", ("A",), None, parse_cql_text)
+
+def test_casei_notlike(db_session):
+    evaluate(db_session, "CASEI(strAttribute) NOT LIKE CASEI('aaa')", ("B", ), None, parse_cql_text)
+
+def test_casei_in(db_session):
+    evaluate(db_session, "CASEI(strAttribute) IN (CASEI('aaa'), CASEI('bbb'))", ("A", "B", ), None, parse_cql_text)
 
 # temporal predicates
 

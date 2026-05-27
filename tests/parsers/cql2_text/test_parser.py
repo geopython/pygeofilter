@@ -409,11 +409,34 @@ def test_nested_and_or():
     assert result.rhs.rhs == ast.Equal(ast.Attribute("attr_d"), 4)
 
 
-def test_casei_function():
-    result = parse("CASEI(provider) = 'coolsat'")
+def test_casei_equals():
+    result = parse("CASEI(provider) = CASEI('coolsat')")
     # Assuming CASEI maps to 'lower' in the implementation
     assert isinstance(result, ast.Equal)
     assert isinstance(result.lhs, ast.Function)
+    assert isinstance(result.rhs, ast.Function)
     assert result.lhs.name == "lower"
     assert result.lhs.arguments == [ast.Attribute("provider")]
-    assert result.rhs == "coolsat"
+    assert result.rhs.name == "lower"
+    assert result.rhs.arguments == ["coolsat"]
+
+
+def test_casei_like():
+    result = parse("CASEI(provider) LIKE CASEI('coolsat')")
+    # Assuming CASEI maps to 'lower' in the implementation
+    assert isinstance(result, ast.Like)
+    assert isinstance(result.lhs, ast.Function)
+    assert result.lhs.name == "lower"
+    assert result.lhs.arguments == [ast.Attribute("provider")]
+    assert result.pattern.name == "lower"
+    assert result.pattern.arguments == ["coolsat"]
+
+def test_casei_notlike():
+    result = parse("CASEI(provider) NOT LIKE CASEI('coolsat')")
+    # Assuming CASEI maps to 'lower' in the implementation
+    assert isinstance(result, ast.Like)
+    assert isinstance(result.lhs, ast.Function)
+    assert result.lhs.name == "lower"
+    assert result.lhs.arguments == [ast.Attribute("provider")]
+    assert result.pattern.name == "lower"
+    assert result.pattern.arguments == ["coolsat"]

@@ -51,8 +51,8 @@
           | expression "gte"i expression                                      -> gte
           | expression "BETWEEN"i expression "AND"i expression                -> between
           | expression "NOT"i "BETWEEN"i expression "AND"i expression         -> not_between
-          | expression "LIKE"i SINGLE_QUOTED                                 -> like
-          | expression "NOT"i "LIKE"i SINGLE_QUOTED                          -> not_like
+          | expression "LIKE"i expression                                 -> like
+          | expression "NOT"i "LIKE"i expression                          -> not_like
           | expression "IN"i "(" expression ( "," expression )* ")"          -> in_
           | expression "NOT"i "IN"i "(" expression ( "," expression )* ")"   -> not_in
           | expression "IS"i "NULL"i                                         -> null
@@ -112,7 +112,6 @@
      | "(" expression ")"
 
 func.2: attribute "(" expression ("," expression)* ")" -> function
-
 
 ?literal: timestamp
         | interval
