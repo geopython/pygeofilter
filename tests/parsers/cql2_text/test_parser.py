@@ -228,6 +228,110 @@ def test_attribute_tintersects_dt_dr():
         ),
     )
 
+def test_prefix_tafter_timestamp():
+    result = parse(
+        "T_AFTER(attr, TIMESTAMP('2022-04-24T07:59:57Z'))"
+    )
+    assert result == ast.TimeAfter(
+        ast.Attribute("attr"),
+        datetime(2022, 4, 24, 7, 59, 57, tzinfo=StaticTzInfo("Z", timedelta(0)))
+    )
+
+def test_prefix_tafter_interval():
+    result = parse(
+        "T_AFTER(attr, INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))"
+    )
+    assert result == ast.TimeAfter(
+        ast.Attribute("attr"),
+        values.Interval(
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2021, 12, 31, 23, 59, 59, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        )
+    )
+
+def test_prefix_tbefore_timestamp():
+    result = parse(
+        "T_BEFORE(attr, TIMESTAMP('2022-04-24T07:59:57Z'))"
+    )
+    assert result == ast.TimeBefore(
+        ast.Attribute("attr"),
+        datetime(2022, 4, 24, 7, 59, 57, tzinfo=StaticTzInfo("Z", timedelta(0)))
+    )
+
+def test_prefix_tbefore_interval():
+    result = parse(
+        "T_BEFORE(attr, INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))"
+    )
+    assert result == ast.TimeBefore(
+        ast.Attribute("attr"),
+        values.Interval(
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2021, 12, 31, 23, 59, 59, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        )
+    )
+
+def test_prefix_tdisjoint_timestamp():
+    result = parse(
+        "T_DISJOINT(attr, TIMESTAMP('2022-04-24T07:59:57Z'))"
+    )
+    assert result == ast.TimeDisjoint(
+        ast.Attribute("attr"),
+        datetime(2022, 4, 24, 7, 59, 57, tzinfo=StaticTzInfo("Z", timedelta(0)))
+    )
+
+def test_prefix_tdisjoint_interval():
+    result = parse(
+        "T_DISJOINT(attr, INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))"
+    )
+    assert result == ast.TimeDisjoint(
+        ast.Attribute("attr"),
+        values.Interval(
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2021, 12, 31, 23, 59, 59, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        )
+    )
+
+def test_prefix_tequals_timestamp():
+    result = parse(
+        "T_EQUALS(attr, TIMESTAMP('2022-04-24T07:59:57Z'))"
+    )
+    assert result == ast.TimeEquals(
+        ast.Attribute("attr"),
+        datetime(2022, 4, 24, 7, 59, 57, tzinfo=StaticTzInfo("Z", timedelta(0)))
+    )
+
+def test_prefix_tequals_interval():
+    result = parse(
+        "T_EQUALS(attr, INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))"
+    )
+    assert result == ast.TimeEquals(
+        ast.Attribute("attr"),
+        values.Interval(
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2021, 12, 31, 23, 59, 59, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        )
+    )
+
+def test_prefix_tintersects_timestamp():
+    result = parse(
+        "T_INTERSECTS(attr, TIMESTAMP('2022-04-24T07:59:57Z'))"
+    )
+    assert result == ast.TimeOverlaps(
+        ast.Attribute("attr"),
+        datetime(2022, 4, 24, 7, 59, 57, tzinfo=StaticTzInfo("Z", timedelta(0)))
+    )
+
+def test_prefix_tintersects_interval():
+    result = parse(
+        "T_INTERSECTS(attr, INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))"
+    )
+    assert result == ast.TimeOverlaps(
+        ast.Attribute("attr"),
+        values.Interval(
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2021, 12, 31, 23, 59, 59, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        )
+    )
 
 def test_intersects_geometry():
     result = parse(

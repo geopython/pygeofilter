@@ -64,6 +64,7 @@
 
 
 ?temporal_predicate: expression _binary_temporal_predicate_func expression -> binary_temporal_predicate
+                   | _binary_temporal_predicate_func "(" expression "," expression ")" -> prefixed_temporal_predicate
 
 !_binary_temporal_predicate_func: "T_BEFORE"i
                         | "T_AFTER"i
@@ -79,6 +80,7 @@
                         | "T_ENDEDBY"i
                         | "T_EQUALS"i
                         | "T_INTERSECTS"i
+                        | "T_DISJOINT"i
 
 
 ?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate

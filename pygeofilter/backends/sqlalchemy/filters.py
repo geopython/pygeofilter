@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import reduce
 from inspect import signature
 from typing import Callable, Dict, Optional
@@ -196,6 +196,12 @@ def temporal(lhs, time_or_period, op):
             low = time_or_period
     elif op == "TEQUALS":
         equal = time_or_period
+    elif op == "DISJOINT":
+        if isinstance(time_or_period, datetime):
+            low = time_or_period
+            high = time_or_period
+        else:
+            high, low = time_or_period
     else:
         low, high = time_or_period
 
@@ -205,7 +211,7 @@ def temporal(lhs, time_or_period, op):
             high = low + high
     if low is not None or high is not None:
         if low is not None and high is not None:
-            return between(lhs, low, high)
+            return between(lhs, low, high, negate = (op == "DISJOINT"))
         elif low is not None:
             return runop(lhs, low, ">=")
         else:

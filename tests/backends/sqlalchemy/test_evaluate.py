@@ -302,6 +302,14 @@ def test_casei(db_session):
 
 # temporal predicates
 
+def test_tbefore(db_session):
+    evaluate(db_session, "T_BEFORE(datetimeAttribute, TIMESTAMP('2000-01-01T00:00:01Z'))", ("A",), None, parse_cql_text)
+
+def test_tdisjoint(db_session):
+    evaluate(db_session, "T_DISJOINT(datetimeAttribute, TIMESTAMP('2000-01-01T00:00:10Z'))", ("A",), None, parse_cql_text)
+
+def test_tintersects(db_session):
+    evaluate(db_session, "T_INTERSECTS(datetimeAttribute, INTERVAL('2000-01-01T00:00:09Z', '2000-01-01T00:00:11Z'))", ("B",), None, parse_cql_text)
 
 def test_before(db_session):
     evaluate(db_session, "datetimeAttribute BEFORE 2000-01-01T00:00:01Z", ("A",))
