@@ -274,6 +274,11 @@ def test_not_like_endswith(db_session):
 def test_not_ilike_endswith(db_session):
     evaluate(db_session, "strMetaAttribute NOT ILIKE '%b'", ("A",))
 
+def test_not_eq(db_session):
+    evaluate(db_session, "NOT(strAttribute = 'AAA')", ("B", ), None, parse_cql_text)
+
+def test_not_gt(db_session):
+    evaluate(db_session, "NOT(floatAttribute > 1)", ("A", ), None, parse_cql_text)
 
 # (NOT) IN
 

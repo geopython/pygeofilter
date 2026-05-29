@@ -440,3 +440,21 @@ def test_casei_notlike():
     assert result.lhs.arguments == [ast.Attribute("provider")]
     assert result.pattern.name == "lower"
     assert result.pattern.arguments == ["coolsat"]
+
+def test_not_gt():
+    result = parse("NOT(attr > 2)")
+    assert result == ast.Not(
+        ast.GreaterThan(ast.Attribute("attr"), 2)
+    )
+
+def test_not_lt():
+    result = parse("NOT(attr < 2)")
+    assert result == ast.Not(
+        ast.LessThan(ast.Attribute("attr"), 2)
+    )
+
+def test_not_eq():
+    result = parse("NOT(attr = 2)")
+    assert result == ast.Not(
+        ast.Equal(ast.Attribute("attr"), 2)
+    )
