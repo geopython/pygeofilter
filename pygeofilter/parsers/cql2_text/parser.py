@@ -31,7 +31,7 @@ import os.path
 from lark import Lark, logger, v_args
 
 from ... import ast, values
-from ...cql2 import SPATIAL_PREDICATES_MAP, TEMPORAL_PREDICATES_MAP
+from ...cql2 import ARRAY_PREDICATES_MAP, SPATIAL_PREDICATES_MAP, TEMPORAL_PREDICATES_MAP
 from ..iso8601 import ISO8601Transformer
 from ..wkt import WKTTransformer
 
@@ -123,6 +123,15 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
 
     def after(self, node, dt):
         return ast.TimeAfter(node, dt)
+
+    def binary_array_predicate(self, func, lhs, rhs):
+        return ARRAY_PREDICATES_MAP[func.lower()](lhs, rhs)
+
+    def array(self, *items):
+        return list(items)
+
+    def empty_array(self):
+        return []
 
     def binary_spatial_predicate(self, op, lhs, rhs):
         op = op.lower()

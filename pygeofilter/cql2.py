@@ -56,6 +56,7 @@ ARRAY_PREDICATES_MAP: Dict[str, Type[ast.ArrayPredicate]] = {
     "a_equals": ast.ArrayEquals,
     "a_contains": ast.ArrayContains,
     "a_containedby": ast.ArrayContainedBy,
+    "a_containedBy": ast.ArrayContainedBy,
     "a_overlaps": ast.ArrayOverlaps,
 }
 
