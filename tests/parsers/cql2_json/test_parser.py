@@ -32,6 +32,7 @@ from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
 from pygeofilter import ast, values
+from pygeofilter.backends.cql2_json.evaluate import to_cql2
 from pygeofilter.parsers.cql2_json import parse
 
 
@@ -717,3 +718,18 @@ def test_function_attr_string_arg():
             ],
         ),
     )
+
+
+def test_encode_date():
+    node = ast.Equal(ast.Attribute("attr"), date(2000, 1, 1))
+    result = json.loads(to_cql2(node))
+    assert result["args"][1] == {"date": "2000-01-01"}
+
+
+def test_encode_timestamp():
+    node = ast.Equal(
+        ast.Attribute("attr"),
+        datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+    )
+    result = json.loads(to_cql2(node))
+    assert result["args"][1] == {"timestamp": "2000-01-01T00:00:00Z"}

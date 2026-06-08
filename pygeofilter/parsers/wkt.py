@@ -31,7 +31,6 @@ from lark import Transformer, v_args
 @v_args(meta=False, inline=True)
 class WKTTransformer(Transformer):
     def wkt__geometry_with_srid(self, srid, geometry):
-        print(srid, geometry)
         geometry["crs"] = {
             "type": "name",
             "properties": {"name": f"urn:ogc:def:crs:EPSG::{srid}"},
@@ -66,7 +65,6 @@ class WKTTransformer(Transformer):
         }
 
     def wkt__multipoint_2(self, *coordinates):
-        print(coordinates)
         return {
             "type": "MultiPoint",
             "coordinates": coordinates,

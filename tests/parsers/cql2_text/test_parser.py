@@ -477,3 +477,4 @@ def test_not_eq():
     assert result == ast.Not(
         ast.Equal(ast.Attribute("attr"), 2)
     )
+
