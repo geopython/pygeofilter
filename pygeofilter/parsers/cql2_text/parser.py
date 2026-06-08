@@ -163,6 +163,15 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
     def div(self, lhs, rhs):
         return ast.Div(lhs, rhs)
 
+    def mod(self, lhs, rhs):
+        return ast.Mod(lhs, rhs)
+
+    def intdiv(self, lhs, rhs):
+        return ast.IntDiv(lhs, rhs)
+
+    def pow(self, lhs, rhs):
+        return ast.Pow(lhs, rhs)
+
     def neg(self, value):
         return -value
 

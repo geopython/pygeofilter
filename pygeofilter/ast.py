@@ -632,6 +632,9 @@ class ArithmeticOp(Enum):
     SUB = "-"
     MUL = "*"
     DIV = "/"
+    MOD = "%"
+    INTDIV = "div"
+    POW = "^"
 
 
 @dataclass
@@ -669,6 +672,21 @@ class Mul(Arithmetic):
 @dataclass
 class Div(Arithmetic):
     op: ClassVar[ArithmeticOp] = ArithmeticOp.DIV
+
+
+@dataclass
+class Mod(Arithmetic):
+    op: ClassVar[ArithmeticOp] = ArithmeticOp.MOD
+
+
+@dataclass
+class IntDiv(Arithmetic):
+    op: ClassVar[ArithmeticOp] = ArithmeticOp.INTDIV
+
+
+@dataclass
+class Pow(Arithmetic):
+    op: ClassVar[ArithmeticOp] = ArithmeticOp.POW
 
 
 @dataclass

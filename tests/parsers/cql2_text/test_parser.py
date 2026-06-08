@@ -477,3 +477,23 @@ def test_not_eq():
     assert result == ast.Not(
         ast.Equal(ast.Attribute("attr"), 2)
     )
+
+
+def test_modulo():
+    result = parse("attr % 2 = 0")
+    assert result == ast.Equal(ast.Mod(ast.Attribute("attr"), 2), 0)
+
+
+def test_integer_division():
+    result = parse("attr div 2 = 1")
+    assert result == ast.Equal(ast.IntDiv(ast.Attribute("attr"), 2), 1)
+
+
+def test_power():
+    result = parse("attr ^ 2 = 4")
+    assert result == ast.Equal(ast.Pow(ast.Attribute("attr"), 2), 4)
+
+
+def test_power_right_associative():
+    result = parse("attr ^ 2 ^ 3 = 256")
+    assert result == ast.Equal(ast.Pow(ast.Attribute("attr"), ast.Pow(2, 3)), 256)

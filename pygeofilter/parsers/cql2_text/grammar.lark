@@ -101,9 +101,14 @@
     | sum "+" product                                                       -> add
     | sum "-" product                                                       -> sub
 
-?product: atom
-        | product "*" atom                                                  -> mul
-        | product "/" atom                                                  -> div
+?product: power
+        | product "*" power                                                 -> mul
+        | product "/" power                                                 -> div
+        | product "%" power                                                  -> mod
+        | product _INTDIV power                                             -> intdiv
+
+?power: atom
+      | atom "^" power                                                      -> pow
 
 ?atom: func
      | attribute
@@ -132,6 +137,8 @@ envelope: "ENVELOPE"i "(" number number number number ")"
 
 bbox: "BBOX"i "(" full_number "," full_number "," full_number "," full_number ")"
 
+PERCENT: "%"
+_INTDIV.1: /div/i
 BOOLEAN.2: ( "TRUE"i | "FALSE"i)
 
 DOUBLE_QUOTED: "\"" /.*?/ "\""
