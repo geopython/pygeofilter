@@ -327,6 +327,7 @@ def test_tdisjoint(db_session):
 
 def test_tintersects(db_session):
     evaluate(db_session, "T_INTERSECTS(datetimeAttribute, INTERVAL('2000-01-01T00:00:09Z', '2000-01-01T00:00:11Z'))", ("B",), None, parse_cql_text)
+
 def test_date_gte(db_session):
     evaluate(db_session, "datetimeAttribute >= DATE('2000-01-01')", ("A", "B",), None, parse_cql_text)
 
