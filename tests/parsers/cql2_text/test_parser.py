@@ -259,6 +259,17 @@ def test_intersects_geometry():
     assert isinstance(result.rhs, values.Geometry)
 
 
+def test_intersects_bbox_literal():
+    result = parse("S_INTERSECTS(attr, BBOX(-118, 33, -117, 34))")
+    assert isinstance(result, ast.GeometryIntersects)
+    assert result.lhs == ast.Attribute("attr")
+    assert isinstance(result.rhs, values.Envelope)
+    assert result.rhs.x1 == -118
+    assert result.rhs.y1 == 33
+    assert result.rhs.x2 == -117
+    assert result.rhs.y2 == 34
+
+
 def test_attribute_boolean_literal_true():
     result = parse("attr = TRUE")
     assert result == ast.Equal(
