@@ -32,7 +32,7 @@ from typing import ClassVar, List, Optional, Union
 from . import values
 
 AstType = Union["Node", values.ValueType, list]
-ScalarAstType = Union["Node", int, float]
+ScalarAstType = Union["Node", int, float, str]
 SpatialAstType = Union["Node", values.SpatialValueType]
 TemporalAstType = Union["Node", values.TemporalValueType]
 ArrayAstType = Union["Node", List[AstType]]
@@ -225,7 +225,7 @@ class Like(Predicate):
     """Node class to represent a wildcard sting matching predicate."""
 
     lhs: Node
-    pattern: str
+    pattern: ScalarAstType
     nocase: bool
     wildcard: str
     singlechar: str

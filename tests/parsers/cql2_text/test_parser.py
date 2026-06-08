@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from dateparser.timezone_parser import StaticTzInfo
 
@@ -201,6 +201,12 @@ def test_attribute_before():
         datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
     )
 
+def test_attribute_lt_date():
+    result = parse("attr < DATE('2000-01-01')")
+    assert result == ast.LessThan(
+        ast.Attribute("attr"),
+        date(2000, 1, 1),
+    )
 
 def test_attribute_t_intersects():
     # Using INTERVAL function with properly quoted timestamps
@@ -513,11 +519,52 @@ def test_nested_and_or():
     assert result.rhs.rhs == ast.Equal(ast.Attribute("attr_d"), 4)
 
 
-def test_casei_function():
-    result = parse("CASEI(provider) = 'coolsat'")
+def test_casei_equals():
+    result = parse("CASEI(provider) = CASEI('coolsat')")
     # Assuming CASEI maps to 'lower' in the implementation
     assert isinstance(result, ast.Equal)
     assert isinstance(result.lhs, ast.Function)
+    assert isinstance(result.rhs, ast.Function)
     assert result.lhs.name == "lower"
     assert result.lhs.arguments == [ast.Attribute("provider")]
-    assert result.rhs == "coolsat"
+    assert result.rhs.name == "lower"
+    assert result.rhs.arguments == ["coolsat"]
+
+
+def test_casei_like():
+    result = parse("CASEI(provider) LIKE CASEI('coolsat')")
+    # Assuming CASEI maps to 'lower' in the implementation
+    assert isinstance(result, ast.Like)
+    assert isinstance(result.lhs, ast.Function)
+    assert result.lhs.name == "lower"
+    assert result.lhs.arguments == [ast.Attribute("provider")]
+    assert result.pattern.name == "lower"
+    assert result.pattern.arguments == ["coolsat"]
+
+def test_casei_notlike():
+    result = parse("CASEI(provider) NOT LIKE CASEI('coolsat')")
+    # Assuming CASEI maps to 'lower' in the implementation
+    assert isinstance(result, ast.Like)
+    assert isinstance(result.lhs, ast.Function)
+    assert result.lhs.name == "lower"
+    assert result.lhs.arguments == [ast.Attribute("provider")]
+    assert result.pattern.name == "lower"
+    assert result.pattern.arguments == ["coolsat"]
+
+def test_not_gt():
+    result = parse("NOT(attr > 2)")
+    assert result == ast.Not(
+        ast.GreaterThan(ast.Attribute("attr"), 2)
+    )
+
+def test_not_lt():
+    result = parse("NOT(attr < 2)")
+    assert result == ast.Not(
+        ast.LessThan(ast.Attribute("attr"), 2)
+    )
+
+def test_not_eq():
+    result = parse("NOT(attr = 2)")
+    assert result == ast.Not(
+        ast.Equal(ast.Attribute("attr"), 2)
+    )

@@ -156,6 +156,18 @@ def test_literal_casei():
     result = parse('{"op": "casei", "args": ["literal"]}')
     assert result == ast.Function("lower", ["literal"])
 
+def test_like_casei():
+    result = parse('{"op": "like", "args": [ {"op": "casei", "args": [{"property": "stringattr"}]}, {"op": "casei", "args": ["AAA"]} ] }')
+    assert result == ast.Like(
+        ast.Function("lower", [ast.Attribute("stringattr")]),
+        ast.Function("lower", ["AAA"]),
+        nocase=False,
+        not_=False,
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
+    )
+
 def test_attribute_before():
     result = parse(
         {

@@ -20,6 +20,7 @@ from sqlalchemy.sql import func, select
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 from pygeofilter.parsers.ecql import parse as parse_ecql
 from pygeofilter.parsers.cql2_text import parse as parse_cql_text
+from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 
 Base = declarative_base()
 
@@ -273,6 +274,11 @@ def test_not_like_endswith(db_session):
 def test_not_ilike_endswith(db_session):
     evaluate(db_session, "strMetaAttribute NOT ILIKE '%b'", ("A",))
 
+def test_not_eq(db_session):
+    evaluate(db_session, "NOT(strAttribute = 'AAA')", ("B", ), None, parse_cql_text)
+
+def test_not_gt(db_session):
+    evaluate(db_session, "NOT(floatAttribute > 1)", ("A", ), None, parse_cql_text)
 
 # (NOT) IN
 
@@ -296,9 +302,20 @@ def test_string_not_null(db_session):
     evaluate(db_session, "intAttribute IS NOT NULL", ("A",))
 
 # CASEI
-def test_casei(db_session):
+def test_casei_equals(db_session):
     evaluate(db_session, "CASEI(strAttribute) = CASEI('aaa')", ("A",), None, parse_cql_text)
 
+def test_casei_like(db_session):
+    evaluate(db_session, "CASEI(strAttribute) LIKE CASEI('aaa')", ("A",), None, parse_cql_text)
+
+def test_casei_notlike(db_session):
+    evaluate(db_session, "CASEI(strAttribute) NOT LIKE CASEI('aaa')", ("B", ), None, parse_cql_text)
+
+def test_casei_in(db_session):
+    evaluate(db_session, "CASEI(strAttribute) IN (CASEI('aaa'), CASEI('bbb'))", ("A", "B", ), None, parse_cql_text)
+
+def test_casei_json_like(db_session):
+    evaluate(db_session, '{"op": "like", "args": [ {"op": "casei", "args": [{"property": "strAttribute"}]}, {"op": "casei", "args": ["AAA"]} ] }', ("A", ), None, parse_cql2_json)
 
 # temporal predicates
 
@@ -310,6 +327,9 @@ def test_tdisjoint(db_session):
 
 def test_tintersects(db_session):
     evaluate(db_session, "T_INTERSECTS(datetimeAttribute, INTERVAL('2000-01-01T00:00:09Z', '2000-01-01T00:00:11Z'))", ("B",), None, parse_cql_text)
+def test_date_gte(db_session):
+    evaluate(db_session, "datetimeAttribute >= DATE('2000-01-01')", ("A", "B",), None, parse_cql_text)
+
 
 def test_before(db_session):
     evaluate(db_session, "datetimeAttribute BEFORE 2000-01-01T00:00:01Z", ("A",))

@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0](https://github.com/geopython/pygeofilter/compare/v0.3.3...v0.4.0) (2026-06-08)
+
+## What's Changed
+* Added quotes to equality queries to avoid solr that solr fail if the … by @magnarem in https://github.com/geopython/pygeofilter/pull/136
+* Added escaping of In operator values to avoid solr error if the value… by @magnarem in https://github.com/geopython/pygeofilter/pull/137
+* update Elasticsearch version in CI by @tomkralidis in https://github.com/geopython/pygeofilter/pull/138
+* Add support for CQL2's CASEI (fixes #135) by @mikemahoney218-usgs in https://github.com/geopython/pygeofilter/pull/139
+* Fixes 05 2026 -Better spatial filter handling, some bugfixes by @magnarem in https://github.com/geopython/pygeofilter/pull/140
+* Fix in_(): quote string values to handle colons in Solr identifiers by @epifanio in https://github.com/geopython/pygeofilter/pull/141
+* Update CASEI implementation to support LIKE by @mikemahoney218-usgs in https://github.com/geopython/pygeofilter/pull/142
+* Allow NOT to take predicate in parens in CQL2 by @mikemahoney218-usgs in https://github.com/geopython/pygeofilter/pull/145
+* Add support for DATE in CQL2 Text by @mikemahoney218-usgs in https://github.com/geopython/pygeofilter/pull/148
+
+## New Contributors
+* @mikemahoney218-usgs made their first contribution in https://github.com/geopython/pygeofilter/pull/139
+* @epifanio made their first contribution in https://github.com/geopython/pygeofilter/pull/141
+
+**Full Changelog**: https://github.com/geopython/pygeofilter/compare/v0.3.3...v0.4.0
+
+
 ## [0.3.3](https://github.com/geopython/pygeofilter/compare/v0.3.2...v0.3.3) (2025-12-20)
 
 
