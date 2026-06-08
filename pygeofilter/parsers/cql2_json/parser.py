@@ -165,6 +165,12 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             args = [cast(ast.Node, walk_cql_json(arg)) for arg in args]
             return BINARY_OP_PREDICATES_MAP[op](*args)
 
+        else:
+            return ast.Function(
+                op,
+                [walk_cql_json(arg) for arg in args],
+            )
+
     raise ValueError(f"Unable to parse expression node {node!r}")
 
 
