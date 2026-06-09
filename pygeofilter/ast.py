@@ -308,6 +308,8 @@ class Include(Predicate):
 #   interval T2,then the beginning of T1 is after the end of T2, or the end of
 #   T1 is before the beginning of T2, i.e. the intervals do not overlap in any
 #   way, but their ordering relationship is not known.
+# TINTERSECTS: The union of all other temporal relationships; two temporal
+#   instances intersect if they are not disjoint.
 
 # https://github.com/geotools/geotools/blob/main/modules/library/cql/ECQL.md#temporal-predicate
 # BEFORE_OR_DURING  <----->
@@ -329,6 +331,7 @@ class TemporalComparisonOp(Enum):
     METBY = "METBY"
     TOVERLAPS = "TOVERLAPS"
     OVERLAPPEDBY = "OVERLAPPEDBY"
+    TINTERSECTS = "TINTERSECTS"
 
     BEFORE_OR_DURING = "BEFORE OR DURING"
     DURING_OR_AFTER = "DURING OR AFTER"
@@ -420,6 +423,11 @@ class TimeOverlappedBy(TemporalPredicate):
 
 
 @dataclass
+@dataclass
+class TimeIntersects(TemporalPredicate):
+    op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.TINTERSECTS
+
+
 class TimeBeforeOrDuring(TemporalPredicate):
     op: ClassVar[TemporalComparisonOp] = TemporalComparisonOp.BEFORE_OR_DURING
 

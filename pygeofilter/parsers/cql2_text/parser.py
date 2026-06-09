@@ -128,9 +128,12 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
         op = op.lower()
         return SPATIAL_PREDICATES_MAP[op](lhs, rhs)
 
-    def binary_temporal_predicate(self, lhs, op, rhs):
-        op = op.lower()
-        return TEMPORAL_PREDICATES_MAP[op](lhs, rhs)
+    def binary_temporal_predicate(self, op, lhs, rhs):
+        op_lower = op.lower()
+        for key, cls in TEMPORAL_PREDICATES_MAP.items():
+            if key.lower() == op_lower:
+                return cls(lhs, rhs)
+        raise ValueError(f"Unknown temporal predicate: {op}")
 
     def relate_spatial_predicate(self, lhs, rhs, pattern):
         return ast.Relate(lhs, rhs, pattern)
@@ -192,6 +195,15 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
 
     def bbox(self, x1, y1, x2, y2):
         return values.Envelope(x1, x2, y1, y2)
+
+    def instant_datetime(self, value):
+        return value
+
+    def instant_date(self, value):
+        return value
+
+    def instant_open(self):
+        return None
 
     def interval(self, start, end):
         return values.Interval(start, end)

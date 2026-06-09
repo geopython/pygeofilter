@@ -240,7 +240,7 @@ def test_meets_dt_dr():
 def test_attribute_metby_dr_dt():
     result = parse(
         {
-            "op": "t_metby",
+            "op": "t_metBy",
             "args": [
                 {"property": "attr"},
                 {"interval": ["PT4S", "2000-01-01T00:00:03Z"]},
@@ -278,7 +278,7 @@ def test_attribute_toverlaps_open_dt():
 def test_attribute_overlappedby_dt_open():
     result = parse(
         {
-            "op": "t_overlappedby",
+            "op": "t_overlappedBy",
             "args": [
                 {"property": "attr"},
                 {"interval": ["2000-01-01T00:00:03Z", ".."]},
