@@ -61,6 +61,7 @@
           | "EXCLUDE"i                                                       -> exclude
           | spatial_predicate
           | temporal_predicate
+          | array_predicate
 
 
 ?temporal_predicate: expression _binary_temporal_predicate_func expression -> binary_temporal_predicate
@@ -95,6 +96,14 @@
                                | "S_EQUALS"i
 
 
+?array_predicate: _array_predicate_func "(" expression "," expression ")" -> binary_array_predicate
+
+!_array_predicate_func: "A_EQUALS"i
+                      | "A_CONTAINS"i
+                      | "A_CONTAINEDBY"i
+                      | "A_OVERLAPS"i
+
+
 ?expression: sum
 
 ?sum: product
@@ -109,6 +118,8 @@
      | attribute
      | literal
      | "-" atom                                                             -> neg
+     | "(" ")"                                                               -> empty_array
+     | "(" expression ("," expression)+ ")"                                  -> array
      | "(" expression ")"
 
 func.2: attribute "(" expression ("," expression)* ")" -> function

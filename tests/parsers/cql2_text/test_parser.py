@@ -477,3 +477,23 @@ def test_not_eq():
     assert result == ast.Not(
         ast.Equal(ast.Attribute("attr"), 2)
     )
+
+
+def test_array_equals():
+    result = parse("A_EQUALS(attr, (1, 2, 3))")
+    assert result == ast.ArrayEquals(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_array_contains():
+    result = parse("A_CONTAINS(attr, (1, 2, 3))")
+    assert result == ast.ArrayContains(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_array_overlaps():
+    result = parse("A_OVERLAPS(attr, (1, 2, 3))")
+    assert result == ast.ArrayOverlaps(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_array_empty():
+    result = parse("A_EQUALS(attr, ())")
+    assert result == ast.ArrayEquals(ast.Attribute("attr"), [])
