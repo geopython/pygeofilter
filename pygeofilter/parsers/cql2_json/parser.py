@@ -135,8 +135,8 @@ def walk_cql_json(node: JsonType):  # noqa: C901
         elif op == "between":
             return ast.Between(
                 cast(ast.Node, walk_cql_json(args[0])),
-                cast(ast.ScalarAstType, walk_cql_json(args[1][0])),
-                cast(ast.ScalarAstType, walk_cql_json(args[1][1])),
+                cast(ast.ScalarAstType, walk_cql_json(args[1])),
+                cast(ast.ScalarAstType, walk_cql_json(args[2])),
                 not_=False,
             )
 
@@ -158,12 +158,21 @@ def walk_cql_json(node: JsonType):  # noqa: C901
                 not_=False,
             )
         
-        elif op == "casei":
+        elif op in ("casei", "lower"):
             return ast.Function("lower", [cast(ast.Node, walk_cql_json(args[0]))])
+
+        elif op == "accenti":
+            return ast.Function("accenti", [cast(ast.Node, walk_cql_json(args[0]))])
 
         elif op in BINARY_OP_PREDICATES_MAP:
             args = [cast(ast.Node, walk_cql_json(arg)) for arg in args]
             return BINARY_OP_PREDICATES_MAP[op](*args)
+
+        else:
+            return ast.Function(
+                op,
+                [walk_cql_json(arg) for arg in args],
+            )
 
     raise ValueError(f"Unable to parse expression node {node!r}")
 

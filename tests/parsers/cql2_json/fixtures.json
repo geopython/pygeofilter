@@ -37,7 +37,7 @@
     },
     "Example 10": {
         "text": "filter=eo:cloud_cover BETWEEN 0 AND 50",
-        "json": "{\"filter-lang\": \"cql2-json\", \"filter\": {\"op\": \"between\", \"args\": [{\"property\": \"eo:cloud_cover\"}, [0, 50]]}}"
+        "json": "{\"filter-lang\": \"cql2-json\", \"filter\": {\"op\": \"between\", \"args\": [{\"property\": \"eo:cloud_cover\"}, 0, 50]}}"
     },
     "Example 11": {
         "text": "filter=mission LIKE 'sentinel%'",
