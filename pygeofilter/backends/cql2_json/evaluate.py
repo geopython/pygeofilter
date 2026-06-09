@@ -103,13 +103,21 @@ class CQL2Evaluator(Evaluator):
     def interval(self, node: values.Interval, start, end):
         return {"interval": [start, end]}
 
-    @handle(datetime)
-    def datetime(self, node: ast.Attribute):
-        return {"timestamp": node.name}
-
     @handle(*values.LITERALS)
     def literal(self, node):
         return node
+
+    @handle(date)
+    def date_(self, node: date):
+        return {"date": node.isoformat()}
+
+    @handle(datetime)
+    def datetime_(self, node: datetime):
+        if node.microsecond:
+            ts = node.strftime("%Y-%m-%dT%H:%M:%S.") + f"{node.microsecond:06d}Z"
+        else:
+            ts = node.strftime("%Y-%m-%dT%H:%M:%SZ")
+        return {"timestamp": ts}
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
