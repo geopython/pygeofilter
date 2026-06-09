@@ -207,8 +207,7 @@ def test_attribute_is_null():
 
 
 def test_attribute_before():
-    # Using TIMESTAMP function to properly wrap the timestamp
-    result = parse("attr T_BEFORE TIMESTAMP('2000-01-01T00:00:01Z')")
+    result = parse("T_BEFORE(attr, TIMESTAMP('2000-01-01T00:00:01Z'))")
     assert result == ast.TimeBefore(
         ast.Attribute("attr"),
         datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
@@ -222,11 +221,10 @@ def test_attribute_lt_date():
     )
 
 def test_attribute_t_intersects():
-    # Using INTERVAL function with properly quoted timestamps
     result = parse(
-        "attr T_INTERSECTS INTERVAL('2000-01-01T00:00:00Z', '2000-01-01T00:00:01Z')"
+        "T_INTERSECTS(attr, INTERVAL('2000-01-01T00:00:00Z', '2000-01-01T00:00:01Z'))"
     )
-    assert result == ast.TimeOverlaps(
+    assert result == ast.TimeIntersects(
         ast.Attribute("attr"),
         values.Interval(
             datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
@@ -235,15 +233,48 @@ def test_attribute_t_intersects():
     )
 
 
-def test_attribute_tintersects_dt_dr():
+def test_t_disjoint():
     result = parse(
-        "attr T_INTERSECTS INTERVAL('2000-01-01T00:00:03Z', '2000-01-01T00:00:04Z')"
+        "T_DISJOINT(attr, TIMESTAMP('2000-01-01T00:00:00Z'))"
     )
-    assert result == ast.TimeOverlaps(
+    assert result == ast.TimeDisjoint(
+        ast.Attribute("attr"),
+        datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+    )
+
+
+def test_t_starts():
+    result = parse(
+        "T_STARTS(attr, INTERVAL('2000-01-01T00:00:00Z', '2000-01-01T00:00:01Z'))"
+    )
+    assert result == ast.TimeBegins(
         ast.Attribute("attr"),
         values.Interval(
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2000, 1, 1, 0, 0, 4, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ),
+    )
+
+
+def test_interval_with_date():
+    result = parse(
+        "T_DURING(attr, INTERVAL('2000-01-01', '2001-01-01'))"
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        values.Interval(date(2000, 1, 1), date(2001, 1, 1)),
+    )
+
+
+def test_interval_open_ended():
+    result = parse(
+        "T_DURING(attr, INTERVAL('..', '2001-01-01T00:00:00Z'))"
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        values.Interval(
+            None,
+            datetime(2001, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
         ),
     )
 

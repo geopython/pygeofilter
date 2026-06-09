@@ -20,7 +20,7 @@
         "json": "{\"filter-lang\": \"cql2-json\", \"filter\": {\"op\": \"=\", \"args\": [{\"property\": \"prop1\"}, {\"property\": \"prop2\"}]}}"
     },
     "Example 6": {
-        "text": "filter=datetime T_INTERSECTS INTERVAL('2020-11-11T00:00:00Z', '2020-11-12T00:00:00Z')",
+        "text": "filter=T_INTERSECTS(datetime, INTERVAL('2020-11-11T00:00:00Z', '2020-11-12T00:00:00Z'))",
         "json": "{\"filter-lang\": \"cql2-json\", \"filter\": {\"op\": \"t_intersects\", \"args\": [{\"property\": \"datetime\"}, {\"interval\": [\"2020-11-11T00:00:00Z\", \"2020-11-12T00:00:00Z\"]}]}}"
     },
     "Example 7": {
