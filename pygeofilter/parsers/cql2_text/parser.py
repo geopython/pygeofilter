@@ -132,18 +132,12 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
         op = op.lower()
         return TEMPORAL_PREDICATES_MAP[op](lhs, rhs)
 
-    def relate_spatial_predicate(self, lhs, rhs, pattern):
-        return ast.Relate(lhs, rhs, pattern)
-
     def distance_spatial_predicate(self, op, lhs, rhs, distance, units):
         cls = ast.DistanceWithin if op == "DWITHIN" else ast.DistanceBeyond
         return cls(lhs, rhs, distance, units)
 
     def distance_units(self, value):
         return value
-
-    def bbox_spatial_predicate(self, lhs, minx, miny, maxx, maxy, crs=None):
-        return ast.BBox(lhs, minx, miny, maxx, maxy, crs)
 
     def function(self, func_name, *expressions):
         name = func_name.name.lower()
@@ -190,8 +184,8 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
     def geometry(self, value):
         return values.Geometry(value)
 
-    def bbox(self, x1, y1, x2, y2):
-        return values.Envelope(x1, x2, y1, y2)
+    def bbox_literal(self, west, south, east, north):
+        return values.Envelope(west, east, south, north)
 
     def interval(self, start, end):
         return values.Interval(start, end)

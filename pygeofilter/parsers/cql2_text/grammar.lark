@@ -82,8 +82,6 @@
 
 
 ?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate
-                  | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                    -> relate_spatial_predicate
-                  | _binary_spatial_predicate_func "(" expression "," bbox ")"                                      -> binary_spatial_predicate
 
 !_binary_spatial_predicate_func: "S_INTERSECTS"i
                                | "S_DISJOINT"i
@@ -120,17 +118,14 @@ func.2: attribute "(" expression ("," expression)* ")" -> function
         | BOOLEAN
         | SINGLE_QUOTED
         | ewkt_geometry                                                     -> geometry
-        | envelope
-        | bbox
+        | bbox_literal
 
 ?full_number: number
             | "-" number                                                    -> neg
 
 ?number: FLOAT | INT
 
-envelope: "ENVELOPE"i "(" number number number number ")"
-
-bbox: "BBOX"i "(" full_number "," full_number "," full_number "," full_number ")"
+bbox_literal: "BBOX"i "(" full_number "," full_number "," full_number "," full_number ")"
 
 BOOLEAN.2: ( "TRUE"i | "FALSE"i)
 
