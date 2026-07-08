@@ -32,6 +32,7 @@ from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
 from pygeofilter import ast, values
+from pygeofilter.backends.cql2_json.evaluate import CQL2Evaluator
 from pygeofilter.parsers.cql2_json import parse
 
 
@@ -745,3 +746,25 @@ def test_function_attr_string_arg():
             ],
         ),
     )
+
+
+def test_function_spec_format():
+    """Parse spec-format function: {"op": "my_func", "args": [...]}"""
+    result = parse({"op": "my_func", "args": [{"property": "attr"}, 42]})
+    assert result == ast.Function("my_func", [ast.Attribute("attr"), 42])
+
+
+def test_function_old_format_still_works():
+    """Parse old format: {"function": {"name": "...", "arguments": [...]}}"""
+    result = parse(
+        {"function": {"name": "my_func", "arguments": [{"property": "attr"}]}}
+    )
+    assert result == ast.Function("my_func", [ast.Attribute("attr")])
+
+
+def test_function_encode_spec_format():
+    """Encode Function node to spec format: {"op": ..., "args": [...]}"""
+    evaluator = CQL2Evaluator(None, None)
+    node = ast.Function("my_func", [ast.Attribute("attr")])
+    result = evaluator.evaluate(node)
+    assert result == {"op": "my_func", "args": [{"property": "attr"}]}

@@ -82,14 +82,7 @@ class CQL2Evaluator(Evaluator):
 
     @handle(ast.Function)
     def function(self, node, *args):
-        name = node.name.lower()
-        if name == "lower":
-            ret = {"lower": args[0]}
-        elif name == "upper":
-            ret = {"upper": args[0]}
-        else:
-            ret = {"function": name, "args": [*args]}
-        return ret
+        return {"op": node.name, "args": [*args]}
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
