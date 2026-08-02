@@ -28,6 +28,7 @@
 import json
 from datetime import datetime, timedelta
 
+import pytest
 from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
@@ -834,4 +835,55 @@ def test_function_attr_string_arg():
                 "abc",
             ],
         ),
+    )
+
+
+def test_attribute_ne_literal():
+    """The ``ne`` comparison (``<>``) is part of the CQL2 JSON comparison set."""
+    result = parse({"ne": [{"property": "attr"}, 5]})
+    assert result == ast.NotEqual(
+        ast.Attribute("attr"),
+        5,
+    )
+
+
+def test_malformed_multiple_predicates_raises():
+    """A node with two predicates is invalid and must not silently drop one."""
+    with pytest.raises(ValueError, match="multiple predicates"):
+        parse(
+            {
+                "intersects": [
+                    {"property": "geometry"},
+                    {"type": "Point", "coordinates": [10.4064, 55.3951]},
+                ],
+                "and": [{"eq": [{"property": "direction"}, "east"]}],
+            }
+        )
+
+
+def test_single_operand_and_raises():
+    """A logical ``and`` with fewer than 2 operands is invalid CQL2 JSON."""
+    with pytest.raises(ValueError, match="at least 2 operands"):
+        parse({"and": [{"eq": [{"property": "direction"}, "east"]}]})
+
+
+def test_single_operand_or_raises():
+    """A logical ``or`` with fewer than 2 operands is invalid CQL2 JSON."""
+    with pytest.raises(ValueError, match="at least 2 operands"):
+        parse({"or": [{"eq": [{"property": "a"}, 1]}]})
+
+
+def test_two_operand_and_parses():
+    """A well-formed two-operand ``and`` still parses to a combined AST."""
+    result = parse(
+        {
+            "and": [
+                {"eq": [{"property": "a"}, 1]},
+                {"eq": [{"property": "b"}, 2]},
+            ]
+        }
+    )
+    assert result == ast.And(
+        ast.Equal(ast.Attribute("a"), 1),
+        ast.Equal(ast.Attribute("b"), 2),
     )
