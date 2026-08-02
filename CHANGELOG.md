@@ -1,5 +1,28 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **CQL2 text array predicates** (fixes #160): the cql2_text parser now
+  accepts `A_EQUALS`, `A_CONTAINS`, `A_CONTAINEDBY`, and `A_OVERLAPS`
+  with an array literal (`('a', 'b', 'c')`) or an attribute on the
+  right-hand side, matching the CQL2 spec. Previously
+  `A_CONTAINS('values', ('a', 'b', 'c'))` failed with a LALR
+  `KeyError: 'COMMA'`.
+- **cql-json `ne` comparison** (fixes #19): `{"ne": [...]}` now parses
+  to `ast.NotEqual`, completing the CQL2 comparison operator set.
+- **cql-json malformed-expression validation** (fixes #47): nodes with
+  more than one predicate key, and `and`/`or` with fewer than 2
+  operands, now raise a descriptive `ValueError` instead of silently
+  producing a wrong AST.
+
+### Fixed
+
+- **cql2_text single-character attribute names** (fixes #144): the
+  attribute terminal regex now allows names of length 1
+  (`[a-zA-Z][a-zA-Z_:0-9.]*` instead of `+`), so `a = 1` parses.
+
 ## [0.4.0](https://github.com/geopython/pygeofilter/compare/v0.3.3...v0.4.0) (2026-06-08)
 
 ## What's Changed

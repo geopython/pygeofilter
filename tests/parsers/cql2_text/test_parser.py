@@ -489,3 +489,38 @@ def test_not_lt():
 def test_not_eq():
     result = parse("NOT(attr = 2)")
     assert result == ast.Not(ast.Equal(ast.Attribute("attr"), 2))
+
+
+def test_single_character_attribute_name():
+    result = parse("a = 1")
+    assert result == ast.Equal(ast.Attribute("a"), 1)
+
+
+def test_single_character_attribute_in_list():
+    result = parse("x IN (1, 2, 3)")
+    assert result == ast.In(ast.Attribute("x"), [1, 2, 3], False)
+
+
+def test_aequals_array_literal():
+    result = parse("A_EQUALS(attr, (1, 2, 3))")
+    assert result == ast.ArrayEquals(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_acontains_array_literal():
+    result = parse("A_CONTAINS(attr, ('a', 'b', 'c'))")
+    assert result == ast.ArrayContains(ast.Attribute("attr"), ["a", "b", "c"])
+
+
+def test_acontainedby_array_literal():
+    result = parse("A_CONTAINEDBY(attr, (1, 2))")
+    assert result == ast.ArrayContainedBy(ast.Attribute("attr"), [1, 2])
+
+
+def test_aoverlaps_array_literal():
+    result = parse("A_OVERLAPS(attr, (1, 2, 3))")
+    assert result == ast.ArrayOverlaps(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_acontains_attribute_rhs():
+    result = parse("A_CONTAINS(attr, other_attr)")
+    assert result == ast.ArrayContains(ast.Attribute("attr"), ast.Attribute("other_attr"))

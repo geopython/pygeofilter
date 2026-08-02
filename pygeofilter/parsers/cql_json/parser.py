@@ -38,6 +38,7 @@ from ...values import Envelope, Geometry
 
 COMPARISON_MAP = {
     "eq": ast.Equal,
+    "ne": ast.NotEqual,
     "lt": ast.LessThan,
     "lte": ast.LessEqual,
     "gt": ast.GreaterThan,
@@ -87,6 +88,19 @@ ARITHMETIC_MAP = {
     "/": ast.Div,
 }
 
+# Keys that identify a predicate/operator in a CQL2 JSON node. Every
+# node must contain exactly one of these; extra keys are either
+# options for that operator (e.g. ``like``'s ``singleChar``/``nocase``)
+# or a malformed second predicate.
+PREDICATE_KEYS = (
+    set(COMPARISON_MAP)
+    | set(SPATIAL_PREDICATES_MAP)
+    | set(TEMPORAL_PREDICATES_MAP)
+    | set(ARRAY_PREDICATES_MAP)
+    | set(ARITHMETIC_MAP)
+    | {"and", "or", "not", "between", "like", "in", "isNull", "property", "function"}
+)
+
 
 def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:  # noqa: C901
     if is_temporal and isinstance(node, str):
@@ -128,9 +142,24 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:  # noqa
         return Envelope(*node["bbox"])
 
     # decode all other nodes
+    # A node may only contain a single predicate key. Extra keys are a
+    # malformed expression (e.g. two top-level predicates). Silently
+    # dropping the extra key would produce a misleading AST, so fail.
+    predicate_keys = [key for key in node if key in PREDICATE_KEYS]
+    if len(predicate_keys) > 1:
+        raise ValueError(
+            f"Unable to parse expression node {node!r}: multiple predicates "
+            f"{predicate_keys!r}; a CQL2 JSON node must contain exactly one predicate"
+        )
+
     for name, value in node.items():
         if name in ("and", "or"):
             sub_items = cast(list, walk_cql_json(value))
+            if len(sub_items) < 2:
+                raise ValueError(
+                    f"Unable to parse '{name}' expression: a CQL2 logical "
+                    f"predicate requires at least 2 operands, got {len(sub_items)}"
+                )
             return (ast.And if name == "and" else ast.Or).from_items(*sub_items)
 
         elif name == "not":
