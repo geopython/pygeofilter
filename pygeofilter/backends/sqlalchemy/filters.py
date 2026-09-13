@@ -228,7 +228,9 @@ def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
     :param pattern: the spatial relation pattern
     :param distance: the distance value for distance based lookups:
                      ``"DWITHIN"`` and ``"BEYOND"``
-    :param units: the units the distance is expressed in
+    :param units: the units the distance is expressed in; it is converted
+                  to meters, which is only the unit ``ST_DWithin`` actually
+                  measures in for projected SRIDs or ``geography`` columns
     :return: a comparison expression object
     """
 
