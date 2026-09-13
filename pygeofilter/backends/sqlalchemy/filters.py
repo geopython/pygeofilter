@@ -237,9 +237,9 @@ def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
         return _op.function(lhs, rhs, pattern)
     elif op in ("DWITHIN", "BEYOND"):
         if units == "kilometers":
-            distance = distance / 1000
+            distance = distance * 1000
         elif units == "miles":
-            distance = distance / 1609
+            distance = distance * 1609.34
         return _op.function(lhs, rhs, distance)
     else:
         return _op.function(lhs, rhs)
