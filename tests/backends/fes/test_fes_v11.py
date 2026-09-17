@@ -495,10 +495,10 @@ def test_geom_bbox():
             maxx=35.5472,
             maxy=42.8143,
             crs="epsg:4306",
-        ), namespaces=True
+        ),
+        namespaces=True,
     )
     assert result == expected_xml
-
 
     # no namespaces
     expected_xml = strip_xml("""<Filter>
@@ -518,9 +518,11 @@ def test_geom_bbox():
             maxx=35.5472,
             maxy=42.8143,
             crs="epsg:4306",
-        ), namespaces=False
+        ),
+        namespaces=False,
     )
     assert result == expected_xml
+
 
 def test_geom_contains():
     expected_xml = strip_xml("""<Filter>

@@ -89,7 +89,6 @@ class FESEvaluator(Evaluator):
                 namespace="", nsmap=None, id_required=False
             )
         else:
-
             self.gml32_encoder = v32.GML3Encoder(
                 namespace=v32.NAMESPACE, nsmap=v32.NSMAP, id_required=False
             )
