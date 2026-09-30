@@ -27,13 +27,17 @@
 
 ?start: condition
 
-?condition: condition_1
-          | condition "AND"i condition_1                                 -> and_
-          | condition "OR"i condition_1                                   -> or_
+// AND binds tighter than OR, and NOT tighter than both, as in booleanExpression of the CQL2 BNF
+?condition: condition_and
+          | condition "OR"i condition_and                                 -> or_
 
-?condition_1: predicate
-            | "NOT"i predicate                                               -> not_
-            | "NOT"i "(" predicate ")"                                       -> not_
+?condition_and: condition_1
+              | condition_and "AND"i condition_1                          -> and_
+
+?condition_1: condition_2
+            | "NOT"i condition_2                                             -> not_
+
+?condition_2: predicate
             | "(" condition ")"
 
 ?predicate: expression "=" expression                                       -> eq
