@@ -130,7 +130,7 @@ func.2: attribute "(" expression ("," expression)* ")" -> function
 
 envelope: "ENVELOPE"i "(" number number number number ")"
 
-bbox: "BBOX"i "(" full_number "," full_number "," full_number "," full_number ")"
+bbox: "BBOX"i "(" full_number "," full_number "," full_number "," full_number ("," full_number "," full_number)? ")"
 
 BOOLEAN.2: ( "TRUE"i | "FALSE"i)
 

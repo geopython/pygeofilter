@@ -76,7 +76,7 @@ def walk_cql_json(node: JsonType):  # noqa: C901
         return values.Geometry(node)
 
     elif "bbox" in node:
-        return values.Envelope(*node["bbox"])
+        return values.Envelope.from_bbox(node["bbox"])
 
     elif "date" in node:
         return parse_date(node["date"])
