@@ -28,9 +28,14 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from pygeoif import shape
+
+if TYPE_CHECKING:
+    # ``ast`` imports this module at runtime, so the dependency is one-way;
+    # type checkers still need the name for ``Interval`` below.
+    from . import ast
 
 
 @dataclass
@@ -77,8 +82,10 @@ class Envelope:
 
 @dataclass
 class Interval:
-    start: Optional[Union[date, datetime, timedelta]] = None
-    end: Optional[Union[date, datetime, timedelta]] = None
+    # A bound is either a literal (date/time/duration) or, as the CQL2
+    # conformance tests allow, an expression such as a property reference.
+    start: Optional[Union[date, datetime, timedelta, "ast.Node"]] = None
+    end: Optional[Union[date, datetime, timedelta, "ast.Node"]] = None
 
     def get_sub_nodes(self) -> List[Any]:  # TODO: find way to type this
         return [self.start, self.end]

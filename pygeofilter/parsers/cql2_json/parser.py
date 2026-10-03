@@ -85,10 +85,19 @@ def walk_cql_json(node: JsonType):  # noqa: C901
         return parse_datetime(node["timestamp"])
 
     elif "interval" in node:
-        parsed: List[Union[date, datetime, timedelta, None]] = []
+        parsed: List[Union[date, datetime, timedelta, ast.Node, None]] = []
         for value in node["interval"]:
             if value == "..":
                 parsed.append(None)
+                continue
+            if not isinstance(value, str):
+                # An interval bound need not be a date/time literal: CQL2 also
+                # allows a property reference, e.g.
+                # ``{"interval": [{"property": "start"}, {"property": "end"}]}``
+                # (conformance test 41). Walk it like any other expression and
+                # let the evaluator resolve it; the split() below only accepts
+                # strings.
+                parsed.append(walk_cql_json(value))
                 continue
             try:
                 parsed.append(parse_date(value))

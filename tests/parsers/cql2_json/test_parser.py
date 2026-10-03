@@ -745,3 +745,93 @@ def test_function_attr_string_arg():
             ],
         ),
     )
+
+
+def test_interval_with_property_bounds():
+    # #116 / CQL2 conformance test 41: an interval bound may be a property
+    result = parse(
+        {
+            "op": "t_contains",
+            "args": [
+                {
+                    "interval": [
+                        {"property": "start_datetime"},
+                        {"property": "end_datetime"},
+                    ]
+                },
+                {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]},
+            ],
+        }
+    )
+    assert result == ast.TimeContains(
+        values.Interval(
+            ast.Attribute("start_datetime"), ast.Attribute("end_datetime")
+        ),
+        values.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+        ),
+    )
+
+
+def test_interval_with_property_and_open_end():
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {"interval": [{"property": "start_datetime"}, ".."]},
+            ],
+        }
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        values.Interval(ast.Attribute("start_datetime"), None),
+    )
+
+
+def test_interval_with_open_start_and_property():
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["..", {"property": "end_datetime"}]},
+            ],
+        }
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        values.Interval(None, ast.Attribute("end_datetime")),
+    )
+
+
+def test_interval_with_function_bound():
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {
+                    "interval": [
+                        {
+                            "function": {
+                                "name": "myfunc",
+                                "arguments": [{"property": "start_datetime"}],
+                            }
+                        },
+                        "2000-01-01T00:00:01Z",
+                    ]
+                },
+            ],
+        }
+    )
+    assert isinstance(result, ast.TimeDuring)
+    assert isinstance(result.rhs, values.Interval)
+    assert result.rhs.start == ast.Function(
+        "myfunc", [ast.Attribute("start_datetime")]
+    )
