@@ -582,3 +582,21 @@ def test_parens_override_precedence():
         ),
         ast.Equal(ast.Attribute("attr"), 3),
     )
+
+
+def test_single_letter_attribute():
+    # https://github.com/geopython/pygeofilter/issues/165
+    # single-letter property names must parse
+    result = parse("a = 1")
+    assert result == ast.Equal(ast.Attribute("a"), 1)
+
+    result = parse("x > 5")
+    assert result == ast.GreaterThan(ast.Attribute("x"), 5)
+
+
+def test_single_letter_attribute_in_function():
+    # https://github.com/geopython/pygeofilter/issues/165
+    result = parse("S_INTERSECTS(g, BBOX(-180, -90, 180, 90))")
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("g"), values.Envelope(-180, 180, -90, 90)
+    )
