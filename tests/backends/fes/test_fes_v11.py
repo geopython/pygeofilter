@@ -219,6 +219,30 @@ def test_is_between():
     assert result == expected_xml
 
 
+def test_in():
+    expected_xml = strip_xml("""<Filter>
+      <Or>
+        <PropertyIsEqualTo>
+          <PropertyName>attr</PropertyName>
+          <Literal>30.5</Literal>
+        </PropertyIsEqualTo>
+        <PropertyIsEqualTo>
+          <PropertyName>attr</PropertyName>
+          <Literal>10.5</Literal>
+        </PropertyIsEqualTo>
+        <PropertyIsEqualTo>
+          <PropertyName>attr</PropertyName>
+          <Literal>1.5</Literal>
+        </PropertyIsEqualTo>
+      </Or>
+    </Filter>""")
+    result = to_xml_str(
+        ast.In(ast.Attribute("attr"), sub_nodes=[30.5, 10.5, 1.5], not_=False),
+        namespaces=False,
+    )
+    assert result == expected_xml
+
+
 def test_geom_equals():
     expected_xml = strip_xml("""<ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"
         xmlns:xsd="http://www.w3.org/2001/XMLSchema-datatypes">

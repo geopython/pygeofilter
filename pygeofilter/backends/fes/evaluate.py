@@ -27,6 +27,7 @@
 # ------------------------------------------------------------------------------
 
 from typing import Literal
+from copy import copy
 
 from lxml.etree import Element, tostring
 from pygml import v32
@@ -153,6 +154,20 @@ class FESEvaluator(Evaluator):
         el.append(lhs)
         return self.negate_if_not(node, el)
 
+    @handle(ast.In)
+    def in_(self, node, lhs, *options):
+        """Not implemtend in FES, use Or"""
+        el = Element(self.ns + "Or")
+        option_els = []
+        for option in options:
+            option_els.append(
+                Element(self.ns + COMPARISON_OP_MAP[ast.ComparisonOp.EQ])
+            )
+            option_els[-1].append(copy(lhs))
+            option_els[-1].append(option)
+            el.append(option_els[-1])
+        return self.negate_if_not(node, el)
+
     @handle(ast.SpatialComparisonPredicate, subclasses=True)
     def spatial_operation(self, node, lhs, rhs):
         op = SPATIAL_COMPARISON_OP_MAP[node.op]
@@ -252,10 +267,6 @@ class FESEvaluator(Evaluator):
         el.append(lc_el)
         el.append(uc_el)
         return el
-
-    # @handle(ast.In)
-    # def in_(self, node, lhs, *options):
-    #     raise NotImplementedError("'In' comparison is not supported by FES v1.1")
 
 
 def to_lxml_etree(
