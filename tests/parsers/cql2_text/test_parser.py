@@ -175,6 +175,36 @@ def test_string_not_like():
     )
 
 
+def test_string_doubled_quote():
+    result = parse("attr = 'it''s'")
+    assert result == ast.Equal(ast.Attribute("attr"), "it's")
+
+
+def test_string_backslash_quote():
+    result = parse(r"attr = 'it\'s'")
+    assert result == ast.Equal(ast.Attribute("attr"), "it's")
+
+
+def test_string_only_quotes():
+    assert parse("attr = ''") == ast.Equal(ast.Attribute("attr"), "")
+    assert parse("attr = ''''") == ast.Equal(ast.Attribute("attr"), "'")
+
+
+def test_strings_end_at_their_quote():
+    result = parse("attr = 'a' OR attr = 'b'")
+    assert result == ast.Or(
+        ast.Equal(ast.Attribute("attr"), "a"),
+        ast.Equal(ast.Attribute("attr"), "b"),
+    )
+
+
+def test_string_like_keeps_backslashes():
+    result = parse(r"attr LIKE '100\%'")
+    assert result.pattern == r"100\%"
+    result = parse(r"attr LIKE 'a\\''%'")
+    assert result.pattern == r"a\\'%"
+
+
 def test_attribute_in_list():
     result = parse("attr IN (1, 2, 3, 4)")
     assert result == ast.In(
