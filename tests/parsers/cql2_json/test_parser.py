@@ -802,14 +802,12 @@ def test_between_compatible_args_round_trip(nested, bounds):
 
 
 def test_between_encode_flat_args():
-
     node = ast.Between(ast.Attribute("attr"), 2, 5, False)
     decoded = json.loads(to_cql2(node))
     assert decoded == {"op": "between", "args": [{"property": "attr"}, 2, 5]}
 
 
 def test_not_between_encodes_with_not_wrapper():
-
     node = ast.Between(ast.Attribute("attr"), 2, 5, not_=True)
     decoded = json.loads(to_cql2(node))
     assert decoded["op"] == "not"
@@ -817,7 +815,6 @@ def test_not_between_encodes_with_not_wrapper():
 
 
 def test_not_like_encodes_with_not_wrapper():
-
     node = ast.Like(
         ast.Attribute("attr"),
         "val%",
@@ -833,7 +830,6 @@ def test_not_like_encodes_with_not_wrapper():
 
 
 def test_not_in_encodes_with_not_wrapper():
-
     node = ast.In(ast.Attribute("attr"), [1, 2, 3], not_=True)
     decoded = json.loads(to_cql2(node))
     assert decoded["op"] == "not"
@@ -846,7 +842,6 @@ def test_casei_json_parse():
 
 
 def test_casei_json_encode():
-
     node = ast.Function("lower", [ast.Attribute("name")])
     decoded = json.loads(to_cql2(node))
     assert decoded == {"op": "casei", "args": [{"property": "name"}]}
@@ -858,7 +853,6 @@ def test_accenti_json_parse():
 
 
 def test_accenti_json_encode():
-
     node = ast.Function("accenti", [ast.Attribute("name")])
     decoded = json.loads(to_cql2(node))
     assert decoded == {"op": "accenti", "args": [{"property": "name"}]}
