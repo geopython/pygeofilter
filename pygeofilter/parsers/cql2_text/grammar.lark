@@ -65,6 +65,7 @@
           | "EXCLUDE"i                                                       -> exclude
           | spatial_predicate
           | temporal_predicate
+          | array_predicate
 
 
 ?temporal_predicate: expression _binary_temporal_predicate_func expression -> binary_temporal_predicate
@@ -98,6 +99,26 @@
                                | "S_OVERLAPS"i
                                | "S_EQUALS"i
 
+?array_predicate: _array_predicate_func "(" array_expression "," array_expression ")" -> array_predicate
+
+?array_expression: array
+                 | attribute
+                 | func
+
+// Explicit singleton rules avoid a shift/reduce conflict with grouped expressions.
+// Prefer an array when nested singleton parentheses can also be a scalar group.
+array.3: "(" ")"
+       | "(" expression ")"
+       | "(" array ")"
+       | "(" array_element "," array_element ("," array_element)* ")"
+?array_element: expression
+              | array
+
+!_array_predicate_func: "A_EQUALS"i
+                      | "A_CONTAINS"i
+                      | "A_CONTAINEDBY"i
+                      | "A_OVERLAPS"i
+
 
 ?expression: sum
 
@@ -113,7 +134,9 @@
      | attribute
      | literal
      | "-" atom                                                             -> neg
-     | "(" expression ")"
+     | grouped_expression
+
+?grouped_expression: "(" expression ")"
 
 func.2: attribute "(" expression ("," expression)* ")" -> function
 
