@@ -146,10 +146,19 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             return ast.IsNull(cast(ast.Node, walk_cql_json(args)), not_=False)
 
         elif op == "between":
+            # OGC 21-065r2 defines BETWEEN with a flat 3-element args array
+            # [operand, low, high]. The earlier draft nested the bounds as
+            # [operand, [low, high]]; accept both for compatibility.
+            if isinstance(args[1], list):
+                low = cast(ast.ScalarAstType, walk_cql_json(args[1][0]))
+                high = cast(ast.ScalarAstType, walk_cql_json(args[1][1]))
+            else:
+                low = cast(ast.ScalarAstType, walk_cql_json(args[1]))
+                high = cast(ast.ScalarAstType, walk_cql_json(args[2]))
             return ast.Between(
                 cast(ast.Node, walk_cql_json(args[0])),
-                cast(ast.ScalarAstType, walk_cql_json(args[1][0])),
-                cast(ast.ScalarAstType, walk_cql_json(args[1][1])),
+                low,
+                high,
                 not_=False,
             )
 

@@ -886,3 +886,16 @@ def test_interval_rejects_invalid_bound_types(bound, position):
     bounds[position] = bound
     with pytest.raises(ValueError, match="Invalid interval bound"):
         parse({"interval": bounds})
+
+
+def test_between_flat_args_final_spec():
+    # https://github.com/geopython/pygeofilter/issues/162
+    # OGC 21-065r2 defines BETWEEN with a flat 3-element args array.
+    result = parse({"op": "between", "args": [{"property": "height"}, 2, 5]})
+    assert result == ast.Between(ast.Attribute("height"), 2, 5, not_=False)
+
+
+def test_between_nested_args_draft_compat():
+    # The earlier draft nested the bounds as [operand, [low, high]].
+    result = parse({"op": "between", "args": [{"property": "height"}, [2, 5]]})
+    assert result == ast.Between(ast.Attribute("height"), 2, 5, not_=False)
