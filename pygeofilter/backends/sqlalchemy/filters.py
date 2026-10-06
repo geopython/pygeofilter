@@ -6,6 +6,8 @@ from typing import Callable, Dict, Optional
 from pygeoif import shape
 from sqlalchemy import and_, func, not_, null, or_
 
+from ...util import extract_srid
+
 
 def parse_bbox(box, srid: Optional[int] = None):
     minx, miny, maxx, maxy = box
@@ -23,32 +25,9 @@ def parse_geometry(geom: dict):
         .get("properties", {})
         .get("name", "urn:ogc:def:crs:EPSG::4326")
     )
-    srid = _extract_srid(crs_identifier)
+    srid = extract_srid(crs_identifier)
     wkt = shape(geom).wkt
     return func.ST_GeomFromEWKT(f"SRID={srid};{wkt}")
-
-
-def _extract_srid(crs_identifier: str) -> int:
-    """Extract the integer SRID from a CRS identifier.
-
-    Handles the URN form ("urn:ogc:def:crs:EPSG::4326"),
-    the URL form ("http://www.opengis.net/def/crs/EPSG/0/4326"),
-    and the OGC CRS84/CRS83 variants. CRS83 and CRS84 are the OGC
-    axis-order variants of EPSG:4326; PostGIS spatial_ref_sys only
-    carries the integer EPSG code, so both map to 4326.
-    """
-    if "CRS83" in crs_identifier or "CRS84" in crs_identifier:
-        return 4326
-    # URN: urn:ogc:def:crs:EPSG::4326 or urn:ogc:def:crs:EPSG:1.3:3035
-    # The last numeric segment after the final colon is the SRID.
-    tail = crs_identifier.rstrip("/").rsplit(":", 1)[-1]
-    if tail.isdigit():
-        return int(tail)
-    # URL: http://www.opengis.net/def/crs/EPSG/0/4326
-    tail = crs_identifier.rstrip("/").rsplit("/", 1)[-1]
-    if tail.isdigit():
-        return int(tail)
-    raise ValueError(f"Cannot extract SRID from CRS identifier: {crs_identifier}")
 
 
 # TODO: map functions
