@@ -91,13 +91,16 @@ def walk_cql_json(node: JsonType):  # noqa: C901
                 parsed.append(None)
                 continue
             if not isinstance(value, str):
-                # An interval bound need not be a date/time literal: CQL2 also
-                # allows a property reference, e.g.
-                # ``{"interval": [{"property": "start"}, {"property": "end"}]}``
-                # (conformance test 41). Walk it like any other expression and
-                # let the evaluator resolve it; the split() below only accepts
-                # strings.
-                parsed.append(walk_cql_json(value))
+                # Resolve supported property/function references as expressions.
+                # Other expression types cannot be interval bounds.
+                if not isinstance(value, dict) or not (
+                    "property" in value or "function" in value
+                ):
+                    raise ValueError(f"Invalid interval bound {value!r}")
+                bound = walk_cql_json(value)
+                if not isinstance(bound, (ast.Attribute, ast.Function)):
+                    raise ValueError(f"Invalid interval bound {value!r}")
+                parsed.append(bound)
                 continue
             try:
                 parsed.append(parse_date(value))

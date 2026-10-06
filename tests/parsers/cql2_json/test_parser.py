@@ -28,6 +28,7 @@
 import json
 from datetime import date, datetime, timedelta
 
+import pytest
 from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
@@ -810,7 +811,9 @@ def test_interval_with_open_start_and_property():
     )
 
 
-def test_interval_with_function_bound():
+def test_interval_with_legacy_function_bound():
+    # This parser supports the legacy function encoding. The published CQL2
+    # op/args function encoding is a separate parser compatibility issue.
     result = parse(
         {
             "op": "t_during",
@@ -835,3 +838,27 @@ def test_interval_with_function_bound():
     assert result.rhs.start == ast.Function(
         "myfunc", [ast.Attribute("start_datetime")]
     )
+
+
+@pytest.mark.parametrize(
+    "bound",
+    [
+        7,
+        False,
+        None,
+        [{"property": "start_datetime"}],
+        {"interval": ["2000-01-01", "2000-01-02"]},
+        {"date": "2000-01-01"},
+        {"timestamp": "2000-01-01T00:00:00Z"},
+        {"op": "=", "args": [1, 1]},
+        {"op": "+", "args": [1, 1]},
+        {"type": "Point", "coordinates": [0, 0]},
+        {"property": "start_datetime", "date": "2000-01-01"},
+    ],
+)
+@pytest.mark.parametrize("position", [0, 1])
+def test_interval_rejects_invalid_bound_types(bound, position):
+    bounds = ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]
+    bounds[position] = bound
+    with pytest.raises(ValueError, match="Invalid interval bound"):
+        parse({"interval": bounds})

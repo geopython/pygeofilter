@@ -8,6 +8,7 @@ from shapely.geometry import Point
 
 from pygeofilter import ast
 from pygeofilter.backends.native.evaluate import NativeEvaluator
+from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.ecql import parse
 
 
@@ -461,3 +462,25 @@ def test_nested(data):
         data,
     )
     assert len(result) == 1 and result[0] is data[0]
+
+
+@pytest.mark.parametrize(
+    "start_year, end_year, expected",
+    [(1999, 2001, True), (2001, 2002, False), (1999, 1999, False)],
+)
+def test_cql2_interval_property_bounds(start_year, end_year, expected):
+    node = parse_cql2_json(
+        {
+            "op": "t_contains",
+            "args": [
+                {"interval": [{"property": "start"}, {"property": "end"}]},
+                {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]},
+            ],
+        }
+    )
+    predicate = NativeEvaluator(use_getattr=False).evaluate(node)
+    record = {
+        "start": datetime(start_year, 1, 1, tzinfo=timezone.utc),
+        "end": datetime(end_year, 1, 1, tzinfo=timezone.utc),
+    }
+    assert predicate(record) is expected
