@@ -600,3 +600,23 @@ def test_single_letter_attribute_in_function():
     assert result == ast.GeometryIntersects(
         ast.Attribute("g"), values.Envelope(-180, 180, -90, 90)
     )
+
+
+def test_array_equals():
+    result = parse("A_EQUALS(attr, (1, 2, 3))")
+    assert result == ast.ArrayEquals(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_array_contains():
+    result = parse("A_CONTAINS(attr, (1, 2, 3))")
+    assert result == ast.ArrayContains(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_array_overlaps():
+    result = parse("A_OVERLAPS(attr, (1, 2, 3))")
+    assert result == ast.ArrayOverlaps(ast.Attribute("attr"), [1, 2, 3])
+
+
+def test_array_empty():
+    result = parse("A_EQUALS(attr, ())")
+    assert result == ast.ArrayEquals(ast.Attribute("attr"), [])
