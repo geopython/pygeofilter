@@ -27,13 +27,17 @@
 
 ?start: condition
 
-?condition: condition_1
-          | condition "AND"i condition_1                                 -> and_
-          | condition "OR"i condition_1                                   -> or_
+// AND binds tighter than OR, and NOT tighter than both, as in booleanExpression of the CQL2 BNF
+?condition: condition_and
+          | condition "OR"i condition_and                                 -> or_
 
-?condition_1: predicate
-            | "NOT"i predicate                                               -> not_
-            | "NOT"i "(" predicate ")"                                       -> not_
+?condition_and: condition_1
+              | condition_and "AND"i condition_1                          -> and_
+
+?condition_1: condition_2
+            | "NOT"i condition_2                                             -> not_
+
+?condition_2: predicate
             | "(" condition ")"
 
 ?predicate: expression "=" expression                                       -> eq
@@ -135,7 +139,8 @@ bbox: "BBOX"i "(" full_number "," full_number "," full_number "," full_number ")
 BOOLEAN.2: ( "TRUE"i | "FALSE"i)
 
 DOUBLE_QUOTED: "\"" /.*?/ "\""
-SINGLE_QUOTED: "'" /.*?/ "'"
+// CQL2 escapes a quote as '' or \'
+SINGLE_QUOTED: /'(?:[^'\\]|\\.|'')*'/
 
 DATE: /[0-9]{4}-?[0-1][0-9]-?[0-3][0-9]/
 DATETIME: /[0-9]{4}-?[0-1][0-9]-?[0-3][0-9][T ][0-2][0-9]:?[0-5][0-9]:?[0-5][0-9](\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})?/

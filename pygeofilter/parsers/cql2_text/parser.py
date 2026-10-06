@@ -27,6 +27,7 @@
 
 import logging
 import os.path
+import re
 
 from lark import Lark, logger, v_args
 
@@ -185,7 +186,13 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
         return token[1:-1]
 
     def SINGLE_QUOTED(self, token):
-        return token[1:-1]
+        # '' and \' stand for a quote, the other backslashes are kept for LIKE
+        return re.sub(
+            r"''|\\(.)",
+            lambda m: "'" if m[0] == "''" or m[1] == "'" else m[0],
+            token[1:-1],
+            flags=re.S,
+        )
 
     def geometry(self, value):
         return values.Geometry(value)
