@@ -133,10 +133,15 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             return ast.IsNull(cast(ast.Node, walk_cql_json(args)), not_=False)
 
         elif op == "between":
+            # Accept the legacy nested bounds as well as the standard flat args.
+            if isinstance(args[1], list):
+                low, high = args[1]
+            else:
+                low, high = args[1], args[2]
             return ast.Between(
                 cast(ast.Node, walk_cql_json(args[0])),
-                cast(ast.ScalarAstType, walk_cql_json(args[1])),
-                cast(ast.ScalarAstType, walk_cql_json(args[2])),
+                cast(ast.ScalarAstType, walk_cql_json(low)),
+                cast(ast.ScalarAstType, walk_cql_json(high)),
                 not_=False,
             )
 

@@ -28,6 +28,7 @@
 import json
 from datetime import date, datetime, timedelta
 
+import pytest
 from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
@@ -725,6 +726,26 @@ def test_function_attr_string_arg():
 def test_between_flat_args_parse():
     result = parse({"op": "between", "args": [{"property": "attr"}, 2, 5]})
     assert result == ast.Between(ast.Attribute("attr"), 2, 5, False)
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize(
+    "bounds",
+    [[2, 5], [-1, 1], [{"property": "low"}, {"property": "high"}]],
+)
+def test_between_compatible_args_round_trip(nested, bounds):
+    args = (
+        [{"property": "attr"}, bounds]
+        if nested
+        else [{"property": "attr"}, *bounds]
+    )
+    result = parse({"op": "between", "args": args})
+    assert result == ast.Between(
+        ast.Attribute("attr"), parse(bounds[0]), parse(bounds[1]), False
+    )
+    encoded = json.loads(to_cql2(result))
+    assert encoded == {"op": "between", "args": [{"property": "attr"}, *bounds]}
+    assert parse(encoded) == result
 
 
 def test_between_encode_flat_args():
