@@ -201,7 +201,7 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
         return values.Envelope.from_bbox(coordinates)
 
     def interval(self, start, end):
-        return values.Interval(start, end)
+        return ast.Interval(start, end)
 
 
 parser = Lark.open(

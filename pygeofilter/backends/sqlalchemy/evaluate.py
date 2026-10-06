@@ -124,11 +124,11 @@ class SQLAlchemyFilterEvaluator(Evaluator):
     def function(self, node, *arguments):
         return filters.function_map[node.name](*arguments)
 
-    @handle(*values.LITERALS)
+    @handle(type(None), *values.LITERALS)
     def literal(self, node):
         return filters.literal(node)
 
-    @handle(values.Interval)
+    @handle(ast.Interval)
     def interval(self, node, start, end):
         return filters.literal((start, end))
 

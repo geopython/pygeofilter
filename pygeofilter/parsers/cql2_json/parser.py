@@ -51,7 +51,6 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             date,
             datetime,
             values.Geometry,
-            values.Interval,
             values.Envelope,
             ast.Node,
         ),
@@ -85,10 +84,20 @@ def walk_cql_json(node: JsonType):  # noqa: C901
         return parse_datetime(node["timestamp"])
 
     elif "interval" in node:
-        parsed: List[Union[date, datetime, timedelta, None]] = []
+        parsed: List[Union[date, datetime, timedelta, ast.Node, None]] = []
         for value in node["interval"]:
             if value == "..":
                 parsed.append(None)
+                continue
+            if not isinstance(value, str):
+                if not isinstance(value, dict) or not (
+                    "property" in value or "function" in value
+                ):
+                    raise ValueError(f"Invalid interval bound {value!r}")
+                bound = walk_cql_json(value)
+                if not isinstance(bound, (ast.Attribute, ast.Function)):
+                    raise ValueError(f"Invalid interval bound {value!r}")
+                parsed.append(bound)
                 continue
             try:
                 parsed.append(parse_date(value))
@@ -98,7 +107,7 @@ def walk_cql_json(node: JsonType):  # noqa: C901
                 except ValueError:
                     parsed.append(parse_datetime(value))
 
-        return values.Interval(*parsed)
+        return ast.Interval(*parsed)
 
     elif "property" in node:
         return ast.Attribute(node["property"])

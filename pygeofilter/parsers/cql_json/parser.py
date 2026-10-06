@@ -29,7 +29,7 @@ import json
 from datetime import datetime
 from typing import List, Union, cast
 
-from ... import ast, values
+from ... import ast
 from ...util import parse_datetime, parse_duration
 from ...values import Envelope, Geometry
 
@@ -113,7 +113,7 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:  # noqa
             for sub_node in node
         ]
         if is_temporal:
-            return values.Interval(*result)
+            return ast.Interval(*result)
         else:
             return result
 
