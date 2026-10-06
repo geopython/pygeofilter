@@ -13,6 +13,13 @@ def test_intersect_bbox():
     )
 
 
+def test_intersect_bbox_3d():
+    result = parse("S_INTERSECTS(geometry,BBOX(1,2,-10,3,4,10))")
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
+    )
+
+
 def test_intersect_point():
     result = parse("S_INTERSECTS(geometry,POINT(7.02 49.92))")
     assert result == ast.GeometryIntersects(

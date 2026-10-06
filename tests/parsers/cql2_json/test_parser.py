@@ -401,6 +401,30 @@ def test_disjoint_linestring_attr():
     )
 
 
+def test_intersects_attr_bbox():
+    result = parse(
+        {
+            "op": "s_intersects",
+            "args": [{"property": "geometry"}, {"bbox": [1, 2, 3, 4]}],
+        }
+    )
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
+    )
+
+
+def test_intersects_attr_bbox_3d():
+    result = parse(
+        {
+            "op": "s_intersects",
+            "args": [{"property": "geometry"}, {"bbox": [1, 2, -10, 3, 4, 10]}],
+        }
+    )
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
+    )
+
+
 def test_contains_attr_polygon():
     result = parse(
         {
