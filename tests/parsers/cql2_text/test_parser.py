@@ -269,7 +269,7 @@ def test_attribute_t_intersects():
     )
     assert result == ast.TimeOverlaps(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -286,7 +286,7 @@ def test_attribute_tintersects_dt_dr():
     )
     assert result == ast.TimeOverlaps(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),

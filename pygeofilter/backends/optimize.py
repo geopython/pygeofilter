@@ -56,10 +56,15 @@ def is_literal(value):
     return isinstance(value, values.LITERALS)
 
 
-TEMPORAL_LITERALS = (date, datetime, time, timedelta, values.Interval)
+TEMPORAL_LITERALS = (date, datetime, time, timedelta)
 
 
 def is_temporal_literal(value):
+    if isinstance(value, ast.Interval):
+        return all(
+            bound is None or isinstance(bound, (date, datetime, timedelta))
+            for bound in (value.start, value.end)
+        )
     return isinstance(value, TEMPORAL_LITERALS)
 
 
@@ -73,7 +78,7 @@ def is_geometry_literal(value):
 def is_any_literal(value):
     return (
         is_literal(value)
-        or is_temporal_literal(value)
+        or (not isinstance(value, ast.Interval) and is_temporal_literal(value))
         or is_geometry_literal(value)
     )
 
@@ -197,10 +202,20 @@ class OptimizeEvaluator(Evaluator):
     @handle(ast.TemporalPredicate, subclasses=True)
     def temporal(self, node, lhs, rhs):
         if is_temporal_literal(lhs) and is_temporal_literal(rhs):
-            lhs = to_interval(lhs)
-            rhs = to_interval(rhs)
+            lhs_interval = to_interval(lhs)
+            rhs_interval = to_interval(rhs)
 
-            return node.op.value == relate_intervals(lhs, rhs)
+            # Open-ended relations are not implemented by this optimizer.
+            if any(bound is None for bound in (*lhs_interval, *rhs_interval)):
+                return type(node)(lhs, rhs)
+            relation = relate_intervals(lhs_interval, rhs_interval)
+            if node.op == ast.TemporalComparisonOp.DISJOINT:
+                return relation in ("BEFORE", "AFTER")
+            if node.op == ast.TemporalComparisonOp.BEFORE_OR_DURING:
+                return relation in ("BEFORE", "DURING")
+            if node.op == ast.TemporalComparisonOp.DURING_OR_AFTER:
+                return relation in ("DURING", "AFTER")
+            return node.op.value == relation
         else:
             return type(node)(lhs, rhs)
 
@@ -276,8 +291,18 @@ class OptimizeEvaluator(Evaluator):
         else:
             return ast.Function(node.name, list(arguments))
 
+    @handle(ast.Interval)
+    def interval(self, node, start, end):
+        return ast.Interval(start, end)
+
     # just pass through these nodes
-    @handle(ast.Attribute, values.Geometry, values.Envelope, *values.LITERALS)
+    @handle(
+        ast.Attribute,
+        values.Geometry,
+        values.Envelope,
+        type(None),
+        *values.LITERALS,
+    )
     def literal(self, node):
         return node
 
@@ -285,29 +310,29 @@ class OptimizeEvaluator(Evaluator):
 def to_interval(value):
     # TODO:
     zulu = None
-    if isinstance(value, values.Interval):
+    if isinstance(value, ast.Interval):
         low = value.start
         high = value.end
-        if isinstance(low, date):
+        if isinstance(low, date) and not isinstance(low, datetime):
             low = datetime.combine(low, time.min, zulu)
-        if isinstance(high, date):
+        if isinstance(high, date) and not isinstance(high, datetime):
             high = datetime.combine(high, time.max, zulu)
 
         if isinstance(low, timedelta):
-            low = high - timedelta
+            low = high - low
         elif isinstance(high, timedelta):
-            high = low + timedelta
+            high = low + high
 
         return (low, high)
+
+    elif isinstance(value, datetime):
+        return (value, value)
 
     elif isinstance(value, date):
         return (
             datetime.combine(value, time.min, zulu),
             datetime.combine(value, time.max, zulu),
         )
-
-    elif isinstance(value, datetime):
-        return (value, value)
 
     raise ValueError(f"Invalid type {type(value)}")
 
@@ -336,7 +361,7 @@ def relate_intervals(lhs, rhs):  # noqa: C901
     elif ll < rl and lh > rh:
         return "TCONTAINS"
     elif ll > rl and lh == rh:
-        return "TENDS"
+        return "ENDS"
     elif ll < rl and lh == rh:
         return "ENDEDBY"
     elif ll == rl and lh == rh:

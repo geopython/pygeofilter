@@ -583,7 +583,7 @@ def test_begins():
     )
     assert result == ast.TimeBegins(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),

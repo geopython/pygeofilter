@@ -123,11 +123,11 @@ class GeoPandasEvaluator(Evaluator):
     def function(self, node, *arguments):
         return self.function_map[node.name](*arguments)
 
-    @handle(*values.LITERALS)
+    @handle(type(None), *values.LITERALS)
     def literal(self, node):
         return node
 
-    @handle(values.Interval)
+    @handle(ast.Interval)
     def interval(self, node, start, end):
         return (start, end)
 
