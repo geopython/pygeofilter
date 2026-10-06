@@ -33,6 +33,7 @@ from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
 from pygeofilter import ast, values
+from pygeofilter.backends.cql2_json.evaluate import to_cql2
 from pygeofilter.parsers.cql2_json import parse
 
 
@@ -83,7 +84,7 @@ def test_attribute_gte_literal():
 
 
 def test_attribute_between():
-    result = parse({"op": "between", "args": [{"property": "attr"}, [2, 5]]})
+    result = parse({"op": "between", "args": [{"property": "attr"}, 2, 5]})
     assert result == ast.Between(
         ast.Attribute("attr"),
         2,
@@ -93,7 +94,7 @@ def test_attribute_between():
 
 
 def test_attribute_between_negative_positive():
-    result = parse({"op": "between", "args": [{"property": "attr"}, [-1, 1]]})
+    result = parse({"op": "between", "args": [{"property": "attr"}, -1, 1]})
     assert result == ast.Between(
         ast.Attribute("attr"),
         -1,
@@ -770,6 +771,91 @@ def test_function_attr_string_arg():
             ],
         ),
     )
+
+
+# --- CQL2 Advanced Comparison conformance tests ---
+
+
+def test_between_flat_args_parse():
+    result = parse({"op": "between", "args": [{"property": "attr"}, 2, 5]})
+    assert result == ast.Between(ast.Attribute("attr"), 2, 5, False)
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize(
+    "bounds",
+    [[2, 5], [-1, 1], [{"property": "low"}, {"property": "high"}]],
+)
+def test_between_compatible_args_round_trip(nested, bounds):
+    args = (
+        [{"property": "attr"}, bounds]
+        if nested
+        else [{"property": "attr"}, *bounds]
+    )
+    result = parse({"op": "between", "args": args})
+    assert result == ast.Between(
+        ast.Attribute("attr"), parse(bounds[0]), parse(bounds[1]), False
+    )
+    encoded = json.loads(to_cql2(result))
+    assert encoded == {"op": "between", "args": [{"property": "attr"}, *bounds]}
+    assert parse(encoded) == result
+
+
+def test_between_encode_flat_args():
+    node = ast.Between(ast.Attribute("attr"), 2, 5, False)
+    decoded = json.loads(to_cql2(node))
+    assert decoded == {"op": "between", "args": [{"property": "attr"}, 2, 5]}
+
+
+def test_not_between_encodes_with_not_wrapper():
+    node = ast.Between(ast.Attribute("attr"), 2, 5, not_=True)
+    decoded = json.loads(to_cql2(node))
+    assert decoded["op"] == "not"
+    assert decoded["args"][0]["op"] == "between"
+
+
+def test_not_like_encodes_with_not_wrapper():
+    node = ast.Like(
+        ast.Attribute("attr"),
+        "val%",
+        nocase=False,
+        not_=True,
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
+    )
+    decoded = json.loads(to_cql2(node))
+    assert decoded["op"] == "not"
+    assert decoded["args"][0]["op"] == "like"
+
+
+def test_not_in_encodes_with_not_wrapper():
+    node = ast.In(ast.Attribute("attr"), [1, 2, 3], not_=True)
+    decoded = json.loads(to_cql2(node))
+    assert decoded["op"] == "not"
+    assert decoded["args"][0]["op"] == "in"
+
+
+def test_casei_json_parse():
+    result = parse({"op": "casei", "args": [{"property": "name"}]})
+    assert result == ast.Function("lower", [ast.Attribute("name")])
+
+
+def test_casei_json_encode():
+    node = ast.Function("lower", [ast.Attribute("name")])
+    decoded = json.loads(to_cql2(node))
+    assert decoded == {"op": "casei", "args": [{"property": "name"}]}
+
+
+def test_accenti_json_parse():
+    result = parse({"op": "accenti", "args": [{"property": "name"}]})
+    assert result == ast.Function("accenti", [ast.Attribute("name")])
+
+
+def test_accenti_json_encode():
+    node = ast.Function("accenti", [ast.Attribute("name")])
+    decoded = json.loads(to_cql2(node))
+    assert decoded == {"op": "accenti", "args": [{"property": "name"}]}
 
 
 def test_interval_with_property_bounds():
