@@ -6,6 +6,8 @@ from typing import Callable, Dict, Optional
 from pygeoif import shape
 from sqlalchemy import and_, func, not_, null, or_
 
+from ...util import extract_srid
+
 
 def parse_bbox(box, srid: Optional[int] = None):
     minx, miny, maxx, maxy = box
@@ -23,7 +25,7 @@ def parse_geometry(geom: dict):
         .get("properties", {})
         .get("name", "urn:ogc:def:crs:EPSG::4326")
     )
-    srid = crs_identifier.rpartition("::")[-1]
+    srid = extract_srid(crs_identifier)
     wkt = shape(geom).wkt
     return func.ST_GeomFromEWKT(f"SRID={srid};{wkt}")
 
