@@ -10,7 +10,9 @@ def combine(sub_filters, combinator: str):
     """Combine filters using a logical combinator"""
     assert combinator in ("AND", "OR")
     op = and_ if combinator == "AND" else or_
-    return reduce(lambda acc, q: op(acc, q) if acc is not None else q, sub_filters)
+    return reduce(
+        lambda acc, q: op(acc, q) if acc is not None else q, sub_filters
+    )
 
 
 def negate(sub_filter):

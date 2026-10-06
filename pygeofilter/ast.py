@@ -26,12 +26,13 @@
 # ------------------------------------------------------------------------------
 
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import ClassVar, List, Optional, Union
 
 from . import values
 
-AstType = Union["Node", values.ValueType, list]
+AstType = Union["Node", values.ValueType, list, None]
 ScalarAstType = Union["Node", int, float, str]
 SpatialAstType = Union["Node", values.SpatialValueType]
 TemporalAstType = Union["Node", values.TemporalValueType]
@@ -225,7 +226,7 @@ class Like(Predicate):
     """Node class to represent a wildcard sting matching predicate."""
 
     lhs: Node
-    pattern: ScalarAstType
+    pattern: str
     nocase: bool
     wildcard: str
     singlechar: str
@@ -611,6 +612,24 @@ class Expression(Node):
     pass
 
 
+@dataclass
+class Interval(Expression):
+    """Construct a temporal interval from literal or expression bounds.
+
+    ``None`` represents an unbounded end. Durations remain supported for
+    encodings that express a bound relative to the other end.
+    """
+
+    start: Optional[Union[Node, date, datetime, timedelta]] = None
+    end: Optional[Union[Node, date, datetime, timedelta]] = None
+
+    def get_sub_nodes(self) -> List[AstType]:
+        return [self.start, self.end]
+
+    def get_template(self) -> str:
+        return "INTERVAL({}, {})"
+
+
 class Attribute(Expression):
     """Node class to represent attribute lookup expressions
 
@@ -704,7 +723,9 @@ def get_repr(node: Node, indent_amount: int = 0, indent_incr: int = 4) -> str:
             args.append(
                 "(\n{}\n)".format(
                     indent(
-                        get_repr(sub_node, indent_amount + indent_incr, indent_incr),
+                        get_repr(
+                            sub_node, indent_amount + indent_incr, indent_incr
+                        ),
                         indent_amount + indent_incr,
                     )
                 )

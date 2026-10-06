@@ -28,6 +28,7 @@
 import re
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta
+from urllib.parse import unquote, urlsplit
 
 from dateparser import parse as _parse_datetime
 
@@ -37,7 +38,104 @@ __all__ = [
     "parse_duration",
     "like_pattern_to_re_pattern",
     "like_pattern_to_re",
+    "extract_srid",
 ]
+
+# Match complete identifiers so a version, a different authority's code, or
+# a component of a compound CRS cannot accidentally become the SRID.
+_CRS_PATTERNS = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"(?P<authority>EPSG|OGC|CRS):(?P<code>[^:/\s]+)",
+        r"urn:(?:ogc|x-ogc):def:crs:(?P<authority>[^:\s]+):"
+        r"(?:[^:\s]*:)?(?P<code>[^:\s]+)",
+        r"urn:(?P<authority>EPSG):"
+        r"(?:geographic|projected|geocentric|vertical|compound)CRS:"
+        r"(?P<code>[0-9]+)",
+    )
+)
+_CRS_URL_PATTERNS = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"/def/crs/(?P<authority>[^/\s]+)/[^/\s]*/(?P<code>[^/\s]+)/?",
+        r"/gml/srs/(?P<authority>[^/\s]+)\.xml#(?P<code>[^/\s]+)",
+        r"/ref/(?P<authority>EPSG)/(?P<code>[0-9]+)/?",
+    )
+)
+
+_OGC_SRIDS = {
+    "CRS27": 4267,
+    "CRS83": 4269,
+    "CRS84": 4326,
+    "CRS84H": 4979,
+    "CRS88": 5703,
+}
+_EPSG_URL_PATTERNS = {
+    "epsg.io": re.compile(r"/([0-9]+)/?"),
+    "epsg.org": re.compile(r"/crs_([0-9]+)(?:/[^/\s]+)?/?", re.IGNORECASE),
+}
+
+
+def _parse_crs_identifier(identifier: str) -> tuple[str, str]:
+    if re.fullmatch(r"[0-9]+", identifier):
+        return "EPSG", identifier
+
+    patterns = _CRS_PATTERNS
+    url = urlsplit(identifier)
+    if url.scheme.lower() in ("http", "https") and url.hostname:
+        patterns = _CRS_URL_PATTERNS
+        identifier = unquote(url.path)
+        if url.fragment:
+            identifier += "#" + unquote(url.fragment)
+        registry_pattern = _EPSG_URL_PATTERNS.get(
+            url.hostname.lower().removeprefix("www.")
+        )
+        if registry_pattern:
+            match = registry_pattern.fullmatch(identifier)
+            if match:
+                return "EPSG", match[1]
+
+    for pattern in patterns:
+        match = pattern.fullmatch(identifier)
+        if match:
+            return match["authority"].upper(), match["code"].upper()
+    return "", ""
+
+
+def extract_srid(crs_identifier: str) -> int:
+    """Extract an EPSG SRID from a commonly used CRS identifier.
+
+    Accepts numeric strings, ``EPSG:<code>``, OGC and legacy x-ogc URNs
+    (with or without a version), legacy EPSG URNs, HTTP(S) definition URLs
+    (``/def/crs/<authority>/<version>/<code>``), GML URLs
+    (``/gml/srs/epsg.xml#<code>``), spatialreference.org EPSG URLs, and
+    epsg.org and epsg.io URLs. Definition and GML paths also work on custom
+    resolvers.
+    URL components may be percent-encoded; surrounding whitespace and
+    case differences are tolerated.
+
+    OGC CRS27, CRS83, CRS84, CRS84h and CRS88 map to their EPSG equivalents.
+    WMS shorthand such as ``CRS:84`` is also supported.
+    This extracts a code only; it does not reorder coordinates or check
+    that an EPSG code exists in a registry. No network lookup is performed.
+
+    Raises ``ValueError`` for malformed or unsupported identifiers,
+    including other authorities and compound identifiers that cannot be
+    represented by a single EPSG code.
+    """
+    authority, code = _parse_crs_identifier(crs_identifier.strip())
+    if authority == "EPSG" and re.fullmatch(r"[0-9]+", code):
+        srid = int(code)
+        if srid > 0:
+            return srid
+    elif authority in ("OGC", "CRS"):
+        if authority == "CRS":
+            code = "CRS" + code
+        if code in _OGC_SRIDS:
+            return _OGC_SRIDS[code]
+
+    raise ValueError(f"Could not extract an EPSG SRID from {crs_identifier!r}.")
+
 
 RE_ISO_8601 = re.compile(
     r"^(?P<sign>[+-])?P"

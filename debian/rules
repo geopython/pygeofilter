@@ -1,13 +1,26 @@
-#!/usr/bin/make -f
-# -*- makefile -*-
-
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+#! /usr/bin/make -f
 
 export PYBUILD_NAME=pygeofilter
+export PYBUILD_TEST_ARGS=\
+-k "not test_intersects \
+and not test_dwithin \
+and not test_beyond \
+and not test_spatial \
+and not test_fixtures \
+and not test_disjoint_linestring_attr \
+and not test_contains_attr_polygon \
+and not test_within_multipolygon_attr \
+and not test_touches_attr_multilinestring \
+and not test_crosses_attr_multilinestring \
+and not test_overlaps_attr_multilinestring \
+and not test_relate_attr_polygon \
+and not test_function_no_arg \
+and not test_temporal_json" \
+--ignore {dir}/tests/backends/elasticsearch/test_evaluate.py \
+--ignore {dir}/tests/backends/elasticsearch/test_util.py \
+--ignore {dir}/tests/backends/opensearch/test_evaluate.py \
+--ignore {dir}/tests/backends/solr/test_evaluate.py \
+-v {dir}/tests
 
 %:
-        dh  $@ --with python3 --buildsystem pybuild
-
-override_dh_auto_test:
-        @echo "nocheck set, not running tests"
+	dh $@ --buildsystem=pybuild

@@ -55,7 +55,14 @@ def negate(sub_filter: Q) -> Q:
     return ~sub_filter
 
 
-OP_TO_COMP = {"<": "lt", "<=": "lte", ">": "gt", ">=": "gte", "<>": None, "=": "exact"}
+OP_TO_COMP = {
+    "<": "lt",
+    "<=": "lte",
+    ">": "gt",
+    ">=": "gte",
+    "<>": None,
+    "=": "exact",
+}
 
 INVERT_COMP: Dict[Optional[str], str] = {
     "lt": "gt",
@@ -171,7 +178,8 @@ def like(
         # special case when choices are given for the field:
         # compare statically and use 'in' operator to check if contained
         cmp_av = [
-            (a, a.lower() if nocase else a) for a in mapping_choices[lhs.name].keys()
+            (a, a.lower() if nocase else a)
+            for a in mapping_choices[lhs.name].keys()
         ]
 
         for idx, part in enumerate(parts):
@@ -190,7 +198,11 @@ def like(
                 cmp_av = [a for a in cmp_av if cmp_p in a[1]]
 
         q = Q(
-            **{"%s__in" % lhs.name: [mapping_choices[lhs.name][a[0]] for a in cmp_av]}
+            **{
+                "%s__in" % lhs.name: [
+                    mapping_choices[lhs.name][a[0]] for a in cmp_av
+                ]
+            }
         )
 
     else:
@@ -288,7 +300,13 @@ def temporal(lhs: F, time_or_period: Value, op: str) -> Q:
     :return: a comparison expression object
     :rtype: :class:`django.db.models.Q`
     """
-    assert op in ("BEFORE", "BEFORE OR DURING", "DURING", "DURING OR AFTER", "AFTER")
+    assert op in (
+        "BEFORE",
+        "BEFORE OR DURING",
+        "DURING",
+        "DURING OR AFTER",
+        "AFTER",
+    )
     time_or_period = time_or_period.value
     low: Union[datetime, timedelta, None] = None
     high: Union[datetime, timedelta, None] = None
@@ -345,7 +363,12 @@ def time_interval(
         )
 
     elif high == low:
-        return Q(**{begin_time_field + "__gte": value, end_time_field + "__lte": value})
+        return Q(
+            **{
+                begin_time_field + "__gte": value,
+                end_time_field + "__lte": value,
+            }
+        )
 
     else:
         q = Q()
@@ -431,8 +454,9 @@ def spatial(
     return Q(**{"%s__%s" % (lhs.name, op.lower()): rhs})
 
 
-def spatial_relate(lhs: Union[F, Value], rhs: Union[F, Value], pattern: str) -> Q:
-
+def spatial_relate(
+    lhs: Union[F, Value], rhs: Union[F, Value], pattern: str
+) -> Q:
     if not isinstance(lhs, F):
         # TODO: cannot yet invert pattern -> raise
         raise ValueError(f"Unable to compare non-field {lhs}")
@@ -441,7 +465,11 @@ def spatial_relate(lhs: Union[F, Value], rhs: Union[F, Value], pattern: str) -> 
 
 
 def spatial_distance(
-    lhs: Union[F, Value], rhs: Union[F, Value], op: str, distance: float, units: str
+    lhs: Union[F, Value],
+    rhs: Union[F, Value],
+    op: str,
+    distance: float,
+    units: str,
 ) -> Q:
     if not isinstance(lhs, F):
         lhs, rhs = rhs, lhs
@@ -516,7 +544,9 @@ def literal(value) -> Value:
 OP_TO_FUNC = {"+": add, "-": sub, "*": mul, "/": truediv}
 
 
-def arithmetic(lhs: ArithmeticType, rhs: ArithmeticType, op: str) -> ArithmeticType:
+def arithmetic(
+    lhs: ArithmeticType, rhs: ArithmeticType, op: str
+) -> ArithmeticType:
     """Create an arithmetic filter
 
     :param lhs: left hand side of the arithmetic expression. either a

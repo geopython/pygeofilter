@@ -113,55 +113,83 @@ def filter_(ast, data):
 
 def test_comparison(data):
     result = filter_(parse("int_attr = 5"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("int_attr < 6"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("int_attr > 6"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
     result = filter_(parse("int_attr <= 5"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("int_attr >= 8"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
     result = filter_(parse("int_attr <> 5"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
 
 def test_combination(data):
     result = filter_(parse("int_attr = 5 AND float_attr < 6.0"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("int_attr = 5 AND float_attr < 6.0"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
 
 def test_between(data):
     result = filter_(parse("float_attr BETWEEN 4 AND 6"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("int_attr NOT BETWEEN 4 AND 6"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
 
 def test_like(data):
     result = filter_(parse("str_attr LIKE 'this is . test'"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("str_attr LIKE 'this is % test'"), data)
     assert result.GetFeatureCount() == 2
 
     result = filter_(parse("str_attr NOT LIKE '% another test'"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("str_attr NOT LIKE 'this is . test'"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
     result = filter_(parse("str_attr ILIKE 'THIS IS . TEST'"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("str_attr ILIKE 'THIS IS % TEST'"), data)
     assert result.GetFeatureCount() == 2
@@ -169,18 +197,26 @@ def test_like(data):
 
 def test_in(data):
     result = filter_(parse("int_attr IN ( 1, 2, 3, 4, 5 )"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("int_attr NOT IN ( 1, 2, 3, 4, 5 )"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
 
 def test_null(data):
     result = filter_(parse("maybe_str_attr IS NULL"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(parse("maybe_str_attr IS NOT NULL"), data)
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
 
 # TODO: possible?
@@ -211,13 +247,17 @@ def test_spatial(data):
         parse("INTERSECTS(point_attr, ENVELOPE (0 1 0 1))"),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
     result = filter_(
         parse("EQUALS(point_attr, POINT(2 2))"),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 1
+    )
 
 
 def test_arithmetic(data):
@@ -231,7 +271,9 @@ def test_arithmetic(data):
         parse("int_attr = 5 + 20 / 2 - 10"),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )
 
 
 def test_function(data):
@@ -239,4 +281,6 @@ def test_function(data):
         parse("sin(float_attr) BETWEEN -0.75 AND -0.70"),
         data,
     )
-    assert result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    assert (
+        result.GetFeatureCount() == 1 and result.GetFeature(0).GetField(0) == 0
+    )

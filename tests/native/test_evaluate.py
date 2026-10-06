@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import List, Optional
 
 import pytest
@@ -8,6 +8,7 @@ from shapely.geometry import Point
 
 from pygeofilter import ast
 from pygeofilter.backends.native.evaluate import NativeEvaluator
+from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.ecql import parse
 
 
@@ -107,9 +108,9 @@ def data_json():
 
 def filter_json(ast, data):
     attr_map = {"point_attr": "geometry", "*": "properties.*"}
-    filter_expr = NativeEvaluator(math.__dict__, attr_map, use_getattr=False).evaluate(
-        ast
-    )
+    filter_expr = NativeEvaluator(
+        math.__dict__, attr_map, use_getattr=False
+    ).evaluate(ast)
     return [record for record in data if filter_expr(record)]
 
 
@@ -277,12 +278,16 @@ def test_temporal(data):
     result = filter_(parse("date_attr BEFORE 2010-01-08T00:00:00.00Z"), data)
     assert len(result) == 1 and result[0] is data[0]
 
-    result = filter_(parse("date_attr AFTER 2010-01-08T00:00:00.00+01:00"), data)
+    result = filter_(
+        parse("date_attr AFTER 2010-01-08T00:00:00.00+01:00"), data
+    )
     assert len(result) == 1 and result[0] is data[1]
 
 
 def test_temporal_json(data_json):
-    result = filter_json(parse("date_attr BEFORE 2010-01-08T00:00:00.00Z"), data_json)
+    result = filter_json(
+        parse("date_attr BEFORE 2010-01-08T00:00:00.00Z"), data_json
+    )
     assert len(result) == 1 and result[0] is data_json[0]
 
     result = filter_json(
@@ -457,3 +462,87 @@ def test_nested(data):
         data,
     )
     assert len(result) == 1 and result[0] is data[0]
+
+
+@pytest.mark.parametrize(
+    "start_year, end_year, expected",
+    [(1999, 2001, True), (2001, 2002, False), (1999, 1999, False)],
+)
+def test_cql2_interval_property_bounds(start_year, end_year, expected):
+    node = parse_cql2_json(
+        {
+            "op": "t_contains",
+            "args": [
+                {"interval": [{"property": "start"}, {"property": "end"}]},
+                {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]},
+            ],
+        }
+    )
+    predicate = NativeEvaluator(use_getattr=False).evaluate(node)
+    record = {
+        "start": datetime(start_year, 1, 1, tzinfo=timezone.utc),
+        "end": datetime(end_year, 1, 1, tzinfo=timezone.utc),
+    }
+    assert predicate(record) is expected
+
+
+@pytest.mark.parametrize("duration_first", [True, False])
+def test_interval_duration_bounds(duration_first):
+    start = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
+    end = start + timedelta(hours=1)
+    bounds = (
+        (timedelta(hours=1), end)
+        if duration_first
+        else (start, timedelta(hours=1))
+    )
+    node = ast.TimeEquals(ast.Interval(*bounds), ast.Interval(start, end))
+    assert NativeEvaluator().evaluate(node)({}) is True
+
+
+@pytest.mark.parametrize(
+    "bounds, expected",
+    [
+        (
+            (date(2000, 1, 1), date(2000, 1, 2)),
+            (
+                datetime(2000, 1, 1, tzinfo=timezone.utc),
+                datetime.combine(date(2000, 1, 2), time.max, timezone.utc),
+            ),
+        ),
+        (
+            (None, date(2000, 1, 2)),
+            (None, datetime.combine(date(2000, 1, 2), time.max, timezone.utc)),
+        ),
+        (
+            (date(2000, 1, 1), None),
+            (datetime(2000, 1, 1, tzinfo=timezone.utc), None),
+        ),
+        (
+            (datetime(2000, 1, 1, 12), datetime(2000, 1, 1, 13)),
+            (
+                datetime(2000, 1, 1, 12, tzinfo=timezone.utc),
+                datetime(2000, 1, 1, 13, tzinfo=timezone.utc),
+            ),
+        ),
+        ((None, None), (None, None)),
+    ],
+)
+def test_interval_normalization(bounds, expected):
+    assert NativeEvaluator().evaluate(ast.Interval(*bounds))({}) == expected
+
+
+def test_interval_function_bound():
+    start = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
+    end = start + timedelta(hours=1)
+    node = ast.TimeEquals(
+        ast.Interval(ast.Function("start", []), end), ast.Interval(start, end)
+    )
+    assert NativeEvaluator({"start": lambda: start}).evaluate(node)({}) is True
+
+
+def test_interval_valued_property():
+    start = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
+    end = start + timedelta(hours=1)
+    node = ast.TimeEquals(ast.Attribute("period"), ast.Interval(start, end))
+    predicate = NativeEvaluator(use_getattr=False).evaluate(node)
+    assert predicate({"period": (start, end)}) is True

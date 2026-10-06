@@ -1,3 +1,48 @@
+pygeofilter (0.3.3-1) unstable; urgency=medium
+
+  [ Bas Couwenberg ]
+  * Bump Standards-Version to 4.7.2, no changes.
+  * Update lintian overrides.
+  * Drop Rules-Requires-Root: no, default since dpkg 1.22.13.
+  * Use test-build-validate-cleanup instead of test-build-twice.
+
+  [ Antonio Valentino ]
+  * New upstream release.
+  * Update d/copyright.
+  * Set upstream metadata fields: Security-Contact.
+  * debian/control:
+    - Update dependencies.
+  * debian/rules:
+    - Skip tests requiring access to the internet.
+  * Update d/python3-pygeofilter.examples.
+  * Add a manpage for the pygeofilter CLI tool.
+
+ -- Antonio Valentino <antonio.valentino@tiscali.it>  Sat, 20 Dec 2025 17:38:28 +0000
+
+pygeofilter (0.3.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Update dates in d/copyright.
+  * debian/patches:
+    - Drop 0001-Fix-compatibility-with-i386.patch, applied upstream.
+  * debian/rules:
+    - Skip tests requiring the unavailable opensearch-dsl Python package.
+
+ -- Antonio Valentino <antonio.valentino@tiscali.it>  Fri, 03 Jan 2025 16:35:31 +0000
+
+pygeofilter (0.2.4-2) unstable; urgency=medium
+
+  * Team upload.
+  * Source-only upload.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 10 Aug 2024 21:39:08 +0200
+
+pygeofilter (0.2.4-1) unstable; urgency=medium
+
+  * Initial release (Closes: #1078084).
+
+ -- Antonio Valentino <antonio.valentino@tiscali.it>  Thu, 08 Aug 2024 07:03:11 +0000
+
 pygeofilter (0.0.3-0~focal0) focal; urgency=low
 
   * Initial packaging.

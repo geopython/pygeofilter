@@ -51,7 +51,6 @@ def walk_cql_json(node: JsonType):  # noqa: C901
             date,
             datetime,
             values.Geometry,
-            values.Interval,
             values.Envelope,
             ast.Node,
         ),
@@ -76,7 +75,7 @@ def walk_cql_json(node: JsonType):  # noqa: C901
         return values.Geometry(node)
 
     elif "bbox" in node:
-        return values.Envelope(*node["bbox"])
+        return values.Envelope.from_bbox(node["bbox"])
 
     elif "date" in node:
         return parse_date(node["date"])
@@ -85,10 +84,20 @@ def walk_cql_json(node: JsonType):  # noqa: C901
         return parse_datetime(node["timestamp"])
 
     elif "interval" in node:
-        parsed: List[Union[date, datetime, timedelta, None]] = []
+        parsed: List[Union[date, datetime, timedelta, ast.Node, None]] = []
         for value in node["interval"]:
             if value == "..":
                 parsed.append(None)
+                continue
+            if not isinstance(value, str):
+                if not isinstance(value, dict) or not (
+                    "property" in value or "function" in value
+                ):
+                    raise ValueError(f"Invalid interval bound {value!r}")
+                bound = walk_cql_json(value)
+                if not isinstance(bound, (ast.Attribute, ast.Function)):
+                    raise ValueError(f"Invalid interval bound {value!r}")
+                parsed.append(bound)
                 continue
             try:
                 parsed.append(parse_date(value))
@@ -98,7 +107,7 @@ def walk_cql_json(node: JsonType):  # noqa: C901
                 except ValueError:
                     parsed.append(parse_datetime(value))
 
-        return values.Interval(*parsed)
+        return ast.Interval(*parsed)
 
     elif "property" in node:
         return ast.Attribute(node["property"])
@@ -106,11 +115,15 @@ def walk_cql_json(node: JsonType):  # noqa: C901
     elif "function" in node:
         return ast.Function(
             node["function"]["name"],
-            cast(List[ast.AstType], walk_cql_json(node["function"]["arguments"])),
+            cast(
+                List[ast.AstType], walk_cql_json(node["function"]["arguments"])
+            ),
         )
 
     elif "lower" in node:
-        return ast.Function("lower", [cast(ast.Node, walk_cql_json(node["lower"]))])
+        return ast.Function(
+            "lower", [cast(ast.Node, walk_cql_json(node["lower"]))]
+        )
 
     elif "op" in node:
         op = node["op"]
@@ -162,12 +175,16 @@ def walk_cql_json(node: JsonType):  # noqa: C901
                 cast(List[ast.AstType], walk_cql_json(args[1])),
                 not_=False,
             )
-        
+
         elif op in ("casei", "lower"):
-            return ast.Function("lower", [cast(ast.Node, walk_cql_json(args[0]))])
+            return ast.Function(
+                "lower", [cast(ast.Node, walk_cql_json(args[0]))]
+            )
 
         elif op == "accenti":
-            return ast.Function("accenti", [cast(ast.Node, walk_cql_json(args[0]))])
+            return ast.Function(
+                "accenti", [cast(ast.Node, walk_cql_json(args[0]))]
+            )
 
         elif op in BINARY_OP_PREDICATES_MAP:
             args = [cast(ast.Node, walk_cql_json(arg)) for arg in args]

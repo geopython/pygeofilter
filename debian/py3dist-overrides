@@ -1,0 +1,2 @@
+# only required for Python < 3.7
+dataclasses

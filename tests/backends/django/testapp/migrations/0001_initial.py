@@ -8,7 +8,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -29,7 +28,9 @@ class Migration(migrations.Migration):
                 ("identifier", models.CharField(max_length=256, unique=True)),
                 (
                     "geometry",
-                    django.contrib.gis.db.models.fields.GeometryField(srid=4326),
+                    django.contrib.gis.db.models.fields.GeometryField(
+                        srid=4326
+                    ),
                 ),
                 ("float_attribute", models.FloatField(blank=True, null=True)),
                 ("int_attribute", models.IntegerField(blank=True, null=True)),
@@ -37,11 +38,16 @@ class Migration(migrations.Migration):
                     "str_attribute",
                     models.CharField(blank=True, max_length=256, null=True),
                 ),
-                ("datetime_attribute", models.DateTimeField(blank=True, null=True)),
+                (
+                    "datetime_attribute",
+                    models.DateTimeField(blank=True, null=True),
+                ),
                 (
                     "choice_attribute",
                     models.PositiveSmallIntegerField(
-                        blank=True, choices=[(1, "A"), (2, "B"), (3, "C")], null=True
+                        blank=True,
+                        choices=[(1, "A"), (2, "B"), (3, "C")],
+                        null=True,
                     ),
                 ),
             ],
@@ -58,8 +64,14 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("float_meta_attribute", models.FloatField(blank=True, null=True)),
-                ("int_meta_attribute", models.IntegerField(blank=True, null=True)),
+                (
+                    "float_meta_attribute",
+                    models.FloatField(blank=True, null=True),
+                ),
+                (
+                    "int_meta_attribute",
+                    models.IntegerField(blank=True, null=True),
+                ),
                 (
                     "str_meta_attribute",
                     models.CharField(blank=True, max_length=256, null=True),
@@ -71,7 +83,9 @@ class Migration(migrations.Migration):
                 (
                     "choice_meta_attribute",
                     models.PositiveSmallIntegerField(
-                        blank=True, choices=[(1, "X"), (2, "Y"), (3, "Z")], null=True
+                        blank=True,
+                        choices=[(1, "X"), (2, "Y"), (3, "Z")],
+                        null=True,
                     ),
                 ),
                 (

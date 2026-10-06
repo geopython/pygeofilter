@@ -1,0 +1,33 @@
+.TH PYGEOFILTER "1" "December 2025" "pygeofilter" "User Commands"
+.SH NAME
+pygeofilter \- parse a query into an abstract syntax tree
+.SH SYNOPSIS
+.B pygeofilter
+[\fI\,OPTIONS\/\fR] \fI\,COMMAND \/\fR[\fI\,ARGS\/\fR]...
+.SH OPTIONS
+.TP
+\fB\-\-version\fR
+Show the version and exit.
+.TP
+\fB\-\-help\fR
+Show this message and exit.
+.SS "Commands:"
+.TP
+parse
+Parse a query into an abstract syntax tree
+.SH SYNOPSIS
+.B pygeofilter
+\fI\,parse \/\fR[\fI\,OPTIONS\/\fR] \fI\,{cql_json|cql2_json|cql2_text|ecql|fes|jfe}\/\fR
+.SH DESCRIPTION
+.IP
+QUERY
+.IP
+Parse a query into an abstract syntax tree
+.SH OPTIONS
+.TP
+\fB\-v\fR, \fB\-\-verbosity\fR [ERROR|WARNING|INFO|DEBUG]
+Verbosity
+.TP
+\fB\-\-help\fR
+Show this message and exit.
+

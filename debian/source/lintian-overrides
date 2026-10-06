@@ -1,0 +1,3 @@
+# Not supported by devscripts in trixie
+older-debian-watch-file-standard 4 *
+

@@ -25,8 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-""" Apache Solr backend for pygeofilter
-"""
+"""Apache Solr backend for pygeofilter"""
 
 from .evaluate import to_filter
 

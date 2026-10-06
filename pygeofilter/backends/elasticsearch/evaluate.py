@@ -219,7 +219,9 @@ class ElasticSearchDSLEvaluator(Evaluator):
         ast.GeometryWithin,
         ast.GeometryContains,
     )
-    def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs: str, rhs):
+    def spatial_comparison(
+        self, node: ast.SpatialComparisonPredicate, lhs: str, rhs
+    ):
         """Creates a geo_shape query for the give spatial comparison
         predicate.
         """
@@ -243,7 +245,9 @@ class ElasticSearchDSLEvaluator(Evaluator):
             **{
                 lhs: {
                     "shape": self.envelope(
-                        values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
+                        values.Envelope(
+                            node.minx, node.maxx, node.miny, node.maxy
+                        )
                     ),
                     "relation": "intersects",
                 },

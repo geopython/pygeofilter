@@ -54,12 +54,16 @@ def test_between_with_binds():
     where, binds = to_sql_where_with_bind_variables(
         parse("int_attr NOT BETWEEN 4 AND 6"), FIELD_MAPPING, FUNCTION_MAP
     )
-    assert where == "(int_attr NOT BETWEEN :int_attr_low_0 AND :int_attr_high_0)"
+    assert (
+        where == "(int_attr NOT BETWEEN :int_attr_low_0 AND :int_attr_high_0)"
+    )
     assert binds == {"int_attr_low_0": 4, "int_attr_high_0": 6}
 
 
 def test_like():
-    where = to_sql_where(parse("str_attr LIKE 'foo%'"), FIELD_MAPPING, FUNCTION_MAP)
+    where = to_sql_where(
+        parse("str_attr LIKE 'foo%'"), FIELD_MAPPING, FUNCTION_MAP
+    )
     assert where == "str_attr LIKE 'foo%' ESCAPE '\\'"
 
 
@@ -82,7 +86,9 @@ def test_combination_with_binds():
     where, binds = to_sql_where_with_bind_variables(
         parse("int_attr = 5 AND float_attr < 6.0"), FIELD_MAPPING, FUNCTION_MAP
     )
-    assert where == "((int_attr = :int_attr_0) AND (float_attr < :float_attr_1))"
+    assert (
+        where == "((int_attr = :int_attr_0) AND (float_attr < :float_attr_1))"
+    )
     assert binds == {"int_attr_0": 5, "float_attr_1": 6.0}
 
 
@@ -123,7 +129,9 @@ def test_spatial_with_binds():
 
 def test_bbox():
     where = to_sql_where(
-        parse("BBOX(point_attr,-140.99778,41.6751050889,-52.6480987209,83.23324)"),
+        parse(
+            "BBOX(point_attr,-140.99778,41.6751050889,-52.6480987209,83.23324)"
+        ),
         FIELD_MAPPING,
         FUNCTION_MAP,
     )
@@ -144,7 +152,9 @@ def test_bbox():
 
 def test_bbox_with_binds():
     where, binds = to_sql_where_with_bind_variables(
-        parse("BBOX(point_attr,-140.99778,41.6751050889,-52.6480987209,83.23324)"),
+        parse(
+            "BBOX(point_attr,-140.99778,41.6751050889,-52.6480987209,83.23324)"
+        ),
         FIELD_MAPPING,
         FUNCTION_MAP,
     )

@@ -80,6 +80,19 @@ ATTRIBUTE id = LITERAL 10.0
 )
 ```
 
+### Temporal intervals
+
+Parsers represent temporal intervals as `pygeofilter.ast.Interval(start, end)`.
+Bounds may be temporal literals, property references, or function expressions;
+`None` represents an unbounded end. Evaluators translate the bounds into their
+backend's representation. The native evaluator uses `(start, end)` tuples,
+including for interval-valued record properties.
+
+This replaces `pygeofilter.values.Interval`. Applications constructing intervals
+or registering custom evaluator handlers must use `ast.Interval` instead. The
+constructor retains the `start` and `end` arguments, including duration bounds
+supported by existing encodings.
+
 ### Evaluation
 
 A parsed AST can then be evaluated and transformed into filtering mechanisms in the required context. Usually this is a language such as SQL or an object-relational mapper (ORM) interfacing a data store of some kind.

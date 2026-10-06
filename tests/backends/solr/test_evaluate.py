@@ -38,8 +38,10 @@ from pygeofilter.backends.solr.evaluate import SOLRDSLEvaluator, SolrDSLQuery
 from pygeofilter.parsers.ecql import parse
 from pygeofilter.util import parse_datetime
 
-PORT=8983
-SOLR_BASE_URL = f"http://localhost:{PORT}/solr/test"  # replace with your Solr URL
+PORT = 8983
+SOLR_BASE_URL = (
+    f"http://localhost:{PORT}/solr/test"  # replace with your Solr URL
+)
 HEADERS = {
     "Content-type": "application/json",
 }
@@ -103,7 +105,9 @@ def prepare():
     for field_type in field_types:
         data = json.dumps({"add-field-type": field_type})
         requests.post(
-            f"http://localhost:{PORT}/api/cores/test/schema", headers={"Content-type": "application/json"}, data=data
+            f"http://localhost:{PORT}/api/cores/test/schema",
+            headers={"Content-type": "application/json"},
+            data=data,
         )
 
     # Define the fields to be added
@@ -115,7 +119,11 @@ def prepare():
         {"name": "str_attribute", "type": "text_general"},
         {"name": "center", "type": "location"},
         {"name": "geometry_jts", "type": "spatial_jts", "multiValued": "false"},
-        {"name": "geometry_geo3d", "type": "spatial_geo3d", "multiValued": "false"},
+        {
+            "name": "geometry_geo3d",
+            "type": "spatial_geo3d",
+            "multiValued": "false",
+        },
         {"name": "daterange_attribute", "type": "date_range"},
     ]
 
@@ -130,13 +138,17 @@ def prepare():
     index = "ok"
     yield index
     print("cleaning up")
-    requests.get(SOLR_BASE_URL + "/admin/cores?action=UNLOAD&core=test&deleteIndex=true")
+    requests.get(
+        SOLR_BASE_URL + "/admin/cores?action=UNLOAD&core=test&deleteIndex=true"
+    )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def index(prepare):
     # Add test documents
-    response = requests.post(SOLR_BASE_URL + "/update", data=json.dumps(INPUT_DOCS), headers=HEADERS)
+    response = requests.post(
+        SOLR_BASE_URL + "/update", data=json.dumps(INPUT_DOCS), headers=HEADERS
+    )
     print(response.json())
     # Commit index
     res = requests.get(SOLR_BASE_URL + "/update?commit=true")
@@ -149,7 +161,9 @@ def data(index):
     data = {
         "query": "id:A",  # Query
     }
-    response = requests.get(SOLR_BASE_URL + "/query", data=json.dumps(data), headers=HEADERS)
+    response = requests.get(
+        SOLR_BASE_URL + "/query", data=json.dumps(data), headers=HEADERS
+    )
     response_json = response.json()
     if response_json["responseHeader"]["status"] == 0:
         # Print the response
@@ -241,22 +255,34 @@ def test_combination_like_not(data):
     result = filter_(parse("NOT str_attribute LIKE 'another'"))
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
-    result = filter_(parse("str_attribute LIKE 'test' AND NOT str_attribute LIKE 'another'"))
+    result = filter_(
+        parse("str_attribute LIKE 'test' AND NOT str_attribute LIKE 'another'")
+    )
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
-    result = filter_(parse("NOT str_attribute LIKE 'another' AND str_attribute LIKE 'test'"))
+    result = filter_(
+        parse("NOT str_attribute LIKE 'another' AND str_attribute LIKE 'test'")
+    )
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
-    result = filter_(parse("NOT str_attribute LIKE 'test' AND str_attribute LIKE 'another'"))
+    result = filter_(
+        parse("NOT str_attribute LIKE 'test' AND str_attribute LIKE 'another'")
+    )
     assert len(result) == 0
 
-    result = filter_(parse("str_attribute LIKE 'test' OR NOT str_attribute LIKE 'another'"))
+    result = filter_(
+        parse("str_attribute LIKE 'test' OR NOT str_attribute LIKE 'another'")
+    )
     assert len(result) == 2
 
-    result = filter_(parse("str_attribute LIKE 'test' OR NOT str_attribute LIKE 'another'"))
+    result = filter_(
+        parse("str_attribute LIKE 'test' OR NOT str_attribute LIKE 'another'")
+    )
     assert len(result) == 2
 
-    result = filter_(parse("NOT str_attribute LIKE 'another' OR str_attribute LIKE 'test'"))
+    result = filter_(
+        parse("NOT str_attribute LIKE 'another' OR str_attribute LIKE 'test'")
+    )
     assert len(result) == 2
 
 
@@ -334,13 +360,22 @@ def test_dsl_query_obj():
     assert q == {"query": "text:ice", "filter": ["collection:ice"]}
 
     q.add_filter("status:active")
-    assert q == {"query": "text:ice", "filter": ["collection:ice", "status:active"]}
+    assert q == {
+        "query": "text:ice",
+        "filter": ["collection:ice", "status:active"],
+    }
 
     q = SolrDSLQuery(filters=["collection:ice", "int_field:[3 TO 10]"])
-    assert q == {"query": "*:*", "filter": ["collection:ice", "int_field:[3 TO 10]"]}
+    assert q == {
+        "query": "*:*",
+        "filter": ["collection:ice", "int_field:[3 TO 10]"],
+    }
 
     q.add_filter("status:active")
-    assert q == {"query": "*:*", "filter": ["collection:ice", "int_field:[3 TO 10]", "status:active"]}
+    assert q == {
+        "query": "*:*",
+        "filter": ["collection:ice", "int_field:[3 TO 10]", "status:active"],
+    }
 
 
 def test_attribute_mapping_fallback():
@@ -358,15 +393,23 @@ def test_attribute_mapping_fallback():
 
 
 def test_spatial_disjoint_uses_negated_intersects_filter():
-    query = to_filter(parse("DISJOINT(geometry_jts, POLYGON((0 0, 1 0, 1 1, 0 1, 0 0)))"))
+    query = to_filter(
+        parse("DISJOINT(geometry_jts, POLYGON((0 0, 1 0, 1 1, 0 1, 0 0)))")
+    )
     assert query["query"] == "*:*"
-    assert query["filter"] == ["-{!field f=geometry_jts v='Intersects(POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0)))'}"]
+    assert query["filter"] == [
+        "-{!field f=geometry_jts v='Intersects(POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0)))'}"
+    ]
 
 
 def test_not_disjoint_inverts_filter_to_intersects():
-    query = to_filter(parse("NOT DISJOINT(geometry_jts, POLYGON((0 0, 1 0, 1 1, 0 1, 0 0)))"))
+    query = to_filter(
+        parse("NOT DISJOINT(geometry_jts, POLYGON((0 0, 1 0, 1 1, 0 1, 0 0)))")
+    )
     assert query["query"] == "*:*"
-    assert query["filter"] == ["{!field f=geometry_jts v='Intersects(POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0)))'}"]
+    assert query["filter"] == [
+        "{!field f=geometry_jts v='Intersects(POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0)))'}"
+    ]
 
 
 def test_equality_keeps_non_date_string_terms():
@@ -381,7 +424,9 @@ def test_equality_normalizes_date_literals():
 
 def test_or_keeps_spatial_in_filter_context():
     query = to_filter(
-        parse("INTERSECTS(geometry_jts, POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))) OR str_attribute LIKE 'this is a test'")
+        parse(
+            "INTERSECTS(geometry_jts, POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))) OR str_attribute LIKE 'this is a test'"
+        )
     )
     assert query["query"] == "*:*"
     assert query["filter"] == [
@@ -435,16 +480,24 @@ def test_or_keeps_spatial_in_filter_context():
 
 
 def test_spatial_and_text(data):
-    ast = parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0)) AND str_attribute LIKE 'this is a test'")
+    ast = parse(
+        "INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0)) AND str_attribute LIKE 'this is a test'"
+    )
     result = filter_(ast)
     assert len(result) == 1
 
 
 def test_spatial(data):
-    result = filter_(parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0))"))
+    result = filter_(
+        parse("INTERSECTS(geometry_jts, ENVELOPE (0.0 1.0 0.0 1.0))")
+    )
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
-    result = filter_(parse("INTERSECTS(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
+    result = filter_(
+        parse(
+            "INTERSECTS(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"
+        )
+    )
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(
@@ -452,23 +505,39 @@ def test_spatial(data):
     )
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
-    result = filter_(parse("DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
-    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
-
-    result = filter_(parse("NOT DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
-    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
-
-    result = filter_(parse("NOT INTERSECTS(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"))
+    result = filter_(
+        parse(
+            "DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"
+        )
+    )
     assert len(result) == 1 and result[0]["id"] is data[1]["id"]
 
     result = filter_(
-        parse("DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0))) OR str_attribute LIKE 'this is a test'")
+        parse(
+            "NOT DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"
+        )
+    )
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+    result = filter_(
+        parse(
+            "NOT INTERSECTS(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0)))"
+        )
+    )
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
+
+    result = filter_(
+        parse(
+            "DISJOINT(geometry_jts, POLYGON((0.0 0.0, 1.0 0.0, 1.0 1.0, 0.0 1.0, 0.0 0.0))) OR str_attribute LIKE 'this is a test'"
+        )
     )
     assert len(result) == 2
 
 
 def test_spatial_geo3d(data):
-    result = filter_(parse("INTERSECTS(geometry_geo3d, ENVELOPE (0.0 1.0 0.0 1.0))"))
+    result = filter_(
+        parse("INTERSECTS(geometry_geo3d, ENVELOPE (0.0 1.0 0.0 1.0))")
+    )
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
 
     result = filter_(

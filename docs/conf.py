@@ -17,6 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
+from pygeofilter.version import __version__  # noqa: E402
 
 # -- Project information -----------------------------------------------------
 
@@ -25,9 +26,9 @@ copyright = "2021, Fabian Schindler"
 author = "Fabian Schindler"
 
 # The short X.Y version
-version = ""
+version = __version__
 # The full version, including alpha/beta/rc tags
-release = "0.0.3"
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -144,7 +145,9 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "pygeofilter", "pygeofilter Documentation", [author], 1)]
+man_pages = [
+    (master_doc, "pygeofilter", "pygeofilter Documentation", [author], 1)
+]
 
 
 # -- Options for Texinfo output ----------------------------------------------

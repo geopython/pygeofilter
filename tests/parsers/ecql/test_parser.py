@@ -250,12 +250,18 @@ def test_attribute_before():
 
 
 def test_attribute_before_or_during_dt_dt():
-    result = parse("attr BEFORE OR DURING 2000-01-01T00:00:00Z / 2000-01-01T00:00:01Z")
+    result = parse(
+        "attr BEFORE OR DURING 2000-01-01T00:00:00Z / 2000-01-01T00:00:01Z"
+    )
     assert result == ast.TimeBeforeOrDuring(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -264,8 +270,10 @@ def test_attribute_before_or_during_dt_dr():
     result = parse("attr BEFORE OR DURING 2000-01-01T00:00:00Z / PT4S")
     assert result == ast.TimeBeforeOrDuring(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
             timedelta(seconds=4),
         ),
     )
@@ -275,9 +283,11 @@ def test_attribute_before_or_during_dr_dt():
     result = parse("attr BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z")
     assert result == ast.TimeBeforeOrDuring(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             timedelta(seconds=4),
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -308,7 +318,9 @@ def test_contains_attr_polygon():
     assert result == ast.GeometryContains(
         ast.Attribute("geometry"),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon(
+                [(1, 1), (2, 2), (0, 3), (1, 1)]
+            ).__geo_interface__,
         ),
     )
 
@@ -367,7 +379,8 @@ def test_overlaps_attr_multilinestring():
 def test_intersects_attr_point_ewkt():
     result = parse("INTERSECTS(geometry, SRID=4326;POINT(1 1))")
     assert (
-        result.rhs.geometry["crs"]["properties"]["name"] == "urn:ogc:def:crs:EPSG::4326"
+        result.rhs.geometry["crs"]["properties"]["name"]
+        == "urn:ogc:def:crs:EPSG::4326"
     )
     assert result == ast.GeometryIntersects(
         ast.Attribute("geometry"),
@@ -404,7 +417,9 @@ def test_relate_attr_polygon():
     assert result == ast.Relate(
         ast.Attribute("geometry"),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon(
+                [(1, 1), (2, 2), (0, 3), (1, 1)]
+            ).__geo_interface__,
         ),
         pattern="1*T***T**",
     )
@@ -418,7 +433,9 @@ def test_dwithin_attr_polygon():
     assert result == ast.DistanceWithin(
         ast.Attribute("geometry"),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon(
+                [(1, 1), (2, 2), (0, 3), (1, 1)]
+            ).__geo_interface__,
         ),
         distance=5,
         units="feet",
@@ -426,11 +443,15 @@ def test_dwithin_attr_polygon():
 
 
 def test_beyond_attr_polygon():
-    result = parse("BEYOND(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, nautical miles)")
+    result = parse(
+        "BEYOND(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, nautical miles)"
+    )
     assert result == ast.DistanceBeyond(
         ast.Attribute("geometry"),
         values.Geometry(
-            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__,
+            geometry.Polygon(
+                [(1, 1), (2, 2), (0, 3), (1, 1)]
+            ).__geo_interface__,
         ),
         distance=5,
         units="nautical miles",

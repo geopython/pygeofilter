@@ -47,7 +47,8 @@ class CQLTestCase(TransactionTestCase):
         qs = model_type.objects.filter(filters)
 
         self.assertEqual(
-            expected_ids, type(expected_ids)(qs.values_list("identifier", flat=True))
+            expected_ids,
+            type(expected_ids)(qs.values_list("identifier", flat=True)),
         )
 
     # common comparisons
@@ -189,17 +190,20 @@ class CQLTestCase(TransactionTestCase):
 
     def test_before_or_during_dt_td(self):
         self.evaluate(
-            "datetimeAttribute BEFORE OR DURING " "2000-01-01T00:00:00Z / PT4S", ("A",)
+            "datetimeAttribute BEFORE OR DURING 2000-01-01T00:00:00Z / PT4S",
+            ("A",),
         )
 
     def test_before_or_during_td_dt(self):
         self.evaluate(
-            "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z", ("A",)
+            "datetimeAttribute BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z",
+            ("A",),
         )
 
     def test_during_td_dt(self):
         self.evaluate(
-            "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z", ("A",)
+            "datetimeAttribute BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z",
+            ("A",),
         )
 
     # TODO: test DURING OR AFTER / AFTER
@@ -220,7 +224,8 @@ class CQLTestCase(TransactionTestCase):
 
     def test_intersects_multilinestring(self):
         self.evaluate(
-            "INTERSECTS(geometry, MULTILINESTRING((0 0, 1 1), (2 1, 1 2)))", ("A",)
+            "INTERSECTS(geometry, MULTILINESTRING((0 0, 1 1), (2 1, 1 2)))",
+            ("A",),
         )
 
     def test_intersects_polygon(self):
@@ -264,7 +269,9 @@ class CQLTestCase(TransactionTestCase):
         self.evaluate("intMetaAttribute = 10 + floatMetaAttribute", ("A", "B"))
 
     def test_arith_field_plus_field(self):
-        self.evaluate("intMetaAttribute = " "floatMetaAttribute + intAttribute", ("A",))
+        self.evaluate(
+            "intMetaAttribute = floatMetaAttribute + intAttribute", ("A",)
+        )
 
     def test_arith_field_plus_mul_1(self):
         self.evaluate("intMetaAttribute = intAttribute * 1.5 + 5", ("A",))

@@ -42,7 +42,9 @@ def evaluate(cql_expr, expected_ids, model_type=None):
 
     qs = model_type.objects.filter(filters)
 
-    assert expected_ids == type(expected_ids)(qs.values_list("identifier", flat=True))
+    assert expected_ids == type(expected_ids)(
+        qs.values_list("identifier", flat=True)
+    )
 
 
 # common comparisons
@@ -276,21 +278,21 @@ def test_before_or_during_dt_dt():
 @pytest.mark.django_db
 def test_before_or_during_dt_td():
     evaluate(
-        "datetimeAttribute BEFORE OR DURING " "2000-01-01T00:00:00Z / PT4S", ("A",)
+        "datetimeAttribute BEFORE OR DURING 2000-01-01T00:00:00Z / PT4S", ("A",)
     )
 
 
 @pytest.mark.django_db
 def test_before_or_during_td_dt():
     evaluate(
-        "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z", ("A",)
+        "datetimeAttribute BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z", ("A",)
     )
 
 
 @pytest.mark.django_db
 def test_during_td_dt():
     evaluate(
-        "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z", ("A",)
+        "datetimeAttribute BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z", ("A",)
     )
 
 
@@ -341,12 +343,16 @@ def test_intersects_linestring__inv():
 
 @pytest.mark.django_db
 def test_intersects_multilinestring():
-    evaluate("INTERSECTS(geometry, MULTILINESTRING((0 0, 1 1), (2 1, 1 2)))", ("A",))
+    evaluate(
+        "INTERSECTS(geometry, MULTILINESTRING((0 0, 1 1), (2 1, 1 2)))", ("A",)
+    )
 
 
 @pytest.mark.django_db
 def test_intersects_multilinestring_inv():
-    evaluate("INTERSECTS(MULTILINESTRING((0 0, 1 1), (2 1, 1 2)), geometry)", ("A",))
+    evaluate(
+        "INTERSECTS(MULTILINESTRING((0 0, 1 1), (2 1, 1 2)), geometry)", ("A",)
+    )
 
 
 @pytest.mark.django_db
@@ -461,12 +467,12 @@ def test_arith_field_plus_2_inv():
 
 @pytest.mark.django_db
 def test_arith_field_plus_field():
-    evaluate("intMetaAttribute = " "floatMetaAttribute + intAttribute", ("A",))
+    evaluate("intMetaAttribute = floatMetaAttribute + intAttribute", ("A",))
 
 
 @pytest.mark.django_db
 def test_arith_field_plus_field_inv():
-    evaluate("floatMetaAttribute + intAttribute" "= intMetaAttribute", ("A",))
+    evaluate("floatMetaAttribute + intAttribute= intMetaAttribute", ("A",))
 
 
 @pytest.mark.django_db

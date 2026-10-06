@@ -19,7 +19,9 @@ class Missing:
 
 
 def handle(
-    *tags: str, namespace: Union[str, Type[Missing]] = Missing, subiter: bool = True
+    *tags: str,
+    namespace: Union[str, Type[Missing]] = Missing,
+    subiter: bool = True,
 ) -> Callable:
     """Function-decorator to mark a class function as a handler for a
     given node type.
@@ -68,7 +70,8 @@ class XMLParserMeta(type):
                         namespace = value.namespace
                         if namespace is Missing:
                             namespace = (
-                                getattr(cls_, "namespace", None) or cls_namespace
+                                getattr(cls_, "namespace", None)
+                                or cls_namespace
                             )
                         if namespace:
                             if isinstance(namespace, (list, tuple)):
@@ -114,7 +117,9 @@ class XMLParser(metaclass=XMLParserMeta):
             raise NodeParsingError(f"Cannot parse XML tag {node.tag}")
 
         if parse_func.subiter:
-            sub_nodes = [self._evaluate_node(child) for child in node.iterchildren()]
+            sub_nodes = [
+                self._evaluate_node(child) for child in node.iterchildren()
+            ]
             return parse_func(self, node, *sub_nodes)
         else:
             return parse_func(self, node)

@@ -3,11 +3,11 @@ from typing import Dict, Union
 
 from lxml import etree
 
-from ... import values
+from ... import ast
 from ...util import parse_datetime, parse_duration
 from .util import Element
 
-Temporal = Union[date, datetime, timedelta, values.Interval]
+Temporal = Union[date, datetime, timedelta, ast.Interval]
 
 
 def _parse_time_position(node: Element, nsmap: Dict[str, str]) -> datetime:
@@ -19,14 +19,16 @@ def _parse_time_instant(node: Element, nsmap: Dict[str, str]) -> datetime:
     return _parse_time_position(position, nsmap)
 
 
-def _parse_time_period(node: Element, nsmap: Dict[str, str]) -> values.Interval:
+def _parse_time_period(node: Element, nsmap: Dict[str, str]) -> ast.Interval:
     begin = node.xpath(
-        "gml:begin/gml:TimeInstant/gml:timePosition|gml:beginPosition", namespaces=nsmap
+        "gml:begin/gml:TimeInstant/gml:timePosition|gml:beginPosition",
+        namespaces=nsmap,
     )[0]
     end = node.xpath(
-        "gml:end/gml:TimeInstant/gml:timePosition|gml:endPosition", namespaces=nsmap
+        "gml:end/gml:TimeInstant/gml:timePosition|gml:endPosition",
+        namespaces=nsmap,
     )[0]
-    return values.Interval(
+    return ast.Interval(
         _parse_time_position(begin, nsmap),
         _parse_time_position(end, nsmap),
     )

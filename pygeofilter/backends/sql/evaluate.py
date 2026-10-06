@@ -160,7 +160,9 @@ class SQLEvaluator(Evaluator):
 
     @handle(values.Envelope)
     def envelope(self, node: values.Envelope):
-        wkb_hex = shapely.geometry.box(node.x1, node.y1, node.x2, node.y2).wkb_hex
+        wkb_hex = shapely.geometry.box(
+            node.x1, node.y1, node.x2, node.y2
+        ).wkb_hex
         return f"ST_GeomFromWKB(x'{wkb_hex}')"
 
 

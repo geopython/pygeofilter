@@ -1,2 +1,107 @@
 [build-system]
-requires = ["setuptools>=46.4", "wheel"]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygeofilter"
+description = "pygeofilter is a pure Python parser implementation of OGC filtering standards"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Fabian Schindler", email = "fabian.schindler@eox.at" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dynamic = ["version"]
+dependencies = [
+    "click",
+    "dateparser",
+    "lark",
+    "pygeoif>=1.0.0",
+]
+
+[project.optional-dependencies]
+backend-django = ["django"]
+backend-sqlalchemy = ["geoalchemy2", "sqlalchemy"]
+backend-native = ["shapely"]
+backend-elasticsearch = ["elasticsearch", "elasticsearch-dsl"]
+backend-opensearch = ["opensearch-py", "opensearch-dsl"]
+fes = ["pygml>=0.2"]
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-django",
+    "mypy",
+    "types-dateparser",
+    "pre-commit",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-django",
+    "django",
+    "geoalchemy2",
+    "sqlalchemy",
+    "geopandas",
+    "fiona",
+    "pyproj",
+    "rtree",
+    "pygml",
+    "dateparser",
+    "lark",
+    "elasticsearch",
+    "elasticsearch-dsl",
+    "opensearch-py",
+    "opensearch-dsl",
+]
+docs = [
+    "sphinxcontrib-apidoc",
+    "m2r2",
+]
+
+[project.scripts]
+pygeofilter = "pygeofilter.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/geopython/pygeofilter"
+Documentation = "https://pygeofilter.readthedocs.io"
+Repository = "https://github.com/geopython/pygeofilter"
+Issues = "https://github.com/geopython/pygeofilter/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "pygeofilter.version.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["pygeofilter*"]
+
+[tool.setuptools.package-data]
+pygeofilter = ["py.typed", "**/*.lark"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 80
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "C90"]
+ignore = ["E501", "E203"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pygeofilter"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--cov=pygeofilter", "--cov-report=term-missing"]

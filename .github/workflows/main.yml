@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       name: Setup Python ${{ matrix.python-version }}
       with:
@@ -19,10 +19,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y binutils gdal-bin libgdal-dev libproj-dev libsqlite3-mod-spatialite spatialite-bin
-        pip3 install -r requirements-test.txt
-        pip3 install -r requirements-dev.txt
         pip3 install gdal=="`gdal-config --version`.*"
-        pip3 install .
+        pip3 install ".[test,dev,fes,backend-django,backend-sqlalchemy,backend-native,backend-elasticsearch,backend-opensearch]"
     - name: Configure sysctl limits
       run: |
         sudo swapoff -a
@@ -53,7 +51,7 @@ jobs:
     - name: Run unit tests
       run: |
         pytest
-    # - name: run pre-commit (code formatting, lint and type checking)
-    #   run: |
-    #     python -m pip3 install pre-commit
-    #     pre-commit run --all-files
+    - name: Run pre-commit (code formatting, lint and type checking)
+      run: |
+        pip3 install pre-commit
+        pre-commit run --all-files

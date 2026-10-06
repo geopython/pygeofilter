@@ -45,7 +45,7 @@ class Record(models.Model):
             (1, "ASCENDING"),
             (2, "DESCENDING"),
         ],
-        **optional
+        **optional,
     )
 
 

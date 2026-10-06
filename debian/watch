@@ -1,0 +1,8 @@
+version=4
+opts=\
+pgpmode=none,\
+dversionmangle=s/\+(debian|dfsg|ds|deb)\d*$//,\
+uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|c|beta|b|alpha|a)\d*)$/$1~$2/;s/RC/rc/;s/\-/\./g,\
+filenamemangle=s/(?:.*?)?(?:rel|v|@PACKAGE@)?[\-\_]?(\d\S*)\.(tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))/@PACKAGE@-$1.$2/ \
+https://github.com/geopython/pygeofilter/tags \
+(?:.*?/archive/(?:.*?/)?)?(?:rel|v|@PACKAGE@)?[\-\_]?(\d\S*)\.(?:tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))

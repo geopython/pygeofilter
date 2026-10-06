@@ -283,31 +283,43 @@ def test_attribute_after_dt_dt():
 
     assert result == ast.TimeAfter(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
 
 def test_meets_dt_dr():
-    result = parse({"meets": [{"property": "attr"}, ["2000-01-01T00:00:00Z", "PT4S"]]})
+    result = parse(
+        {"meets": [{"property": "attr"}, ["2000-01-01T00:00:00Z", "PT4S"]]}
+    )
     assert result == ast.TimeMeets(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
             timedelta(seconds=4),
         ),
     )
 
 
 def test_attribute_metby_dr_dt():
-    result = parse({"metby": [{"property": "attr"}, ["PT4S", "2000-01-01T00:00:03Z"]]})
+    result = parse(
+        {"metby": [{"property": "attr"}, ["PT4S", "2000-01-01T00:00:03Z"]]}
+    )
     assert result == ast.TimeMetBy(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             timedelta(seconds=4),
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -318,9 +330,11 @@ def test_attribute_toverlaps_open_dt():
     )
     assert result == ast.TimeOverlaps(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             None,
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -331,8 +345,10 @@ def test_attribute_overlappedby_dt_open():
     )
     assert result == ast.TimeOverlappedBy(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
             None,
         ),
     )
@@ -409,7 +425,9 @@ def test_disjoint_linestring_attr():
     )
     assert result == ast.GeometryDisjoint(
         values.Geometry(
-            normalize_geom(geometry.LineString([(1, 1), (2, 2)]).__geo_interface__),
+            normalize_geom(
+                geometry.LineString([(1, 1), (2, 2)]).__geo_interface__
+            ),
         ),
         ast.Attribute("geometry"),
     )
@@ -432,7 +450,9 @@ def test_contains_attr_polygon():
         ast.Attribute("geometry"),
         values.Geometry(
             normalize_geom(
-                geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__
+                geometry.Polygon(
+                    [(1, 1), (2, 2), (0, 3), (1, 1)]
+                ).__geo_interface__
             ),
         ),
     )

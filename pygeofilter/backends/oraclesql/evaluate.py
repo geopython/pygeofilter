@@ -65,7 +65,9 @@ SPATIAL_COMPARISON_OP_MAP = {
 class OracleSQLEvaluator(Evaluator):
     bind_variables: Dict[str, Any]
 
-    def __init__(self, attribute_map: Dict[str, str], function_map: Dict[str, str]):
+    def __init__(
+        self, attribute_map: Dict[str, str], function_map: Dict[str, str]
+    ):
         self.attribute_map = attribute_map
         self.function_map = function_map
 
@@ -103,7 +105,9 @@ class OracleSQLEvaluator(Evaluator):
             )
             self.b_cnt += 1
         else:
-            sql = f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN " f"{low} AND {high})"
+            sql = (
+                f"({lhs} {'NOT ' if node.not_ else ''}BETWEEN {low} AND {high})"
+            )
         return sql
 
     @handle(ast.Like)
@@ -168,7 +172,7 @@ class OracleSQLEvaluator(Evaluator):
             self.b_cnt += 1
         else:
             geom_sql = (
-                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', " f"srid => {srid})"
+                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
             )
 
         sql = f"SDO_RELATE({lhs}, {geom_sql}, '{param}') = 'TRUE'"
@@ -211,7 +215,9 @@ class OracleSQLEvaluator(Evaluator):
             )
             self.b_cnt += 1
         else:
-            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', " f"srid => {srid})"
+            sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
+            )
         return sql
 
     @handle(values.Envelope)
@@ -229,7 +235,9 @@ class OracleSQLEvaluator(Evaluator):
             )
             self.b_cnt += 1
         else:
-            sql = f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', " f"srid => {srid})"
+            sql = (
+                f"SDO_UTIL.FROM_JSON(geometry => '{geo_json}', srid => {srid})"
+            )
         return sql
 
 

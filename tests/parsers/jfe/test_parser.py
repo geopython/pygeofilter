@@ -144,28 +144,46 @@ def test_attribute_before():
 
 def test_attribute_after_dt_dt():
     result = parse(
-        ["after", ["get", "attr"], "2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]
+        [
+            "after",
+            ["get", "attr"],
+            "2000-01-01T00:00:00Z",
+            "2000-01-01T00:00:01Z",
+        ]
     )
 
     assert result == ast.TimeAfter(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
 
 def test_attribute_during_dt_dt():
     result = parse(
-        ["during", ["get", "attr"], "2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]
+        [
+            "during",
+            ["get", "attr"],
+            "2000-01-01T00:00:00Z",
+            "2000-01-01T00:00:01Z",
+        ]
     )
 
     assert result == ast.TimeDuring(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -233,7 +251,9 @@ def test_logical_all():
 
 
 def test_logical_any():
-    result = parse(["any", ["<", ["get", "height"], 50], ["!", ["get", "occupied"]]])
+    result = parse(
+        ["any", ["<", ["get", "height"], 50], ["!", ["get", "occupied"]]]
+    )
     assert result == ast.Or(
         ast.LessThan(
             ast.Attribute("height"),

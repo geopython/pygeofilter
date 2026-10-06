@@ -148,7 +148,11 @@ class NativeEvaluator(Evaluator):
     def like(self, node, lhs):
         maybe_not_inv = "" if node.not_ else "not "
         regex = like_pattern_to_re(
-            node.pattern, node.nocase, node.wildcard, node.singlechar, node.escapechar
+            node.pattern,
+            node.nocase,
+            node.wildcard,
+            node.singlechar,
+            node.escapechar,
         )
         key = self._add_local(regex)
         return f"({key}.match({lhs}) is {maybe_not_inv}None)"
@@ -192,11 +196,16 @@ class NativeEvaluator(Evaluator):
 
     @handle(ast.SpatialComparisonPredicate, subclasses=True)
     def spatial_operation(self, node, lhs, rhs):
-        return f"(getattr(ensure_spatial({lhs}), " f"{node.op.value.lower()!r})({rhs}))"
+        return (
+            f"(getattr(ensure_spatial({lhs}), "
+            f"{node.op.value.lower()!r})({rhs}))"
+        )
 
     @handle(ast.Relate)
     def spatial_pattern(self, node, lhs, rhs):
-        return f"(ensure_spatial({lhs}).relate_pattern({rhs}, {node.pattern!r}))"
+        return (
+            f"(ensure_spatial({lhs}).relate_pattern({rhs}, {node.pattern!r}))"
+        )
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
@@ -229,14 +238,14 @@ class NativeEvaluator(Evaluator):
         args = ", ".join([f"({arg})" for arg in arguments])
         return f"{node.name}({args})"
 
-    @handle(*values.LITERALS)
+    @handle(type(None), *values.LITERALS)
     def literal(self, node):
         key = self._add_local(node)
         return key
 
-    @handle(values.Interval)
+    @handle(ast.Interval)
     def interval(self, node, low, high):
-        return f"values.Interval({low}, {high})"
+        return f"_normalize_interval({low}, {high})"
 
     @handle(values.Geometry)
     def geometry(self, node):
@@ -246,7 +255,9 @@ class NativeEvaluator(Evaluator):
     @handle(values.Envelope)
     def envelope(self, node):
         key = self._add_local(
-            shapely.geometry.Polygon.from_bounds(node.x1, node.y1, node.x2, node.y2)
+            shapely.geometry.Polygon.from_bounds(
+                node.x1, node.y1, node.x2, node.y2
+            )
         )
         return key
 
@@ -258,13 +269,14 @@ class NativeEvaluator(Evaluator):
         globals_ = {
             "relate_intervals": relate_intervals,
             "to_interval": to_interval,
+            "_normalize_interval": _normalize_interval,
             "ensure_spatial": ensure_spatial,
             "ast": ast,
-            "values": values,
         }
         if not set(globals_).isdisjoint(set(self.function_map)):
             raise ValueError(
-                f"globals collision {list(globals_)} and " f"{list(self.function_map)}"
+                f"globals collision {list(globals_)} and "
+                f"{list(self.function_map)}"
             )
 
         globals_.update(self.function_map)
@@ -276,21 +288,34 @@ class NativeEvaluator(Evaluator):
         return eval(expression, globals_)
 
 
-MaybeInterval = Union[values.Interval, date, datetime, str, None]
+IntervalBound = Union[date, datetime, timedelta, str, None]
+MaybeInterval = Union[
+    Tuple[IntervalBound, IntervalBound], date, datetime, str, None
+]
 InternalInterval = Tuple[Optional[datetime], Optional[datetime]]
 
 
-def _interval_to_internal_interval(value: values.Interval) -> InternalInterval:
-    low = value.start
-    high = value.end
+def _normalize_interval(
+    low: IntervalBound, high: IntervalBound
+) -> InternalInterval:
+    """Normalize evaluated bounds to the native backend's interval tuple."""
+    if isinstance(low, str):
+        low = parse_datetime(low)
+    if isinstance(high, str):
+        high = parse_datetime(high)
 
     # convert low and high dates to their respective datetime
     # by using 00:00 time for the low part and 23:59:59 for the high
     # part
-    if isinstance(low, date):
+    if isinstance(low, date) and not isinstance(low, datetime):
         low = datetime.combine(low, time.min, timezone.utc)
-    if isinstance(high, date):
+    if isinstance(high, date) and not isinstance(high, datetime):
         high = datetime.combine(high, time.max, timezone.utc)
+
+    if isinstance(low, datetime) and low.tzinfo is None:
+        low = low.replace(tzinfo=timezone.utc)
+    if isinstance(high, datetime) and high.tzinfo is None:
+        high = high.replace(tzinfo=timezone.utc)
 
     # low and high are now either datetimes, timedeltas or None
 
@@ -305,6 +330,10 @@ def _interval_to_internal_interval(value: values.Interval) -> InternalInterval:
         else:
             raise ValueError(f"Cannot combine {low} with {high}")
 
+    if not isinstance(low, (datetime, type(None))) or not isinstance(
+        high, (datetime, type(None))
+    ):
+        raise ValueError(f"Invalid interval bounds {low!r}, {high!r}")
     return (low, high)
 
 
@@ -312,7 +341,7 @@ def to_interval(value: MaybeInterval) -> InternalInterval:
     """Converts the given value to an interval tuple of ``start``/``stop``
     as Python datetime objects.
 
-    - ``values.Interval`` objects are expanded to two datetimes:
+    - Interval tuples are normalized to two datetimes:
         - two datetimes are returned as such
         - a date is transformed to a datetime, where the ``time``
           component is either ``time.min`` for start or ``time.max``
@@ -333,8 +362,8 @@ def to_interval(value: MaybeInterval) -> InternalInterval:
             value = value.replace(tzinfo=timezone.utc)
         return (value, value)
 
-    elif isinstance(value, values.Interval):
-        return _interval_to_internal_interval(value)
+    elif isinstance(value, tuple) and len(value) == 2:
+        return _normalize_interval(*value)
 
     elif isinstance(value, datetime):
         return (value, value)

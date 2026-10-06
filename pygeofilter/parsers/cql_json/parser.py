@@ -29,7 +29,7 @@ import json
 from datetime import datetime
 from typing import List, Union, cast
 
-from ... import ast, values
+from ... import ast
 from ...util import parse_datetime, parse_duration
 from ...values import Envelope, Geometry
 
@@ -109,10 +109,11 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:  # noqa
 
     if isinstance(node, list):
         result = [
-            cast(datetime, walk_cql_json(sub_node, is_temporal)) for sub_node in node
+            cast(datetime, walk_cql_json(sub_node, is_temporal))
+            for sub_node in node
         ]
         if is_temporal:
-            return values.Interval(*result)
+            return ast.Interval(*result)
         else:
             return result
 
@@ -186,8 +187,14 @@ def walk_cql_json(node: dict, is_temporal: bool = False) -> ast.AstType:  # noqa
 
         elif name in TEMPORAL_PREDICATES_MAP:
             return TEMPORAL_PREDICATES_MAP[name](
-                cast(ast.TemporalAstType, walk_cql_json(value[0], is_temporal=True)),
-                cast(ast.TemporalAstType, walk_cql_json(value[1], is_temporal=True)),
+                cast(
+                    ast.TemporalAstType,
+                    walk_cql_json(value[0], is_temporal=True),
+                ),
+                cast(
+                    ast.TemporalAstType,
+                    walk_cql_json(value[1], is_temporal=True),
+                ),
             )
 
         elif name in ARRAY_PREDICATES_MAP:

@@ -25,8 +25,7 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
-""" General utilities for the Apache Solr backend.
-"""
+"""General utilities for the Apache Solr backend."""
 
 import re
 

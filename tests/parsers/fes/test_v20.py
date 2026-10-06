@@ -391,8 +391,18 @@ def test_geom_overlaps():
                         [(0.2, 0.2), (0.5, 0.2), (0.2, 0.5), (0.2, 0.2)],
                     ],
                     [
-                        [(10.0, 10.0), (11.0, 10.0), (10.0, 11.0), (10.0, 10.0)],
-                        [(10.2, 10.2), (10.5, 10.2), (10.2, 10.5), (10.2, 10.2)],
+                        [
+                            (10.0, 10.0),
+                            (11.0, 10.0),
+                            (10.0, 11.0),
+                            (10.0, 10.0),
+                        ],
+                        [
+                            (10.2, 10.2),
+                            (10.5, 10.2),
+                            (10.2, 10.5),
+                            (10.2, 10.2),
+                        ],
                     ],
                 ],
             }
@@ -573,8 +583,12 @@ def test_begins():
     )
     assert result == ast.TimeBegins(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2001, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2001, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )

@@ -63,10 +63,19 @@ def _invert_filter_query(filter_query):
     (e.g., bool dicts), wraps the filter in a bool.must_not structure.
     """
     if isinstance(filter_query, str):
-        return filter_query[1:] if filter_query.startswith("-") else f"-{filter_query}"
-    if isinstance(filter_query, dict) and "bool" in filter_query and "must_not" in filter_query["bool"]:
+        return (
+            filter_query[1:]
+            if filter_query.startswith("-")
+            else f"-{filter_query}"
+        )
+    if (
+        isinstance(filter_query, dict)
+        and "bool" in filter_query
+        and "must_not" in filter_query["bool"]
+    ):
         return {"bool": {"must": filter_query["bool"]["must_not"]}}
     return {"bool": {"must_not": [filter_query]}}
+
 
 def _to_solr_date(value):
     """Convert input date/datetime to Solr UTC datetime string: YYYY-MM-DDTHH:MM:SSZ.
@@ -111,9 +120,10 @@ def _to_solr_date(value):
     # Solr wants Zulu time with second precision.
     return dt_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+
 COMPARISON_OP_MAP = {
-    ast.ComparisonOp.EQ: "{lhs}:\"{rhs}\"",
-    ast.ComparisonOp.NE: "-{lhs}:\"{rhs}\"",
+    ast.ComparisonOp.EQ: '{lhs}:"{rhs}"',
+    ast.ComparisonOp.NE: '-{lhs}:"{rhs}"',
     ast.ComparisonOp.GT: "{lhs}:{{{rhs} TO *]",
     ast.ComparisonOp.GE: "{lhs}:[{rhs} TO *]",
     ast.ComparisonOp.LT: "{lhs}:[* TO {rhs}}}",
@@ -187,10 +197,18 @@ class SOLRDSLEvaluator(Evaluator):
         not be merged into bool.must (they don't work correctly in the query position
         for Geo3D fields). Non-spatial queries are combined in bool.must as before.
         """
-        lhs_q = lhs.get("query", "*:*") if isinstance(lhs, SolrDSLQuery) else lhs
-        rhs_q = rhs.get("query", "*:*") if isinstance(rhs, SolrDSLQuery) else rhs
-        lhs_filters = list(lhs.get("filter", [])) if isinstance(lhs, SolrDSLQuery) else []
-        rhs_filters = list(rhs.get("filter", [])) if isinstance(rhs, SolrDSLQuery) else []
+        lhs_q = (
+            lhs.get("query", "*:*") if isinstance(lhs, SolrDSLQuery) else lhs
+        )
+        rhs_q = (
+            rhs.get("query", "*:*") if isinstance(rhs, SolrDSLQuery) else rhs
+        )
+        lhs_filters = (
+            list(lhs.get("filter", [])) if isinstance(lhs, SolrDSLQuery) else []
+        )
+        rhs_filters = (
+            list(rhs.get("filter", [])) if isinstance(rhs, SolrDSLQuery) else []
+        )
         combined_filters = lhs_filters + rhs_filters
 
         # Build must list from non-trivial (non-wildcard) query parts
@@ -229,7 +247,11 @@ class SOLRDSLEvaluator(Evaluator):
                     return {"bool": {"must": ["*:*"], "must_not": [clause[1:]]}}
                 if isinstance(clause, dict) and "bool" in clause:
                     bool_part = clause["bool"]
-                    if "must_not" in bool_part and "must" not in bool_part and "should" not in bool_part:
+                    if (
+                        "must_not" in bool_part
+                        and "must" not in bool_part
+                        and "should" not in bool_part
+                    ):
                         normalized = dict(clause)
                         normalized["bool"] = dict(bool_part)
                         normalized["bool"]["must"] = ["*:*"]
@@ -266,7 +288,9 @@ class SOLRDSLEvaluator(Evaluator):
         Creates a range query for comparison operators.
         """
         rhs = _to_solr_date(rhs)
-        return SolrDSLQuery(f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs))
+        return SolrDSLQuery(
+            f"{COMPARISON_OP_MAP[node.op]}".format(lhs=lhs, rhs=rhs)
+        )
 
     @handle(ast.Between)
     def between(self, node: ast.Between, lhs, low, high):
@@ -286,10 +310,12 @@ class SOLRDSLEvaluator(Evaluator):
         """
         Creates a terms query for `IN` conditions.
         """
+
         def _quote(v):
             if isinstance(v, str):
                 return '"' + v.replace('"', '\\"') + '"'
             return str(v)
+
         options_str = " OR ".join(_quote(option) for option in options)
         terms_query = f"{lhs}:({options_str})"
         if node.not_:
@@ -340,22 +366,34 @@ class SOLRDSLEvaluator(Evaluator):
 
             result = SolrDSLQuery("*:*")
             if sub_filters:
-                result["filter"] = [_invert_filter_query(fq) for fq in sub_filters]
+                result["filter"] = [
+                    _invert_filter_query(fq) for fq in sub_filters
+                ]
 
             # A wildcard query contributes no restriction and does not need
             # query-level negation.
             if sub_query == "*:*":
                 return result
 
-            if isinstance(sub_query, dict) and "bool" in sub_query and "must_not" in sub_query["bool"]:
-                result["query"] = {"bool": {"must": sub_query["bool"]["must_not"]}}
+            if (
+                isinstance(sub_query, dict)
+                and "bool" in sub_query
+                and "must_not" in sub_query["bool"]
+            ):
+                result["query"] = {
+                    "bool": {"must": sub_query["bool"]["must_not"]}
+                }
                 return result
 
             result["query"] = {"bool": {"must_not": [sub_query]}}
             return result
 
         # Non-SolrDSLQuery fallback.
-        if isinstance(sub, dict) and "bool" in sub and "must_not" in sub["bool"]:
+        if (
+            isinstance(sub, dict)
+            and "bool" in sub
+            and "must_not" in sub["bool"]
+        ):
             return SolrDSLQuery({"bool": {"must": sub["bool"]["must_not"]}})
         return SolrDSLQuery({"bool": {"must_not": [sub]}})
 
@@ -364,7 +402,9 @@ class SOLRDSLEvaluator(Evaluator):
         """Transforms the provided LIKE pattern to a Solr wildcard
         pattern. This only works properly on fields that are not tokenized.
         """
-        pattern = like_to_wildcard(node.pattern, node.wildcard, node.singlechar, node.escapechar)
+        pattern = like_to_wildcard(
+            node.pattern, node.wildcard, node.singlechar, node.escapechar
+        )
         if "*" in pattern:
             p = pattern.split("*")
             if p[0] == "":
@@ -393,7 +433,7 @@ class SOLRDSLEvaluator(Evaluator):
         """Geometry values are converted to a Solr spatial query."""
         geom_wkt = shape(node).wkt
         geom = shapely.wkt.loads(geom_wkt)
-        if geom.geom_type == "Polygon" or geom.geom_type =="MultiPolygon":
+        if geom.geom_type == "Polygon" or geom.geom_type == "MultiPolygon":
             # Rectangular polygons (from BBox) must use ENVELOPE format for Geo3D.
             # WKT polygons with coordinates at ±180/±90 are "coplanar" in 3D space
             # (poles and antimeridian are degenerate points), causing Solr to reject
@@ -408,7 +448,9 @@ class SOLRDSLEvaluator(Evaluator):
                 # Global bbox covers the whole Earth — spatial predicate is a no-op.
                 if minx <= -180 and miny <= -90 and maxx >= 180 and maxy >= 90:
                     return None
-                if (minx <= -179.9999 and maxx >= 179.9999) or (miny <= -89.9999 and maxy >= 89.9999):
+                if (minx <= -179.9999 and maxx >= 179.9999) or (
+                    miny <= -89.9999 and maxy >= 89.9999
+                ):
                     return f"ENVELOPE({minx}, {maxx}, {maxy}, {miny})"
             geom = geom.reverse() if not geom.exterior.is_ccw else geom
         return geom.wkt
@@ -436,7 +478,10 @@ class SOLRDSLEvaluator(Evaluator):
         if isinstance(rhs, (date, datetime)):
             low = high = rhs.strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
-            low, high = rhs[0].strftime("%Y-%m-%dT%H:%M:%SZ"), rhs[1].strftime("%Y-%m-%dT%H:%M:%SZ")
+            low, high = (
+                rhs[0].strftime("%Y-%m-%dT%H:%M:%SZ"),
+                rhs[1].strftime("%Y-%m-%dT%H:%M:%SZ"),
+            )
 
         query = None
         if op == ast.TemporalComparisonOp.DISJOINT:
@@ -445,7 +490,10 @@ class SOLRDSLEvaluator(Evaluator):
             query = f"{lhs}:{{{high} TO *]"
         elif op == ast.TemporalComparisonOp.BEFORE:
             query = f"{lhs}:[* TO {low}}}"
-        elif op == ast.TemporalComparisonOp.TOVERLAPS or op == ast.TemporalComparisonOp.OVERLAPPEDBY:
+        elif (
+            op == ast.TemporalComparisonOp.TOVERLAPS
+            or op == ast.TemporalComparisonOp.OVERLAPPEDBY
+        ):
             query = f"{lhs}:[{low} TO {high}]"
         elif op == ast.TemporalComparisonOp.BEGINS:
             query = f"{lhs}:{low}"
@@ -470,8 +518,16 @@ class SOLRDSLEvaluator(Evaluator):
 
         return SolrDSLQuery(query)
 
-    @handle(ast.GeometryIntersects, ast.GeometryDisjoint, ast.GeometryWithin, ast.GeometryContains, ast.GeometryEquals)
-    def spatial_comparison(self, node: ast.SpatialComparisonPredicate, lhs: str, rhs):
+    @handle(
+        ast.GeometryIntersects,
+        ast.GeometryDisjoint,
+        ast.GeometryWithin,
+        ast.GeometryContains,
+        ast.GeometryEquals,
+    )
+    def spatial_comparison(
+        self, node: ast.SpatialComparisonPredicate, lhs: str, rhs
+    ):
         """Creates a spatial query for the given spatial comparison predicate.
 
         Spatial {!field ...} queries MUST go into the Solr filter[] array, not the
@@ -492,9 +548,11 @@ class SOLRDSLEvaluator(Evaluator):
         """Performs a spatial query for the given bounding box.
         Ignores CRS parameter, as it is not supported by Solr.
         """
-        bbox = self.envelope(values.Envelope(node.minx, node.maxx, node.miny, node.maxy))
+        bbox = self.envelope(
+            values.Envelope(node.minx, node.maxx, node.miny, node.maxy)
+        )
         query = f"{{!field f={lhs} v='Intersects({bbox})'}}"
-        return SolrDSLQuery('*:*', filters=[query])
+        return SolrDSLQuery("*:*", filters=[query])
 
     # @handle(ast.Arithmetic, subclasses=True)
     # def arithmetic(self, node: ast.Arithmetic, lhs, rhs):
@@ -528,7 +586,9 @@ def to_filter(
     """Shorthand function to convert a pygeofilter AST to an Apache Solr
     filter structure.
     """
-    return SOLRDSLEvaluator(attribute_map, Version(version) if version else None).evaluate(root)
+    return SOLRDSLEvaluator(
+        attribute_map, Version(str(version)) if version else None
+    ).evaluate(root)
 
 
 def unwrap_query(obj):

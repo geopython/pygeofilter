@@ -1,2 +1,0 @@
-sphinxcontrib-apidoc
-m2r2

@@ -76,7 +76,6 @@ ParseResult = Union[
     int,
     datetime,
     values.Geometry,
-    values.Interval,
     Dict[Any, Any],  # TODO: for like wildcards.
 ]
 
@@ -133,26 +132,35 @@ def _parse_node(node: Union[list, dict]) -> ParseResult:  # noqa: C901
         )
 
     elif op in SPATIAL_PREDICATES_MAP:
-        return SPATIAL_PREDICATES_MAP[op](*cast(List[ast.SpatialAstType], arguments))
+        return SPATIAL_PREDICATES_MAP[op](
+            *cast(List[ast.SpatialAstType], arguments)
+        )
 
     elif op in TEMPORAL_PREDICATES_MAP:
         # parse strings to datetimes
         dt_args = [
-            parse_datetime(arg) if isinstance(arg, str) else arg for arg in arguments
+            parse_datetime(arg) if isinstance(arg, str) else arg
+            for arg in arguments
         ]
         if len(arguments) == 3:
-            if isinstance(dt_args[0], datetime) and isinstance(dt_args[1], datetime):
+            if isinstance(dt_args[0], datetime) and isinstance(
+                dt_args[1], datetime
+            ):
                 dt_args = [
-                    values.Interval(dt_args[0], dt_args[1]),
+                    ast.Interval(dt_args[0], dt_args[1]),
                     dt_args[2],
                 ]
-            if isinstance(dt_args[1], datetime) and isinstance(dt_args[2], datetime):
+            if isinstance(dt_args[1], datetime) and isinstance(
+                dt_args[2], datetime
+            ):
                 dt_args = [
                     dt_args[0],
-                    values.Interval(dt_args[1], dt_args[2]),
+                    ast.Interval(dt_args[1], dt_args[2]),
                 ]
 
-        return TEMPORAL_PREDICATES_MAP[op](*cast(List[ast.TemporalAstType], dt_args))
+        return TEMPORAL_PREDICATES_MAP[op](
+            *cast(List[ast.TemporalAstType], dt_args)
+        )
 
     # special property getters
     elif op in ["id", "geometry"]:

@@ -18,9 +18,9 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import func, select
 
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
-from pygeofilter.parsers.ecql import parse as parse_ecql
-from pygeofilter.parsers.cql2_text import parse as parse_cql_text
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
+from pygeofilter.parsers.cql2_text import parse as parse_cql_text
+from pygeofilter.parsers.ecql import parse as parse_ecql
 
 Base = declarative_base()
 
@@ -146,7 +146,9 @@ def setup_database(connection):
     connection.commit()
 
     seed_database(
-        scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=connection))
+        scoped_session(
+            sessionmaker(autocommit=False, autoflush=False, bind=connection)
+        )
     )
 
     yield
@@ -163,7 +165,9 @@ def db_session(setup_database, connection):
     transaction.rollback()
 
 
-def evaluate(session, cql_expr, expected_ids, filter_option=None, parser=parse_ecql):
+def evaluate(
+    session, cql_expr, expected_ids, filter_option=None, parser=parse_ecql
+):
     ast = parser(cql_expr)
     filters = to_filter(ast, FIELD_MAPPING, filter_option)
 
@@ -274,11 +278,18 @@ def test_not_like_endswith(db_session):
 def test_not_ilike_endswith(db_session):
     evaluate(db_session, "strMetaAttribute NOT ILIKE '%b'", ("A",))
 
+
 def test_not_eq(db_session):
-    evaluate(db_session, "NOT(strAttribute = 'AAA')", ("B", ), None, parse_cql_text)
+    evaluate(
+        db_session, "NOT(strAttribute = 'AAA')", ("B",), None, parse_cql_text
+    )
+
 
 def test_not_gt(db_session):
-    evaluate(db_session, "NOT(floatAttribute > 1)", ("A", ), None, parse_cql_text)
+    evaluate(
+        db_session, "NOT(floatAttribute > 1)", ("A",), None, parse_cql_text
+    )
+
 
 # (NOT) IN
 
@@ -301,30 +312,81 @@ def test_string_null(db_session):
 def test_string_not_null(db_session):
     evaluate(db_session, "intAttribute IS NOT NULL", ("A",))
 
+
 # CASEI
 def test_casei_equals(db_session):
-    evaluate(db_session, "CASEI(strAttribute) = CASEI('aaa')", ("A",), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "CASEI(strAttribute) = CASEI('aaa')",
+        ("A",),
+        None,
+        parse_cql_text,
+    )
+
 
 def test_casei_like(db_session):
-    evaluate(db_session, "CASEI(strAttribute) LIKE CASEI('aaa')", ("A",), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "CASEI(strAttribute) LIKE CASEI('aaa')",
+        ("A",),
+        None,
+        parse_cql_text,
+    )
+
 
 def test_casei_notlike(db_session):
-    evaluate(db_session, "CASEI(strAttribute) NOT LIKE CASEI('aaa')", ("B", ), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "CASEI(strAttribute) NOT LIKE CASEI('aaa')",
+        ("B",),
+        None,
+        parse_cql_text,
+    )
+
 
 def test_casei_in(db_session):
-    evaluate(db_session, "CASEI(strAttribute) IN (CASEI('aaa'), CASEI('bbb'))", ("A", "B", ), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "CASEI(strAttribute) IN (CASEI('aaa'), CASEI('bbb'))",
+        (
+            "A",
+            "B",
+        ),
+        None,
+        parse_cql_text,
+    )
+
 
 def test_casei_json_like(db_session):
-    evaluate(db_session, '{"op": "like", "args": [ {"op": "casei", "args": [{"property": "strAttribute"}]}, {"op": "casei", "args": ["AAA"]} ] }', ("A", ), None, parse_cql2_json)
+    evaluate(
+        db_session,
+        '{"op": "like", "args": [ {"op": "casei", "args": [{"property": "strAttribute"}]}, {"op": "casei", "args": ["AAA"]} ] }',
+        ("A",),
+        None,
+        parse_cql2_json,
+    )
+
 
 # temporal predicates
 
+
 def test_date_gte(db_session):
-    evaluate(db_session, "datetimeAttribute >= DATE('2000-01-01')", ("A", "B",), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "datetimeAttribute >= DATE('2000-01-01')",
+        (
+            "A",
+            "B",
+        ),
+        None,
+        parse_cql_text,
+    )
 
 
 def test_before(db_session):
-    evaluate(db_session, "datetimeAttribute BEFORE 2000-01-01T00:00:01Z", ("A",))
+    evaluate(
+        db_session, "datetimeAttribute BEFORE 2000-01-01T00:00:01Z", ("A",)
+    )
 
 
 def test_before_or_during_dt_dt(db_session):
@@ -339,7 +401,7 @@ def test_before_or_during_dt_dt(db_session):
 def test_before_or_during_dt_td(db_session):
     evaluate(
         db_session,
-        "datetimeAttribute BEFORE OR DURING " "2000-01-01T00:00:00Z / PT4S",
+        "datetimeAttribute BEFORE OR DURING 2000-01-01T00:00:00Z / PT4S",
         ("A",),
     )
 
@@ -347,7 +409,7 @@ def test_before_or_during_dt_td(db_session):
 def test_before_or_during_td_dt(db_session):
     evaluate(
         db_session,
-        "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z",
+        "datetimeAttribute BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z",
         ("A",),
     )
 
@@ -355,7 +417,7 @@ def test_before_or_during_td_dt(db_session):
 def test_during_td_dt(db_session):
     evaluate(
         db_session,
-        "datetimeAttribute BEFORE OR DURING " "PT4S / 2000-01-01T00:00:03Z",
+        "datetimeAttribute BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z",
         ("A",),
     )
 
@@ -372,7 +434,9 @@ def test_intersects_mulitipoint_1(db_session):
 
 
 def test_intersects_mulitipoint_2(db_session):
-    evaluate(db_session, "INTERSECTS(geometry, MULTIPOINT((0 0), (1 1)))", ("A",))
+    evaluate(
+        db_session, "INTERSECTS(geometry, MULTIPOINT((0 0), (1 1)))", ("A",)
+    )
 
 
 def test_intersects_linestring(db_session):
@@ -421,14 +485,39 @@ def test_intersects_envelope(db_session):
 def test_bbox(db_session):
     evaluate(db_session, "BBOX(geometry, 0, 0, 1, 1, '4326')", ("A",))
 
+
 def test_bbox_cql2(db_session):
-    evaluate(db_session, "S_INTERSECTS(geometry, BBOX(0, 0, 1, 1))", ("A",), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "S_INTERSECTS(geometry, BBOX(0, 0, 1, 1))",
+        ("A",),
+        None,
+        parse_cql_text,
+    )
+
 
 def test_empty_bbox_cql2(db_session):
-    evaluate(db_session, "S_INTERSECTS(geometry, BBOX(178, 88, 181, 91))", (), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "S_INTERSECTS(geometry, BBOX(178, 88, 181, 91))",
+        (),
+        None,
+        parse_cql_text,
+    )
+
 
 def test_global_bbox_cql2(db_session):
-    evaluate(db_session, "S_INTERSECTS(geometry,BBOX(-180,-90,180,90))", ("A", "B",), None, parse_cql_text)
+    evaluate(
+        db_session,
+        "S_INTERSECTS(geometry,BBOX(-180,-90,180,90))",
+        (
+            "A",
+            "B",
+        ),
+        None,
+        parse_cql_text,
+    )
+
 
 # arithmethic expressions
 
@@ -438,16 +527,22 @@ def test_arith_simple_plus(db_session):
 
 
 def test_arith_field_plus_1(db_session):
-    evaluate(db_session, "intMetaAttribute = floatMetaAttribute + 10", ("A", "B"))
+    evaluate(
+        db_session, "intMetaAttribute = floatMetaAttribute + 10", ("A", "B")
+    )
 
 
 def test_arith_field_plus_2(db_session):
-    evaluate(db_session, "intMetaAttribute = 10 + floatMetaAttribute", ("A", "B"))
+    evaluate(
+        db_session, "intMetaAttribute = 10 + floatMetaAttribute", ("A", "B")
+    )
 
 
 def test_arith_field_plus_field(db_session):
     evaluate(
-        db_session, "intMetaAttribute = " "floatMetaAttribute + intAttribute", ("A",)
+        db_session,
+        "intMetaAttribute = floatMetaAttribute + intAttribute",
+        ("A",),
     )
 
 

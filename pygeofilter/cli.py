@@ -27,12 +27,13 @@
 
 import logging
 import sys
+from typing import Any
 
 import click
 
-from .parsers.cql_json.parser import parse as parse_cql_json
 from .parsers.cql2_json.parser import parse as parse_cql2_json
 from .parsers.cql2_text.parser import parse as parse_cql2_text
+from .parsers.cql_json.parser import parse as parse_cql_json
 from .parsers.ecql.parser import parse as parse_ecql
 from .parsers.fes.parser import parse as parse_fes
 from .parsers.jfe.parser import parse as parse_jfe
@@ -40,28 +41,33 @@ from .version import __version__
 
 __all__ = ["__version__"]
 
-PARSERS = {
-    'cql_json': parse_cql_json,
-    'cql2_json': parse_cql2_json,
-    'cql2_text': parse_cql2_text,
-    'ecql': parse_ecql,
-    'fes': parse_fes,
-    'jfe': parse_jfe
+PARSERS: dict[str, Any] = {
+    "cql_json": parse_cql_json,
+    "cql2_json": parse_cql2_json,
+    "cql2_text": parse_cql2_text,
+    "ecql": parse_ecql,
+    "fes": parse_fes,
+    "jfe": parse_jfe,
 }
 
 
 def CLI_OPTION_VERBOSITY(f):
     """Setup click logging output"""
+
     def callback(ctx, param, value):
         if value is not None:
-            logging.basicConfig(stream=sys.stdout,
-                                level=getattr(logging, value))
+            logging.basicConfig(
+                stream=sys.stdout, level=getattr(logging, value)
+            )
         return True
 
-    return click.option('--verbosity', '-v',
-                        type=click.Choice(['ERROR', 'WARNING', 'INFO', 'DEBUG']),
-                        help='Verbosity',
-                        callback=callback)(f)
+    return click.option(
+        "--verbosity",
+        "-v",
+        type=click.Choice(["ERROR", "WARNING", "INFO", "DEBUG"]),
+        help="Verbosity",
+        callback=callback,
+    )(f)
 
 
 @click.group()
@@ -72,13 +78,13 @@ def cli():
 
 @cli.command()
 @click.pass_context
-@click.argument('parser', type=click.Choice(PARSERS.keys()))
-@click.argument('query')
+@click.argument("parser", type=click.Choice(PARSERS.keys()))
+@click.argument("query")
 @CLI_OPTION_VERBOSITY
 def parse(ctx, parser, query, verbosity):
     """Parse a query into an abstract syntax tree"""
 
-    click.echo(f'Parsing {parser} query into AST')
+    click.echo(f"Parsing {parser} query into AST")
     try:
         click.echo(PARSERS[parser](query))
     except Exception as err:

@@ -150,16 +150,21 @@ def test_attribute_is_null():
     result = parse({"op": "isNull", "args": [{"property": "attr"}]})
     assert result == ast.IsNull(ast.Attribute("attr"), False)
 
+
 def test_attribute_casei():
     result = parse('{"op": "casei", "args": [{"property": "attr"}]}')
     assert result == ast.Function("lower", [ast.Attribute("attr")])
+
 
 def test_literal_casei():
     result = parse('{"op": "casei", "args": ["literal"]}')
     assert result == ast.Function("lower", ["literal"])
 
+
 def test_like_casei():
-    result = parse('{"op": "like", "args": [ {"op": "casei", "args": [{"property": "stringattr"}]}, {"op": "casei", "args": ["AAA"]} ] }')
+    result = parse(
+        '{"op": "like", "args": [ {"op": "casei", "args": [{"property": "stringattr"}]}, {"op": "casei", "args": ["AAA"]} ] }'
+    )
     assert result == ast.Like(
         ast.Function("lower", [ast.Attribute("stringattr")]),
         ast.Function("lower", ["AAA"]),
@@ -169,6 +174,7 @@ def test_like_casei():
         singlechar=".",
         escapechar="\\",
     )
+
 
 def test_attribute_before():
     result = parse(
@@ -213,9 +219,13 @@ def test_attribute_after_dt_dt():
 
     assert result == ast.TimeAfter(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
-            datetime(2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -232,8 +242,10 @@ def test_meets_dt_dr():
     )
     assert result == ast.TimeMeets(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
             timedelta(seconds=4),
         ),
     )
@@ -251,9 +263,11 @@ def test_attribute_metby_dr_dt():
     )
     assert result == ast.TimeMetBy(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             timedelta(seconds=4),
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -270,9 +284,11 @@ def test_attribute_toverlaps_open_dt():
     )
     assert result == ast.TimeOverlaps(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             None,
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
+            datetime(
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
         ),
     )
 
@@ -289,8 +305,10 @@ def test_attribute_overlappedby_dt_open():
     )
     assert result == ast.TimeOverlappedBy(
         ast.Attribute("attr"),
-        values.Interval(
-            datetime(2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
             None,
         ),
     )
@@ -300,7 +318,9 @@ def test_attribute_overlappedby_dt_open():
 
 
 def test_attribute_aequals():
-    result = parse({"op": "a_equals", "args": [{"property": "arrayattr"}, [1, 2, 3]]})
+    result = parse(
+        {"op": "a_equals", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
+    )
     assert result == ast.ArrayEquals(
         ast.Attribute("arrayattr"),
         [1, 2, 3],
@@ -308,7 +328,9 @@ def test_attribute_aequals():
 
 
 def test_attribute_aoverlaps():
-    result = parse({"op": "a_overlaps", "args": [{"property": "arrayattr"}, [1, 2, 3]]})
+    result = parse(
+        {"op": "a_overlaps", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
+    )
     assert result == ast.ArrayOverlaps(
         ast.Attribute("arrayattr"),
         [1, 2, 3],
@@ -316,7 +338,9 @@ def test_attribute_aoverlaps():
 
 
 def test_attribute_acontains():
-    result = parse({"op": "a_contains", "args": [{"property": "arrayattr"}, [1, 2, 3]]})
+    result = parse(
+        {"op": "a_contains", "args": [{"property": "arrayattr"}, [1, 2, 3]]}
+    )
     assert result == ast.ArrayContains(
         ast.Attribute("arrayattr"),
         [1, 2, 3],
@@ -371,9 +395,35 @@ def test_disjoint_linestring_attr():
     )
     assert result == ast.GeometryDisjoint(
         values.Geometry(
-            normalize_geom(geometry.LineString([(1, 1), (2, 2)]).__geo_interface__),
+            normalize_geom(
+                geometry.LineString([(1, 1), (2, 2)]).__geo_interface__
+            ),
         ),
         ast.Attribute("geometry"),
+    )
+
+
+def test_intersects_attr_bbox():
+    result = parse(
+        {
+            "op": "s_intersects",
+            "args": [{"property": "geometry"}, {"bbox": [1, 2, 3, 4]}],
+        }
+    )
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
+    )
+
+
+def test_intersects_attr_bbox_3d():
+    result = parse(
+        {
+            "op": "s_intersects",
+            "args": [{"property": "geometry"}, {"bbox": [1, 2, -10, 3, 4, 10]}],
+        }
+    )
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
     )
 
 
@@ -395,7 +445,9 @@ def test_contains_attr_polygon():
         ast.Attribute("geometry"),
         values.Geometry(
             normalize_geom(
-                geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)]).__geo_interface__
+                geometry.Polygon(
+                    [(1, 1), (2, 2), (0, 3), (1, 1)]
+                ).__geo_interface__
             ),
         ),
     )
@@ -723,6 +775,7 @@ def test_function_attr_string_arg():
 
 # --- CQL2 Advanced Comparison conformance tests ---
 
+
 def test_between_flat_args_parse():
     result = parse({"op": "between", "args": [{"property": "attr"}, 2, 5]})
     assert result == ast.Between(ast.Attribute("attr"), 2, 5, False)
@@ -765,8 +818,15 @@ def test_not_between_encodes_with_not_wrapper():
 
 def test_not_like_encodes_with_not_wrapper():
 
-    node = ast.Like(ast.Attribute("attr"), "val%", nocase=False, not_=True,
-                    wildcard="%", singlechar=".", escapechar="\\")
+    node = ast.Like(
+        ast.Attribute("attr"),
+        "val%",
+        nocase=False,
+        not_=True,
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
+    )
     decoded = json.loads(to_cql2(node))
     assert decoded["op"] == "not"
     assert decoded["args"][0]["op"] == "like"
@@ -802,3 +862,119 @@ def test_accenti_json_encode():
     node = ast.Function("accenti", [ast.Attribute("name")])
     decoded = json.loads(to_cql2(node))
     assert decoded == {"op": "accenti", "args": [{"property": "name"}]}
+
+
+def test_interval_with_property_bounds():
+    # #116 / CQL2 conformance test 41: an interval bound may be a property
+    result = parse(
+        {
+            "op": "t_contains",
+            "args": [
+                {
+                    "interval": [
+                        {"property": "start_datetime"},
+                        {"property": "end_datetime"},
+                    ]
+                },
+                {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]},
+            ],
+        }
+    )
+    assert result == ast.TimeContains(
+        ast.Interval(
+            ast.Attribute("start_datetime"), ast.Attribute("end_datetime")
+        ),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+        ),
+    )
+
+
+def test_interval_with_property_and_open_end():
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {"interval": [{"property": "start_datetime"}, ".."]},
+            ],
+        }
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        ast.Interval(ast.Attribute("start_datetime"), None),
+    )
+
+
+def test_interval_with_open_start_and_property():
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["..", {"property": "end_datetime"}]},
+            ],
+        }
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        ast.Interval(None, ast.Attribute("end_datetime")),
+    )
+
+
+def test_interval_with_legacy_function_bound():
+    # This parser supports the legacy function encoding. The published CQL2
+    # op/args function encoding is a separate parser compatibility issue.
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {
+                    "interval": [
+                        {
+                            "function": {
+                                "name": "myfunc",
+                                "arguments": [{"property": "start_datetime"}],
+                            }
+                        },
+                        "2000-01-01T00:00:01Z",
+                    ]
+                },
+            ],
+        }
+    )
+    assert isinstance(result, ast.TimeDuring)
+    assert isinstance(result.rhs, ast.Interval)
+    assert result.rhs.start == ast.Function(
+        "myfunc", [ast.Attribute("start_datetime")]
+    )
+
+
+@pytest.mark.parametrize(
+    "bound",
+    [
+        7,
+        False,
+        None,
+        [{"property": "start_datetime"}],
+        {"interval": ["2000-01-01", "2000-01-02"]},
+        {"date": "2000-01-01"},
+        {"timestamp": "2000-01-01T00:00:00Z"},
+        {"op": "=", "args": [1, 1]},
+        {"op": "+", "args": [1, 1]},
+        {"type": "Point", "coordinates": [0, 0]},
+        {"property": "start_datetime", "date": "2000-01-01"},
+    ],
+)
+@pytest.mark.parametrize("position", [0, 1])
+def test_interval_rejects_invalid_bound_types(bound, position):
+    bounds = ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]
+    bounds[position] = bound
+    with pytest.raises(ValueError, match="Invalid interval bound"):
+        parse({"interval": bounds})

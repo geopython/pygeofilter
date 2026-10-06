@@ -34,8 +34,10 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
     @handle(ast.Like)
     def like(self, node, lhs):
-        if (isinstance(node.pattern, ast.Function)):
-            node.pattern = filters.function_map[node.pattern.name](*node.pattern.arguments)
+        if isinstance(node.pattern, ast.Function):
+            node.pattern = filters.function_map[node.pattern.name](
+                *node.pattern.arguments
+            )
         return filters.like(
             lhs,
             node.pattern,
@@ -104,11 +106,15 @@ class SQLAlchemyFilterEvaluator(Evaluator):
 
     @handle(ast.BBox)
     def bbox(self, node, lhs):
-        return filters.bbox(lhs, node.minx, node.miny, node.maxx, node.maxy, node.crs)
+        return filters.bbox(
+            lhs, node.minx, node.miny, node.maxx, node.maxy, node.crs
+        )
 
     @handle(ast.Attribute)
     def attribute(self, node):
-        return filters.attribute(node.name, self.field_mapping, self.undefined_as_null)
+        return filters.attribute(
+            node.name, self.field_mapping, self.undefined_as_null
+        )
 
     @handle(ast.Arithmetic, subclasses=True)
     def arithmetic(self, node, lhs, rhs):
@@ -118,11 +124,11 @@ class SQLAlchemyFilterEvaluator(Evaluator):
     def function(self, node, *arguments):
         return filters.function_map[node.name](*arguments)
 
-    @handle(*values.LITERALS)
+    @handle(type(None), *values.LITERALS)
     def literal(self, node):
         return filters.literal(node)
 
-    @handle(values.Interval)
+    @handle(ast.Interval)
     def interval(self, node, start, end):
         return filters.literal((start, end))
 
@@ -146,4 +152,6 @@ def to_filter(ast, field_mapping={}, undefined_as_null=None):
     :type ast: :class:`Node`
     :returns: a SQLAlchemy query object
     """
-    return SQLAlchemyFilterEvaluator(field_mapping, undefined_as_null).evaluate(ast)
+    return SQLAlchemyFilterEvaluator(field_mapping, undefined_as_null).evaluate(
+        ast
+    )

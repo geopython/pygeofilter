@@ -106,15 +106,20 @@ class CQL2Evaluator(Evaluator):
     def attribute(self, node: ast.Attribute):
         return {"property": node.name}
 
-    @handle(values.Interval)
-    def interval(self, node: values.Interval, start, end):
-        return {"interval": [start, end]}
+    @handle(ast.Interval)
+    def interval(self, node: ast.Interval, start, end):
+        return {
+            "interval": [
+                ".." if start is None else start,
+                ".." if end is None else end,
+            ]
+        }
 
     @handle(datetime)
     def datetime(self, node: ast.Attribute):
         return {"timestamp": node.name}
 
-    @handle(*values.LITERALS)
+    @handle(type(None), *values.LITERALS)
     def literal(self, node):
         return node
 

@@ -27,7 +27,7 @@
 
 from lark import Transformer, v_args
 
-from ..util import parse_datetime, parse_duration, parse_date
+from ..util import parse_date, parse_datetime, parse_duration
 
 
 @v_args(meta=False, inline=True)
@@ -37,6 +37,6 @@ class ISO8601Transformer(Transformer):
 
     def DURATION(self, duration):
         return parse_duration(duration)
-    
+
     def DATE(self, date):
         return parse_date(date)
