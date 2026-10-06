@@ -55,13 +55,17 @@ class Envelope:
     @classmethod
     def from_bbox(cls, bbox: List[float]) -> "Envelope":
         """
-        The envelope of a CQL2 bbox: minx, miny, maxx, maxy, or in 3D minx, miny, minz,
-        maxx, maxy, maxz, whose elevations are dropped.
+        The envelope of a CQL2 bbox: GeoJSON order is [minx, miny, maxx, maxy]
+        (or 3D [minx, miny, minz, maxx, maxy, maxz]). Envelope fields are
+        (x1, x2, y1, y2) = (minx, maxx, miny, maxy).
         """
         if len(bbox) not in (4, 6):
             raise ValueError(f"A bbox has 4 or 6 numbers, not {len(bbox)}")
-        half = len(bbox) // 2
-        return cls(bbox[0], bbox[half], bbox[1], bbox[half + 1])
+        if len(bbox) == 4:
+            minx, miny, maxx, maxy = bbox
+        else:
+            minx, miny, _minz, maxx, maxy, _maxz = bbox
+        return cls(minx, maxx, miny, maxy)
 
     @property
     def geometry(self):

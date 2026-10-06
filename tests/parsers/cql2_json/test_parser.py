@@ -886,3 +886,18 @@ def test_interval_rejects_invalid_bound_types(bound, position):
     bounds[position] = bound
     with pytest.raises(ValueError, match="Invalid interval bound"):
         parse({"interval": bounds})
+
+
+def test_bbox_envelope_axis_order():
+    # https://github.com/geopython/pygeofilter/issues/163
+    # GeoJSON bbox is [minx, miny, maxx, maxy]; Envelope is
+    # (x1, x2, y1, y2) == (minx, maxx, miny, maxy). The two orderings must
+    # not be conflated, otherwise longitudes and latitudes are scrambled.
+    result = parse({"bbox": [-74.1, 40.5, -73.9, 41.0]})
+    assert result == values.Envelope(-74.1, -73.9, 40.5, 41.0)
+
+
+def test_bbox_envelope_global():
+    # The global bbox used by cql2-text and the SQLAlchemy backend.
+    result = parse({"bbox": [-180.0, -90.0, 180.0, 90.0]})
+    assert result == values.Envelope(-180.0, 180.0, -90.0, 90.0)
