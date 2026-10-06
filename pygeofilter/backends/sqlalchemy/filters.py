@@ -215,7 +215,22 @@ def temporal(lhs, time_or_period, op):
         return runop(lhs, equal, "==")
 
 
-UNITS_LOOKUP = {"kilometers": "km", "meters": "m"}
+#: Metres per unit, for the ``units`` argument of ``DWITHIN``/``BEYOND``.
+#: The keys are the unit spellings the ECQL grammar accepts (``feet``,
+#: ``meters``, ``statute miles``, ``nautical miles``, ``kilometers``) plus the
+#: bare ``miles`` a caller can pass directly. The SQL radius is handed to
+#: ``ST_DWithin`` in the coordinate units of the column's CRS, so these factors
+#: are unit-correct only for a projected, metric CRS (or a ``geography`` cast);
+#: on a geographic column (e.g. EPSG:4326) the radius is in degrees and no
+#: factor here changes that. A unit outside this table passes through unchanged.
+UNITS_TO_METRES = {
+    "meters": 1.0,
+    "kilometers": 1000.0,
+    "feet": 0.3048,
+    "miles": 1609.344,
+    "statute miles": 1609.344,
+    "nautical miles": 1852.0,
+}
 
 
 def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
@@ -238,10 +253,9 @@ def spatial(lhs, rhs, op, pattern=None, distance=None, units=None):
     if op == "RELATE":
         return _op.function(lhs, rhs, pattern)
     elif op in ("DWITHIN", "BEYOND"):
-        if units == "kilometers":
-            distance = distance / 1000
-        elif units == "miles":
-            distance = distance / 1609
+        factor = UNITS_TO_METRES.get(units) if units is not None else None
+        if distance is not None and factor is not None:
+            distance = distance * factor
         return _op.function(lhs, rhs, distance)
     else:
         return _op.function(lhs, rhs)
