@@ -32,6 +32,11 @@ SPATIAL_PREDICATES_MAP: Dict[str, Type[ast.SpatialComparisonPredicate]] = {
     "s_overlaps": ast.GeometryOverlaps,
     "s_crosses": ast.GeometryCrosses,
     "s_contains": ast.GeometryContains,
+}
+
+SPATIAL_DISTANCE_PREDICATES_MAP: Dict[
+    str, Type[ast.SpatialDistancePredicate]
+] = {
     "s_dwithin": ast.DistanceWithin,
 }
 
@@ -80,6 +85,7 @@ BINARY_OP_PREDICATES_MAP: Dict[
         Type[ast.Node],
         Type[ast.Comparison],
         Type[ast.SpatialComparisonPredicate],
+        Type[ast.SpatialDistancePredicate],
         Type[ast.TemporalPredicate],
         Type[ast.ArrayPredicate],
         Type[ast.Arithmetic],
@@ -87,6 +93,7 @@ BINARY_OP_PREDICATES_MAP: Dict[
 ] = {
     **COMPARISON_MAP,
     **SPATIAL_PREDICATES_MAP,
+    **SPATIAL_DISTANCE_PREDICATES_MAP,
     **TEMPORAL_PREDICATES_MAP,
     **ARRAY_PREDICATES_MAP,
     **ARITHMETIC_MAP,
