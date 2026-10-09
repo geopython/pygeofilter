@@ -255,7 +255,7 @@ def test_attribute_before_or_during_dt_dt():
     )
     assert result == ast.TimeBeforeOrDuring(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -270,7 +270,7 @@ def test_attribute_before_or_during_dt_dr():
     result = parse("attr BEFORE OR DURING 2000-01-01T00:00:00Z / PT4S")
     assert result == ast.TimeBeforeOrDuring(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -283,7 +283,7 @@ def test_attribute_before_or_during_dr_dt():
     result = parse("attr BEFORE OR DURING PT4S / 2000-01-01T00:00:03Z")
     assert result == ast.TimeBeforeOrDuring(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             timedelta(seconds=4),
             datetime(
                 2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))

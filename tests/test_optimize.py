@@ -25,6 +25,10 @@
 # THE SOFTWARE.
 # ------------------------------------------------------------------------------
 
+from datetime import date, datetime, timedelta, timezone
+
+import pytest
+
 from pygeofilter import ast
 from pygeofilter.backends.optimize import optimize
 from pygeofilter.parsers.ecql import parse
@@ -150,9 +154,69 @@ def test_in():
     assert result == ast.In(1, [ast.Attribute("attr"), 2, 3], False)
 
 
-def test_temporal():
-    # TODO
-    pass
+@pytest.mark.parametrize("matching", [True, False])
+def test_temporal(matching):
+    outer = ast.Interval(date(1999, 1, 1), date(2001, 1, 1))
+    year = 2000 if matching else 2002
+    inner = ast.Interval(date(year, 1, 1), date(year, 2, 1))
+    assert optimize(ast.TimeContains(outer, inner)) == ast.Include(not matching)
+
+
+@pytest.mark.parametrize(
+    "bound", [ast.Attribute("start"), ast.Function("unknown", [])]
+)
+def test_temporal_preserves_dynamic_intervals(bound):
+    node = ast.TimeContains(
+        ast.Interval(bound, date(2001, 1, 1)),
+        ast.Interval(date(2000, 1, 1), date(2000, 2, 1)),
+    )
+    assert optimize(node) == node
+
+
+def test_temporal_optimizes_function_bounds():
+    node = ast.TimeContains(
+        ast.Interval(ast.Function("start", []), date(2001, 1, 1)),
+        ast.Interval(date(2000, 1, 1), date(2000, 2, 1)),
+    )
+    assert optimize(node, {"start": lambda: date(1999, 1, 1)}) == ast.Include(
+        False
+    )
+
+
+@pytest.mark.parametrize(
+    "bounds", [(None, date(2001, 1, 1)), (date(1999, 1, 1), None)]
+)
+def test_temporal_preserves_open_intervals(bounds):
+    node = ast.TimeContains(
+        ast.Interval(*bounds), ast.Interval(date(2000, 1, 1), date(2000, 2, 1))
+    )
+    assert optimize(node) == node
+
+
+@pytest.mark.parametrize("duration_first", [True, False])
+def test_temporal_duration_bounds(duration_first):
+    start = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
+    end = start + timedelta(hours=1)
+    bounds = (
+        (timedelta(hours=1), end)
+        if duration_first
+        else (start, timedelta(hours=1))
+    )
+    node = ast.TimeEquals(ast.Interval(*bounds), ast.Interval(start, end))
+    assert optimize(node) == ast.Include(False)
+
+
+def test_function_with_interval_argument_is_preserved():
+    node = ast.Function(
+        "process", [ast.Interval(date(2000, 1, 1), date(2000, 2, 1))]
+    )
+
+    def unexpected_call(interval):
+        pytest.fail(
+            "An AST interval must not be passed as a runtime function argument"
+        )
+
+    assert optimize(node, {"process": unexpected_call}) == node
 
 
 def test_array():
@@ -242,3 +306,38 @@ def test_function():
             ],
         ),
     )
+
+
+@pytest.mark.parametrize("node_type", [ast.TimeBefore, ast.TimeEnds])
+def test_temporal_preserves_timestamp_precision(node_type):
+    start = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
+    middle = start + timedelta(minutes=30)
+    end = start + timedelta(hours=1)
+    if node_type is ast.TimeBefore:
+        node = node_type(
+            ast.Interval(start, middle),
+            ast.Interval(end, end + timedelta(hours=1)),
+        )
+    else:
+        node = node_type(ast.Interval(middle, end), ast.Interval(start, end))
+    assert optimize(node) == ast.Include(False)
+
+
+@pytest.mark.parametrize(
+    "node_type, start_year, end_year, expected",
+    [
+        (ast.TimeDisjoint, 1997, 1998, True),
+        (ast.TimeDisjoint, 2002, 2003, True),
+        (ast.TimeDisjoint, 2000, 2002, False),
+        (ast.TimeBeforeOrDuring, 1997, 1998, True),
+        (ast.TimeBeforeOrDuring, 2002, 2003, False),
+        (ast.TimeDuringOrAfter, 2002, 2003, True),
+        (ast.TimeDuringOrAfter, 1997, 1998, False),
+    ],
+)
+def test_temporal_compound_relations(node_type, start_year, end_year, expected):
+    node = node_type(
+        ast.Interval(date(start_year, 1, 1), date(end_year, 1, 1)),
+        ast.Interval(date(1999, 1, 1), date(2001, 1, 1)),
+    )
+    assert optimize(node) == ast.Include(not expected)

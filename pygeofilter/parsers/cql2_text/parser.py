@@ -27,11 +27,16 @@
 
 import logging
 import os.path
+import re
 
 from lark import Lark, logger, v_args
 
 from ... import ast, values
-from ...cql2 import SPATIAL_PREDICATES_MAP, TEMPORAL_PREDICATES_MAP
+from ...cql2 import (
+    ARRAY_PREDICATES_MAP,
+    SPATIAL_PREDICATES_MAP,
+    TEMPORAL_PREDICATES_MAP,
+)
 from ..iso8601 import ISO8601Transformer
 from ..wkt import WKTTransformer
 
@@ -132,6 +137,13 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
         op = op.lower()
         return TEMPORAL_PREDICATES_MAP[op](lhs, rhs)
 
+    def array_predicate(self, op, lhs, rhs):
+        op = op.lower()
+        return ARRAY_PREDICATES_MAP[op](lhs, rhs)
+
+    def array(self, *elements):
+        return list(elements)
+
     def relate_spatial_predicate(self, lhs, rhs, pattern):
         return ast.Relate(lhs, rhs, pattern)
 
@@ -185,16 +197,22 @@ class CQLTransformer(WKTTransformer, ISO8601Transformer):
         return token[1:-1]
 
     def SINGLE_QUOTED(self, token):
-        return token[1:-1]
+        # '' and \' stand for a quote, the other backslashes are kept for LIKE
+        return re.sub(
+            r"''|\\(.)",
+            lambda m: "'" if m[0] == "''" or m[1] == "'" else m[0],
+            token[1:-1],
+            flags=re.S,
+        )
 
     def geometry(self, value):
         return values.Geometry(value)
 
-    def bbox(self, x1, y1, x2, y2):
-        return values.Envelope(x1, x2, y1, y2)
+    def bbox(self, *coordinates):
+        return values.Envelope.from_bbox(coordinates)
 
     def interval(self, start, end):
-        return values.Interval(start, end)
+        return ast.Interval(start, end)
 
 
 parser = Lark.open(

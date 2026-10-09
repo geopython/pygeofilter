@@ -251,6 +251,21 @@ def test_like(data):
     assert len(result) == 2
 
 
+def test_like_single_token_wildcards(data):
+    # "contains": both the leading and the trailing wildcard must be kept
+    result = filter_(parse("str_attribute LIKE '%nothe%'"))
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
+
+    result = filter_(parse("str_attribute LIKE 'ano%er'"))
+    assert len(result) == 1 and result[0]["id"] is data[1]["id"]
+
+    result = filter_(parse("str_attribute LIKE 't.st'"))
+    assert len(result) == 2
+
+    result = filter_(parse("str_attribute NOT LIKE '%nothe%'"))
+    assert len(result) == 1 and result[0]["id"] is data[0]["id"]
+
+
 def test_combination_like_not(data):
     result = filter_(parse("NOT str_attribute LIKE 'another'"))
     assert len(result) == 1 and result[0]["id"] is data[0]["id"]
@@ -602,3 +617,50 @@ def test_spatial_geo3d(data):
 #         data,
 #     )
 #     assert len(result) == 1 and result[0] is data[0]
+
+
+def test_like_single_token_uses_plain_wildcard_term():
+    assert to_filter(parse("str_attribute LIKE '%Arctic%'"))["query"] == (
+        "str_attribute:*Arctic*"
+    )
+    assert to_filter(parse("str_attribute LIKE '%Arctic'"))["query"] == (
+        "str_attribute:*Arctic"
+    )
+    assert to_filter(parse("str_attribute LIKE 'Arctic%'"))["query"] == (
+        "str_attribute:Arctic*"
+    )
+    assert to_filter(parse("str_attribute LIKE 'Arc%tic'"))["query"] == (
+        "str_attribute:Arc*tic"
+    )
+    assert to_filter(parse("str_attribute NOT LIKE '%Arctic%'"))["query"] == (
+        "-str_attribute:*Arctic*"
+    )
+
+
+def test_like_escapes_query_syntax_in_wildcard_term():
+    assert to_filter(parse("str_attribute LIKE '%met:adc%'"))["query"] == (
+        "str_attribute:*met\\:adc*"
+    )
+
+
+def test_like_multi_word_splits_on_standalone_wildcards():
+    assert to_filter(parse("str_attribute LIKE 'this is % test'"))["query"] == (
+        '+str_attribute:"this is" +str_attribute:"test"'
+    )
+    assert (
+        to_filter(parse("str_attribute NOT LIKE '% another test'"))["query"]
+        == '-str_attribute:"another test"'
+    )
+    assert to_filter(parse("str_attribute LIKE '%sea ice%'"))["query"] == (
+        'str_attribute:"sea ice"'
+    )
+
+
+def test_like_multi_word_inner_wildcard_uses_complexphrase():
+    assert to_filter(parse("str_attribute LIKE 'this is . test'"))["query"] == (
+        '{!complexphrase}str_attribute:"this is ? test"'
+    )
+    assert (
+        to_filter(parse("str_attribute NOT LIKE 'this is % te%'"))["query"]
+        == '-(+str_attribute:"this is" +str_attribute:te*)'
+    )

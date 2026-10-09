@@ -172,7 +172,7 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return ast.Attribute(str(name))
 
     def period(self, start, end):
-        return values.Interval(start, end)
+        return ast.Interval(start, end)
 
     def INT(self, value):
         return int(value)

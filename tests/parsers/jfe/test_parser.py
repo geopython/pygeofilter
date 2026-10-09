@@ -154,7 +154,7 @@ def test_attribute_after_dt_dt():
 
     assert result == ast.TimeAfter(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -177,7 +177,7 @@ def test_attribute_during_dt_dt():
 
     assert result == ast.TimeDuring(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),

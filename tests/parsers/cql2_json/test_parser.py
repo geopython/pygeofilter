@@ -33,6 +33,7 @@ from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
 from pygeofilter import ast, values
+from pygeofilter.backends.cql2_json.evaluate import to_cql2
 from pygeofilter.parsers.cql2_json import parse
 
 
@@ -83,7 +84,7 @@ def test_attribute_gte_literal():
 
 
 def test_attribute_between():
-    result = parse({"op": "between", "args": [{"property": "attr"}, [2, 5]]})
+    result = parse({"op": "between", "args": [{"property": "attr"}, 2, 5]})
     assert result == ast.Between(
         ast.Attribute("attr"),
         2,
@@ -93,7 +94,7 @@ def test_attribute_between():
 
 
 def test_attribute_between_negative_positive():
-    result = parse({"op": "between", "args": [{"property": "attr"}, [-1, 1]]})
+    result = parse({"op": "between", "args": [{"property": "attr"}, -1, 1]})
     assert result == ast.Between(
         ast.Attribute("attr"),
         -1,
@@ -218,7 +219,7 @@ def test_attribute_after_dt_dt():
 
     assert result == ast.TimeAfter(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -241,7 +242,7 @@ def test_meets_dt_dr():
     )
     assert result == ast.TimeMeets(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -262,7 +263,7 @@ def test_attribute_metby_dr_dt():
     )
     assert result == ast.TimeMetBy(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             timedelta(seconds=4),
             datetime(
                 2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
@@ -283,7 +284,7 @@ def test_attribute_toverlaps_open_dt():
     )
     assert result == ast.TimeOverlaps(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             None,
             datetime(
                 2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
@@ -304,7 +305,7 @@ def test_attribute_overlappedby_dt_open():
     )
     assert result == ast.TimeOverlappedBy(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -399,6 +400,30 @@ def test_disjoint_linestring_attr():
             ),
         ),
         ast.Attribute("geometry"),
+    )
+
+
+def test_intersects_attr_bbox():
+    result = parse(
+        {
+            "op": "s_intersects",
+            "args": [{"property": "geometry"}, {"bbox": [1, 2, 3, 4]}],
+        }
+    )
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
+    )
+
+
+def test_intersects_attr_bbox_3d():
+    result = parse(
+        {
+            "op": "s_intersects",
+            "args": [{"property": "geometry"}, {"bbox": [1, 2, -10, 3, 4, 10]}],
+        }
+    )
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
     )
 
 
@@ -781,3 +806,204 @@ def test_function_attr_string_arg():
             ],
         ),
     )
+
+
+# --- CQL2 Advanced Comparison conformance tests ---
+
+
+def test_between_flat_args_parse():
+    result = parse({"op": "between", "args": [{"property": "attr"}, 2, 5]})
+    assert result == ast.Between(ast.Attribute("attr"), 2, 5, False)
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize(
+    "bounds",
+    [[2, 5], [-1, 1], [{"property": "low"}, {"property": "high"}]],
+)
+def test_between_compatible_args_round_trip(nested, bounds):
+    args = (
+        [{"property": "attr"}, bounds]
+        if nested
+        else [{"property": "attr"}, *bounds]
+    )
+    result = parse({"op": "between", "args": args})
+    assert result == ast.Between(
+        ast.Attribute("attr"), parse(bounds[0]), parse(bounds[1]), False
+    )
+    encoded = json.loads(to_cql2(result))
+    assert encoded == {"op": "between", "args": [{"property": "attr"}, *bounds]}
+    assert parse(encoded) == result
+
+
+def test_between_encode_flat_args():
+    node = ast.Between(ast.Attribute("attr"), 2, 5, False)
+    decoded = json.loads(to_cql2(node))
+    assert decoded == {"op": "between", "args": [{"property": "attr"}, 2, 5]}
+
+
+def test_not_between_encodes_with_not_wrapper():
+    node = ast.Between(ast.Attribute("attr"), 2, 5, not_=True)
+    decoded = json.loads(to_cql2(node))
+    assert decoded["op"] == "not"
+    assert decoded["args"][0]["op"] == "between"
+
+
+def test_not_like_encodes_with_not_wrapper():
+    node = ast.Like(
+        ast.Attribute("attr"),
+        "val%",
+        nocase=False,
+        not_=True,
+        wildcard="%",
+        singlechar=".",
+        escapechar="\\",
+    )
+    decoded = json.loads(to_cql2(node))
+    assert decoded["op"] == "not"
+    assert decoded["args"][0]["op"] == "like"
+
+
+def test_not_in_encodes_with_not_wrapper():
+    node = ast.In(ast.Attribute("attr"), [1, 2, 3], not_=True)
+    decoded = json.loads(to_cql2(node))
+    assert decoded["op"] == "not"
+    assert decoded["args"][0]["op"] == "in"
+
+
+def test_casei_json_parse():
+    result = parse({"op": "casei", "args": [{"property": "name"}]})
+    assert result == ast.Function("lower", [ast.Attribute("name")])
+
+
+def test_casei_json_encode():
+    node = ast.Function("lower", [ast.Attribute("name")])
+    decoded = json.loads(to_cql2(node))
+    assert decoded == {"op": "casei", "args": [{"property": "name"}]}
+
+
+def test_accenti_json_parse():
+    result = parse({"op": "accenti", "args": [{"property": "name"}]})
+    assert result == ast.Function("accenti", [ast.Attribute("name")])
+
+
+def test_accenti_json_encode():
+    node = ast.Function("accenti", [ast.Attribute("name")])
+    decoded = json.loads(to_cql2(node))
+    assert decoded == {"op": "accenti", "args": [{"property": "name"}]}
+
+
+def test_interval_with_property_bounds():
+    # #116 / CQL2 conformance test 41: an interval bound may be a property
+    result = parse(
+        {
+            "op": "t_contains",
+            "args": [
+                {
+                    "interval": [
+                        {"property": "start_datetime"},
+                        {"property": "end_datetime"},
+                    ]
+                },
+                {"interval": ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]},
+            ],
+        }
+    )
+    assert result == ast.TimeContains(
+        ast.Interval(
+            ast.Attribute("start_datetime"), ast.Attribute("end_datetime")
+        ),
+        ast.Interval(
+            datetime(
+                2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+            datetime(
+                2000, 1, 1, 0, 0, 1, tzinfo=StaticTzInfo("Z", timedelta(0))
+            ),
+        ),
+    )
+
+
+def test_interval_with_property_and_open_end():
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {"interval": [{"property": "start_datetime"}, ".."]},
+            ],
+        }
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        ast.Interval(ast.Attribute("start_datetime"), None),
+    )
+
+
+def test_interval_with_open_start_and_property():
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {"interval": ["..", {"property": "end_datetime"}]},
+            ],
+        }
+    )
+    assert result == ast.TimeDuring(
+        ast.Attribute("attr"),
+        ast.Interval(None, ast.Attribute("end_datetime")),
+    )
+
+
+def test_interval_with_legacy_function_bound():
+    # This parser supports the legacy function encoding. The published CQL2
+    # op/args function encoding is a separate parser compatibility issue.
+    result = parse(
+        {
+            "op": "t_during",
+            "args": [
+                {"property": "attr"},
+                {
+                    "interval": [
+                        {
+                            "function": {
+                                "name": "myfunc",
+                                "arguments": [{"property": "start_datetime"}],
+                            }
+                        },
+                        "2000-01-01T00:00:01Z",
+                    ]
+                },
+            ],
+        }
+    )
+    assert isinstance(result, ast.TimeDuring)
+    assert isinstance(result.rhs, ast.Interval)
+    assert result.rhs.start == ast.Function(
+        "myfunc", [ast.Attribute("start_datetime")]
+    )
+
+
+@pytest.mark.parametrize(
+    "bound",
+    [
+        7,
+        False,
+        None,
+        [{"property": "start_datetime"}],
+        {"interval": ["2000-01-01", "2000-01-02"]},
+        {"date": "2000-01-01"},
+        {"timestamp": "2000-01-01T00:00:00Z"},
+        {"op": "=", "args": [1, 1]},
+        {"op": "+", "args": [1, 1]},
+        {"type": "Point", "coordinates": [0, 0]},
+        {"property": "start_datetime", "date": "2000-01-01"},
+    ],
+)
+@pytest.mark.parametrize("position", [0, 1])
+def test_interval_rejects_invalid_bound_types(bound, position):
+    bounds = ["2000-01-01T00:00:00Z", "2000-01-01T00:00:01Z"]
+    bounds[position] = bound
+    with pytest.raises(ValueError, match="Invalid interval bound"):
+        parse({"interval": bounds})

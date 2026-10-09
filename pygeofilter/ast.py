@@ -26,12 +26,13 @@
 # ------------------------------------------------------------------------------
 
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import ClassVar, List, Optional, Union
 
 from . import values
 
-AstType = Union["Node", values.ValueType, list]
+AstType = Union["Node", values.ValueType, list, None]
 ScalarAstType = Union["Node", int, float, str]
 SpatialAstType = Union["Node", values.SpatialValueType]
 TemporalAstType = Union["Node", values.TemporalValueType]
@@ -609,6 +610,24 @@ class Expression(Node):
     """The base class for all nodes representing expressions"""
 
     pass
+
+
+@dataclass
+class Interval(Expression):
+    """Construct a temporal interval from literal or expression bounds.
+
+    ``None`` represents an unbounded end. Durations remain supported for
+    encodings that express a bound relative to the other end.
+    """
+
+    start: Optional[Union[Node, date, datetime, timedelta]] = None
+    end: Optional[Union[Node, date, datetime, timedelta]] = None
+
+    def get_sub_nodes(self) -> List[AstType]:
+        return [self.start, self.end]
+
+    def get_template(self) -> str:
+        return "INTERVAL({}, {})"
 
 
 class Attribute(Expression):

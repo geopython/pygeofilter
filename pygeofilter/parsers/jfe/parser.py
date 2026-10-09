@@ -76,7 +76,6 @@ ParseResult = Union[
     int,
     datetime,
     values.Geometry,
-    values.Interval,
     Dict[Any, Any],  # TODO: for like wildcards.
 ]
 
@@ -148,7 +147,7 @@ def _parse_node(node: Union[list, dict]) -> ParseResult:  # noqa: C901
                 dt_args[1], datetime
             ):
                 dt_args = [
-                    values.Interval(dt_args[0], dt_args[1]),
+                    ast.Interval(dt_args[0], dt_args[1]),
                     dt_args[2],
                 ]
             if isinstance(dt_args[1], datetime) and isinstance(
@@ -156,7 +155,7 @@ def _parse_node(node: Union[list, dict]) -> ParseResult:  # noqa: C901
             ):
                 dt_args = [
                     dt_args[0],
-                    values.Interval(dt_args[1], dt_args[2]),
+                    ast.Interval(dt_args[1], dt_args[2]),
                 ]
 
         return TEMPORAL_PREDICATES_MAP[op](

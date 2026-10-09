@@ -67,11 +67,17 @@ class CQL2Evaluator(Evaluator):
 
     @handle(ast.Between)
     def between(self, node, lhs, low, high):
-        return {"op": "between", "args": [lhs, [low, high]]}
+        ret = {"op": "between", "args": [lhs, low, high]}
+        if node.not_:
+            ret = {"op": "not", "args": [ret]}
+        return ret
 
     @handle(ast.Like)
     def like(self, node, *subargs):
-        return {"op": "like", "args": [subargs[0], node.pattern]}
+        ret = {"op": "like", "args": [subargs[0], node.pattern]}
+        if node.not_:
+            ret = {"op": "not", "args": [ret]}
+        return ret
 
     @handle(ast.IsNull)
     def isnull(self, node, arg):
@@ -84,30 +90,36 @@ class CQL2Evaluator(Evaluator):
     def function(self, node, *args):
         name = node.name.lower()
         if name == "lower":
-            ret = {"lower": args[0]}
-        elif name == "upper":
-            ret = {"upper": args[0]}
-        else:
-            ret = {"function": name, "args": [*args]}
-        return ret
+            return {"op": "casei", "args": [args[0]]}
+        elif name == "accenti":
+            return {"op": "accenti", "args": [args[0]]}
+        return {"op": node.name, "args": [*args]}
 
     @handle(ast.In)
     def in_(self, node, lhs, *options):
-        return {"op": "in", "args": [lhs, options]}
+        ret = {"op": "in", "args": [lhs, list(options)]}
+        if node.not_:
+            ret = {"op": "not", "args": [ret]}
+        return ret
 
     @handle(ast.Attribute)
     def attribute(self, node: ast.Attribute):
         return {"property": node.name}
 
-    @handle(values.Interval)
-    def interval(self, node: values.Interval, start, end):
-        return {"interval": [start, end]}
+    @handle(ast.Interval)
+    def interval(self, node: ast.Interval, start, end):
+        return {
+            "interval": [
+                ".." if start is None else start,
+                ".." if end is None else end,
+            ]
+        }
 
     @handle(datetime)
     def datetime(self, node: ast.Attribute):
         return {"timestamp": node.name}
 
-    @handle(*values.LITERALS)
+    @handle(type(None), *values.LITERALS)
     def literal(self, node):
         return node
 

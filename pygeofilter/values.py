@@ -28,7 +28,7 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Any, List, Optional, Union
+from typing import List, Union
 
 from pygeoif import shape
 
@@ -51,6 +51,17 @@ class Envelope:
     x2: float
     y1: float
     y2: float
+
+    @classmethod
+    def from_bbox(cls, bbox: List[float]) -> "Envelope":
+        """
+        The envelope of a CQL2 bbox: minx, miny, maxx, maxy, or in 3D minx, miny, minz,
+        maxx, maxy, maxz, whose elevations are dropped.
+        """
+        if len(bbox) not in (4, 6):
+            raise ValueError(f"A bbox has 4 or 6 numbers, not {len(bbox)}")
+        half = len(bbox) // 2
+        return cls(bbox[0], bbox[half], bbox[1], bbox[half + 1])
 
     @property
     def geometry(self):
@@ -75,15 +86,6 @@ class Envelope:
         return shape(self).__geo_interface__ == shape(o).__geo_interface__
 
 
-@dataclass
-class Interval:
-    start: Optional[Union[date, datetime, timedelta]] = None
-    end: Optional[Union[date, datetime, timedelta]] = None
-
-    def get_sub_nodes(self) -> List[Any]:  # TODO: find way to type this
-        return [self.start, self.end]
-
-
 # used for handler declaration
 LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
 
@@ -91,7 +93,7 @@ LITERALS = (list, str, float, int, bool, datetime, date, time, timedelta)
 
 SpatialValueType = Union[Geometry, Envelope]
 
-TemporalValueType = Union[date, datetime, timedelta, Interval]
+TemporalValueType = Union[date, datetime, timedelta]
 
 ValueType = Union[
     SpatialValueType,

@@ -13,6 +13,13 @@ def test_intersect_bbox():
     )
 
 
+def test_intersect_bbox_3d():
+    result = parse("S_INTERSECTS(geometry,BBOX(1,2,-10,3,4,10))")
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("geometry"), values.Envelope(1, 3, 2, 4)
+    )
+
+
 def test_intersect_point():
     result = parse("S_INTERSECTS(geometry,POINT(7.02 49.92))")
     assert result == ast.GeometryIntersects(
@@ -175,6 +182,36 @@ def test_string_not_like():
     )
 
 
+def test_string_doubled_quote():
+    result = parse("attr = 'it''s'")
+    assert result == ast.Equal(ast.Attribute("attr"), "it's")
+
+
+def test_string_backslash_quote():
+    result = parse(r"attr = 'it\'s'")
+    assert result == ast.Equal(ast.Attribute("attr"), "it's")
+
+
+def test_string_only_quotes():
+    assert parse("attr = ''") == ast.Equal(ast.Attribute("attr"), "")
+    assert parse("attr = ''''") == ast.Equal(ast.Attribute("attr"), "'")
+
+
+def test_strings_end_at_their_quote():
+    result = parse("attr = 'a' OR attr = 'b'")
+    assert result == ast.Or(
+        ast.Equal(ast.Attribute("attr"), "a"),
+        ast.Equal(ast.Attribute("attr"), "b"),
+    )
+
+
+def test_string_like_keeps_backslashes():
+    result = parse(r"attr LIKE '100\%'")
+    assert result.pattern == r"100\%"
+    result = parse(r"attr LIKE 'a\\''%'")
+    assert result.pattern == r"a\\'%"
+
+
 def test_attribute_in_list():
     result = parse("attr IN (1, 2, 3, 4)")
     assert result == ast.In(
@@ -232,7 +269,7 @@ def test_attribute_t_intersects():
     )
     assert result == ast.TimeOverlaps(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 0, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -249,7 +286,7 @@ def test_attribute_tintersects_dt_dr():
     )
     assert result == ast.TimeOverlaps(
         ast.Attribute("attr"),
-        values.Interval(
+        ast.Interval(
             datetime(
                 2000, 1, 1, 0, 0, 3, tzinfo=StaticTzInfo("Z", timedelta(0))
             ),
@@ -489,3 +526,77 @@ def test_not_lt():
 def test_not_eq():
     result = parse("NOT(attr = 2)")
     assert result == ast.Not(ast.Equal(ast.Attribute("attr"), 2))
+
+
+def test_not_double_parens():
+    result = parse("NOT ((attr = 2))")
+    assert result == ast.Not(ast.Equal(ast.Attribute("attr"), 2))
+
+
+def test_not_or():
+    result = parse("NOT (attr = 1 OR attr = 2)")
+    assert result == ast.Not(
+        ast.Or(
+            ast.Equal(ast.Attribute("attr"), 1),
+            ast.Equal(ast.Attribute("attr"), 2),
+        )
+    )
+
+
+def test_not_binds_tighter_than_and():
+    result = parse("NOT attr = 1 AND attr = 2")
+    assert result == ast.And(
+        ast.Not(ast.Equal(ast.Attribute("attr"), 1)),
+        ast.Equal(ast.Attribute("attr"), 2),
+    )
+
+
+def test_and_binds_tighter_than_or():
+    result = parse("attr = 1 OR attr = 2 AND attr = 3")
+    assert result == ast.Or(
+        ast.Equal(ast.Attribute("attr"), 1),
+        ast.And(
+            ast.Equal(ast.Attribute("attr"), 2),
+            ast.Equal(ast.Attribute("attr"), 3),
+        ),
+    )
+
+
+def test_and_then_or():
+    result = parse("attr = 1 AND attr = 2 OR attr = 3")
+    assert result == ast.Or(
+        ast.And(
+            ast.Equal(ast.Attribute("attr"), 1),
+            ast.Equal(ast.Attribute("attr"), 2),
+        ),
+        ast.Equal(ast.Attribute("attr"), 3),
+    )
+
+
+def test_parens_override_precedence():
+    result = parse("(attr = 1 OR attr = 2) AND attr = 3")
+    assert result == ast.And(
+        ast.Or(
+            ast.Equal(ast.Attribute("attr"), 1),
+            ast.Equal(ast.Attribute("attr"), 2),
+        ),
+        ast.Equal(ast.Attribute("attr"), 3),
+    )
+
+
+def test_single_letter_attribute():
+    # https://github.com/geopython/pygeofilter/issues/165
+    # single-letter property names must parse
+    result = parse("a = 1")
+    assert result == ast.Equal(ast.Attribute("a"), 1)
+
+    result = parse("x > 5")
+    assert result == ast.GreaterThan(ast.Attribute("x"), 5)
+
+
+def test_single_letter_attribute_in_function():
+    # https://github.com/geopython/pygeofilter/issues/165
+    result = parse("S_INTERSECTS(g, BBOX(-180, -90, 180, 90))")
+    assert result == ast.GeometryIntersects(
+        ast.Attribute("g"), values.Envelope(-180, 180, -90, 90)
+    )
