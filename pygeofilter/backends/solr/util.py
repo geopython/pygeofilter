@@ -60,3 +60,40 @@ def like_to_wildcard(
         )
 
     return value
+
+
+# Solr query syntax characters that must be escaped in a bare term.
+# The wildcards '*' and '?' and the escape character '\' are left alone:
+# they are produced (or preserved) by like_to_wildcard().
+_TERM_SPECIAL_CHARS = re.compile(r'([+\-&|!(){}\[\]^"~:/])')
+
+_UNESCAPED_WILDCARD = re.compile(r"(?<!\\)[*?]")
+
+
+def has_wildcard(pattern: str) -> bool:
+    """Whether a Solr wildcard pattern contains an unescaped '*' or '?'."""
+    return _UNESCAPED_WILDCARD.search(pattern) is not None
+
+
+def escape_wildcard_term(pattern: str) -> str:
+    """Escape a single-token wildcard pattern for use as a bare Solr term."""
+    return _TERM_SPECIAL_CHARS.sub(r"\\\1", pattern)
+
+
+def escape_phrase(pattern: str) -> str:
+    """Escape a pattern for use inside a double-quoted Solr phrase."""
+    return pattern.replace('"', '\\"')
+
+
+def strip_leading_wildcard(token: str) -> str:
+    """Remove unescaped '*' wildcards from the start of a token."""
+    return token.lstrip("*")
+
+
+def strip_trailing_wildcard(token: str) -> str:
+    """Remove unescaped '*' wildcards from the end of a token."""
+    stripped = token.rstrip("*")
+    if stripped.endswith("\\") and len(stripped) < len(token):
+        # keep an escaped literal '*'
+        stripped += "*"
+    return stripped

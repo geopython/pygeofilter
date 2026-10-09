@@ -44,7 +44,14 @@ from pytz import UTC
 
 from ... import ast, values
 from ..evaluator import Evaluator, handle
-from .util import like_to_wildcard
+from .util import (
+    escape_phrase,
+    escape_wildcard_term,
+    has_wildcard,
+    like_to_wildcard,
+    strip_leading_wildcard,
+    strip_trailing_wildcard,
+)
 
 VERSION_9_8_1 = Version("9.8.1")
 
@@ -399,34 +406,68 @@ class SOLRDSLEvaluator(Evaluator):
 
     @handle(ast.Like)
     def like(self, node: ast.Like, lhs):
-        """Transforms the provided LIKE pattern to a Solr wildcard
-        pattern. This only works properly on fields that are not tokenized.
+        """Transforms the provided LIKE pattern to a Solr query.
+
+        - no wildcards: a phrase query on the pattern.
+        - a single-token pattern: a plain wildcard term query, e.g.
+          ``%Arctic%`` -> ``field:*Arctic*``.
+        - a multi-word pattern: standalone ``%`` tokens split it into
+          segments that must all match, e.g. ``this is % test`` ->
+          ``+field:"this is" +field:"test"``. Word order across a gap is not
+          enforced. Wildcards at segment edges are dropped (the gap already
+          means "anything"); a phrase that still contains a wildcard uses the
+          complexphrase parser.
         """
         pattern = like_to_wildcard(
             node.pattern, node.wildcard, node.singlechar, node.escapechar
         )
-        if "*" in pattern:
-            p = pattern.split("*")
-            if p[0] == "":
-                q = f"{{!complexphrase}}{lhs}:*{p[1].strip()}"
-                if node.not_:
-                    q = f'{{!complexphrase}}-{lhs}:"*{p[1].strip()}"'
-            elif p[1] == "":
-                q = f'{{!complexphrase}}{lhs}:"{p[0].strip()}*"'
-                if node.not_:
-                    q = f"{{!complexphrase}}-{lhs}:{p[0].strip()}*"
-            else:
-                q = f'{{!complexphrase}}{lhs}:"{p[0].strip()}"*"{p[1].strip()}"'
-        elif "?" in pattern:
-            q = f'{{!complexphrase}}{lhs}:"{pattern}"'
-            if node.not_:
-                q = f'{{!complexphrase}}-{lhs}:"{pattern}"'
-
+        tokens = pattern.split()
+        if not has_wildcard(pattern):
+            q = f'{lhs}:"{escape_phrase(pattern)}"'
+        elif len(tokens) == 1:
+            q = f"{lhs}:{escape_wildcard_term(tokens[0])}"
         else:
-            q = f'{lhs}:"{pattern}"'
-            if node.not_:
-                q = f"-{q}"
+            q = self._like_multi_word(lhs, tokens, node.not_)
+            return SolrDSLQuery(q)
+
+        if node.not_:
+            q = f"-{q}"
         return SolrDSLQuery(q)
+
+    @staticmethod
+    def _like_multi_word(lhs, tokens, not_):
+        segments = [[]]
+        for token in tokens:
+            if has_wildcard(token) and not token.strip("*?"):
+                if "*" in token:
+                    segments.append([])
+                    continue
+            segments[-1].append(token)
+        segments = [segment for segment in segments if segment]
+
+        clauses = []
+        complexphrase = False
+        for segment in segments:
+            if len(segment) == 1 and has_wildcard(segment[0]):
+                clauses.append(f"{lhs}:{escape_wildcard_term(segment[0])}")
+                continue
+            segment[0] = strip_leading_wildcard(segment[0])
+            segment[-1] = strip_trailing_wildcard(segment[-1])
+            phrase = " ".join(segment)
+            complexphrase = complexphrase or has_wildcard(phrase)
+            clauses.append(f'{lhs}:"{escape_phrase(phrase)}"')
+
+        if not clauses:
+            q = f"{lhs}:*"
+        elif len(clauses) == 1:
+            q = clauses[0]
+        else:
+            q = " ".join(f"+{clause}" for clause in clauses)
+            if not_:
+                q = f"({q})"
+        if not_:
+            q = f"-{q}"
+        return f"{{!complexphrase}}{q}" if complexphrase else q
 
     @handle(values.Geometry)
     def geometry(self, node: values.Geometry):
