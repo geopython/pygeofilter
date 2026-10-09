@@ -32,6 +32,7 @@ SPATIAL_PREDICATES_MAP: Dict[str, Type[ast.SpatialComparisonPredicate]] = {
     "s_overlaps": ast.GeometryOverlaps,
     "s_crosses": ast.GeometryCrosses,
     "s_contains": ast.GeometryContains,
+    "s_dwithin": ast.DistanceWithin,
 }
 
 TEMPORAL_PREDICATES_MAP: Dict[str, Type[ast.TemporalPredicate]] = {

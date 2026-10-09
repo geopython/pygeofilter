@@ -597,18 +597,18 @@ def test_overlaps_attr_multilinestring():
 
 # # dwithin/beyond
 
-# def test_dwithin_attr_polygon():
-#     result = parse('DWITHIN(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, feet)')
-#     print(get_repr(result))
-#     assert result == ast.SpatialDistancePredicateNode(
-#         ast.Attribute('geometry'),
-#         ast.LiteralExpression(
-#             geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
-#         ),
-#         ast.SpatialDistanceOp('DWITHIN'),
-#         distance=5,
-#         units='feet',
-#     )
+
+def test_dwithin_attr_polygon():
+    result = parse("DWITHIN(geometry, POLYGON((1 1,2 2,0 3,1 1)), 5, feet)")
+    assert result == ast.SpatialDistancePredicateNode(
+        ast.Attribute("geometry"),
+        ast.LiteralExpression(
+            geometry.Polygon([(1, 1), (2, 2), (0, 3), (1, 1)])
+        ),
+        ast.SpatialDistanceOp("DWITHIN"),
+        distance=5,
+        units="feet",
+    )
 
 
 # def test_beyond_attr_polygon():
