@@ -560,6 +560,41 @@ def test_overlaps_attr_multilinestring():
     )
 
 
+@pytest.mark.parametrize("as_json_string", [False, True])
+@pytest.mark.parametrize(
+    "property_name, geom, distance, units",
+    [
+        (
+            "geometry",
+            {
+                "type": "Polygon",
+                "coordinates": [[[1, 1], [2, 2], [0, 3], [1, 1]]],
+            },
+            5,
+            "feet",
+        ),
+        (
+            "feature.geometry",
+            {"type": "Point", "coordinates": [13.0, 65.0]},
+            250000,
+            "meters",
+        ),
+    ],
+)
+def test_dwithin(as_json_string, property_name, geom, distance, units):
+    query = {
+        "op": "s_dwithin",
+        "args": [{"property": property_name}, geom, distance, units],
+    }
+    result = parse(json.dumps(query) if as_json_string else query)
+    assert result == ast.DistanceWithin(
+        ast.Attribute(property_name),
+        values.Geometry(geom),
+        distance=distance,
+        units=units,
+    )
+
+
 def test_attribute_arithmetic_add():
     result = parse(
         {
