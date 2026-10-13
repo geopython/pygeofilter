@@ -135,13 +135,17 @@ class ECQLTransformer(WKTTransformer, ISO8601Transformer):
         return ast.TimeAfter(node, dt)
 
     def binary_spatial_predicate(self, op, lhs, rhs):
-        return SPATIAL_PREDICATES_MAP[op](lhs, rhs)
+        return SPATIAL_PREDICATES_MAP[op.upper()](lhs, rhs)
 
     def relate_spatial_predicate(self, lhs, rhs, pattern):
         return ast.Relate(lhs, rhs, pattern)
 
     def distance_spatial_predicate(self, op, lhs, rhs, distance, units):
-        cls = ast.DistanceWithin if op == "DWITHIN" else ast.DistanceBeyond
+        cls = (
+            ast.DistanceWithin
+            if op.upper() == "DWITHIN"
+            else ast.DistanceBeyond
+        )
         return cls(lhs, rhs, distance, units)
 
     def distance_units(self, value):
