@@ -28,11 +28,11 @@
 ?start: condition
 
 ?condition: condition_1
-          | condition "AND" condition_1                                     -> and_
-          | condition "OR" condition_1                                      -> or_
+          | condition "AND"i condition_1                                    -> and_
+          | condition "OR"i condition_1                                     -> or_
 
 ?condition_1: predicate
-            | "NOT" predicate                                               -> not_
+            | "NOT"i predicate                                              -> not_
             | "(" condition ")"
 
 ?predicate: expression "=" expression                                       -> eq
@@ -41,35 +41,35 @@
           | expression "<=" expression                                      -> lte
           | expression ">" expression                                       -> gt
           | expression ">=" expression                                      -> gte
-          | expression "BETWEEN" expression "AND" expression                -> between
-          | expression "NOT" "BETWEEN" expression "AND" expression          -> not_between
-          | expression "LIKE" SINGLE_QUOTED                                 -> like
-          | expression "NOT" "LIKE" SINGLE_QUOTED                           -> not_like
-          | expression "ILIKE" SINGLE_QUOTED                                -> ilike
-          | expression "NOT" "ILIKE" SINGLE_QUOTED                          -> not_ilike
-          | expression "IN" "(" expression ( "," expression )* ")"          -> in_
-          | expression "NOT" "IN" "(" expression ( "," expression )* ")"    -> not_in
-          | expression "IS" "NULL"                                          -> null
-          | expression "IS" "NOT" "NULL"                                    -> not_null
-          | attribute "EXISTS"                                              -> exists
-          | attribute "DOES-NOT-EXIST"                                      -> does_not_exist
-          | "INCLUDE"                                                       -> include
-          | "EXCLUDE"                                                       -> exclude
+          | expression "BETWEEN"i expression "AND"i expression              -> between
+          | expression "NOT"i "BETWEEN"i expression "AND"i expression       -> not_between
+          | expression "LIKE"i SINGLE_QUOTED                                -> like
+          | expression "NOT"i "LIKE"i SINGLE_QUOTED                         -> not_like
+          | expression "ILIKE"i SINGLE_QUOTED                               -> ilike
+          | expression "NOT"i "ILIKE"i SINGLE_QUOTED                        -> not_ilike
+          | expression "IN"i "(" expression ( "," expression )* ")"         -> in_
+          | expression "NOT"i "IN"i "(" expression ( "," expression )* ")"  -> not_in
+          | expression "IS"i "NULL"i                                        -> null
+          | expression "IS"i "NOT"i "NULL"i                                 -> not_null
+          | attribute "EXISTS"i                                             -> exists
+          | attribute "DOES-NOT-EXIST"i                                     -> does_not_exist
+          | "INCLUDE"i                                                      -> include
+          | "EXCLUDE"i                                                      -> exclude
           | temporal_predicate
           | spatial_predicate
 
-?temporal_predicate: expression "BEFORE" DATETIME                           -> before
-                   | expression "BEFORE" "OR" "DURING" period               -> before_or_during
-                   | expression "DURING" period                             -> during
-                   | expression "DURING" "OR" "AFTER" period                -> during_or_after
-                   | expression "AFTER" DATETIME                            -> after
+?temporal_predicate: expression "BEFORE"i DATETIME                          -> before
+                   | expression "BEFORE"i "OR"i "DURING"i period            -> before_or_during
+                   | expression "DURING"i period                            -> during
+                   | expression "DURING"i "OR"i "AFTER"i period             -> during_or_after
+                   | expression "AFTER"i DATETIME                           -> after
 
 ?spatial_predicate: _binary_spatial_predicate_func "(" expression "," expression ")"                                -> binary_spatial_predicate
-                  | "RELATE" "(" expression "," expression "," SINGLE_QUOTED ")"                                    -> relate_spatial_predicate
+                  | "RELATE"i "(" expression "," expression "," SINGLE_QUOTED ")"                                   -> relate_spatial_predicate
                   | _distance_spatial_predicate_func "(" expression "," expression "," number "," distance_units ")" -> distance_spatial_predicate
-                  | "BBOX" "(" expression "," full_number "," full_number "," full_number "," full_number [ ","  SINGLE_QUOTED] ")" -> bbox_spatial_predicate
-!_binary_spatial_predicate_func: "INTERSECTS" | "DISJOINT" | "CONTAINS" | "WITHIN" | "TOUCHES" | "CROSSES" | "OVERLAPS" | "EQUALS"
-!_distance_spatial_predicate_func: "DWITHIN" | "BEYOND"
+                  | "BBOX"i "(" expression "," full_number "," full_number "," full_number "," full_number [ ","  SINGLE_QUOTED] ")" -> bbox_spatial_predicate
+!_binary_spatial_predicate_func: "INTERSECTS"i | "DISJOINT"i | "CONTAINS"i | "WITHIN"i | "TOUCHES"i | "CROSSES"i | "OVERLAPS"i | "EQUALS"i
+!_distance_spatial_predicate_func: "DWITHIN"i | "BEYOND"i
 !distance_units: "feet" | "meters" | "statute miles" | "nautical miles" | "kilometers"                              -> distance_units
 
 ?expression: sum
@@ -107,7 +107,7 @@ period: DATETIME "/" DATETIME
       | DURATION "/" DATETIME
       | DATETIME "/" DURATION
 
-envelope: "ENVELOPE" "(" number number number number ")"
+envelope: "ENVELOPE"i "(" number number number number ")"
 
 BOOLEAN.2: ( "TRUE"i | "FALSE"i )
 

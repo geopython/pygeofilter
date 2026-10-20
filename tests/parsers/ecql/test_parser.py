@@ -27,6 +27,7 @@
 
 from datetime import datetime, timedelta
 
+import pytest
 from dateparser.timezone_parser import StaticTzInfo
 from pygeoif import geometry
 
@@ -650,3 +651,82 @@ def test_attribute_eq_false_lowercase():
         ast.Attribute("attr"),
         False,
     )
+
+
+# ECQL keywords are case-insensitive, like the CQL2-text ones (see #121).
+@pytest.mark.parametrize(
+    "text",
+    [
+        "attr = 'A' AND NOT attr2 = 'B' OR attr3 = 'C'",
+        "attr BETWEEN 2 AND 5",
+        "attr NOT BETWEEN 2 AND 5",
+        "attr LIKE 'some%'",
+        "attr NOT LIKE 'some%'",
+        "attr ILIKE 'some%'",
+        "attr NOT ILIKE 'some%'",
+        "attr IN ('A', 'B')",
+        "attr NOT IN ('A', 'B')",
+        "attr IS NULL",
+        "attr IS NOT NULL",
+        "attr EXISTS",
+        "attr DOES-NOT-EXIST",
+        "INCLUDE",
+        "EXCLUDE",
+        "attr BEFORE 2000-01-01T00:00:01Z",
+        "attr BEFORE OR DURING 2000-01-01T00:00:00Z/2000-01-01T00:00:01Z",
+        "attr DURING 2000-01-01T00:00:00Z/2000-01-01T00:00:01Z",
+        "attr DURING OR AFTER 2000-01-01T00:00:00Z/2000-01-01T00:00:01Z",
+        "attr AFTER 2000-01-01T00:00:01Z",
+        "INTERSECTS(geometry, POINT(1 1))",
+        "WITHIN(geometry, POINT(1 1))",
+        "RELATE(geometry, POINT(1 1), '*TT***FF*')",
+        "DWITHIN(geometry, POINT(1 1), 5, feet)",
+        "BEYOND(geometry, POINT(1 1), 5, feet)",
+        "BBOX(geometry, 1, 2, 3, 4)",
+        "INTERSECTS(geometry, ENVELOPE(0 1 2 3))",
+    ],
+)
+@pytest.mark.parametrize("case", [str.lower, str.title])
+def test_keywords_case_insensitive(text, case):
+    # only change the case of the keywords, not of attribute names
+    # (geometry, attr) or of the WKT geometry / distance units, which
+    # are not part of this grammar's keywords
+    keywords = {
+        "AND",
+        "OR",
+        "NOT",
+        "BETWEEN",
+        "LIKE",
+        "ILIKE",
+        "IN",
+        "IS",
+        "NULL",
+        "EXISTS",
+        "DOES-NOT-EXIST",
+        "INCLUDE",
+        "EXCLUDE",
+        "BEFORE",
+        "DURING",
+        "AFTER",
+        "INTERSECTS",
+        "WITHIN",
+        "RELATE",
+        "DWITHIN",
+        "BEYOND",
+        "BBOX",
+        "ENVELOPE",
+    }
+    changed = " ".join(
+        case(word) if word in keywords else word for word in text.split(" ")
+    )
+    for keyword in keywords:
+        changed = changed.replace(f"{keyword}(", f"{case(keyword)}(")
+    assert changed != text
+    assert parse(changed) == parse(text)
+
+
+@pytest.mark.parametrize(
+    "name", ["notes", "index", "orbit", "likes", "isbn", "android", "between_x"]
+)
+def test_attribute_names_starting_with_keywords(name):
+    assert parse(f"{name} = 1") == ast.Equal(ast.Attribute(name), 1)
