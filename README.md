@@ -12,13 +12,17 @@ pygeofilter is a pure Python parser implementation of OGC filtering standards
     * [CQL as defined in CSW 2.0](https://portal.ogc.org/files/?artifact_id=20555)
     * [CQL JSON as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-json-schema)
     * [JSON Filter Expressions (JFE)](https://github.com/tschaub/ogcapi-features/tree/json-array-expression/extensions/cql/jfe)
-    * Soon:
-        * [CQL Text as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-bnf)
-        * [FES](http://docs.opengeospatial.org/is/09-026r2/09-026r2.html)
+    * [CQL Text as defined in OGC API - Features - Part 3: Filtering and the Common Query Language (CQL)](https://portal.ogc.org/files/96288#cql-bnf)
+    * [FES](http://docs.opengeospatial.org/is/09-026r2/09-026r2.html) (OGC filter encoding standard v1.1 & v2.0)
 * Several backends included
     * [Django](https://www.djangoproject.com/)
     * [SQLAlchemy](https://www.sqlalchemy.org/)
     * [(Geo)Pandas](https://pandas.pydata.org/)
+    * Apchae Solr
+    * Elasticsearch
+    * OpenSearch
+    * [CQL2 JSON](https://portal.ogc.org/files/96288#cql-json-schema)
+    * [FES](https://www.ogc.org/standards/filter/) (OGC filter encoding standard v.1.1)
     * Native Python objects
 
 
