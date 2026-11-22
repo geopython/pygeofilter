@@ -64,6 +64,9 @@ ARITHMETIC_MAP: Dict[str, Type[ast.Arithmetic]] = {
     "-": ast.Sub,
     "*": ast.Mul,
     "/": ast.Div,
+    "%": ast.Mod,
+    "div": ast.IntDiv,
+    "^": ast.Pow,
 }
 
 CONDITION_MAP: Dict[str, Type[ast.Node]] = {
