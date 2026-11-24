@@ -437,6 +437,63 @@ def test_equality_normalizes_date_literals():
     assert query["query"] == 'datetime_attribute:"2000-01-01T00:00:00Z"'
 
 
+FES_COMPARISON = (
+    '<fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0">'
+    "<fes:{op}><fes:ValueReference>{name}</fes:ValueReference>"
+    "<fes:Literal>{literal}</fes:Literal></fes:{op}>"
+    "</fes:Filter>"
+)
+
+
+@pytest.mark.parametrize(
+    "op, literal, expected",
+    [
+        ("PropertyIsLessThanOrEqualTo", "10", "float_attribute:[* TO 10]"),
+        ("PropertyIsLessThan", "5", "float_attribute:[* TO 5}"),
+        ("PropertyIsGreaterThan", "10.5", "float_attribute:{10.5 TO *]"),
+        (
+            "PropertyIsGreaterThanOrEqualTo",
+            "2024",
+            "float_attribute:[2024 TO *]",
+        ),
+        ("PropertyIsEqualTo", "5", 'float_attribute:"5"'),
+    ],
+)
+def test_fes_numeric_literals_are_not_dates(op, literal, expected):
+    # FES literals carry no type: they reach the evaluator as strings
+    pytest.importorskip("lxml")
+    from pygeofilter.parsers.fes import parse as fes_parse
+
+    xml = FES_COMPARISON.format(op=op, name="float_attribute", literal=literal)
+    assert to_filter(fes_parse(xml))["query"] == expected
+
+
+def test_words_are_not_dates():
+    query = to_filter(parse("str_attribute = 'May'"))
+    assert query["query"] == 'str_attribute:"May"'
+
+
+@pytest.mark.parametrize(
+    "literal, expected",
+    [
+        ("2000-01-01", "2000-01-01T00:00:00Z"),
+        ("2000-01-01T12:30:00Z", "2000-01-01T12:30:00Z"),
+        ("2000-01-01T12:30:00+02:00", "2000-01-01T10:30:00Z"),
+        ("2000-01-01 12:30", "2000-01-01T12:30:00Z"),
+    ],
+)
+def test_iso_date_strings_are_dates(literal, expected):
+    query = to_filter(parse(f"datetime_attribute >= '{literal}'"))
+    assert query["query"] == f"datetime_attribute:[{expected} TO *]"
+
+
+def test_between_numeric_strings():
+    query = to_filter(
+        ast.Between(ast.Attribute("float_attribute"), "20", "30", False)
+    )
+    assert query["query"] == {"bool": {"must": ["float_attribute:[20 TO 30]"]}}
+
+
 def test_or_keeps_spatial_in_filter_context():
     query = to_filter(
         parse(
