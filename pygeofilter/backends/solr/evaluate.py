@@ -33,6 +33,7 @@ Uses native Python to return dict of JSON request payload
 
 # pylint: disable=E1130,C0103,W0223
 
+import re
 from datetime import date, datetime
 from typing import Optional, Union
 
@@ -84,11 +85,23 @@ def _invert_filter_query(filter_query):
     return {"bool": {"must_not": [filter_query]}}
 
 
+# An ISO 8601 calendar date, optionally with a time and a UTC offset:
+# 2024-11-04, 2024-11-04T10:00:00Z, 2024-11-04 10:00:00.5+01:00
+ISO_DATE_RE = re.compile(
+    r"\d{4}-\d{2}-\d{2}"
+    r"(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)?)?"
+)
+
+
 def _to_solr_date(value):
     """Convert input date/datetime to Solr UTC datetime string: YYYY-MM-DDTHH:MM:SSZ.
 
+    Strings are converted only when they are written as an ISO 8601 date
+    (see ISO_DATE_RE); any other string is returned unchanged. Literals of
+    OGC Filter (FES) have no type and reach the evaluator as strings, so a
+    number such as '10' or a word such as 'May' must not become a date.
+
     Returns None for empty input.
-    Raises ValueError for unparseable input.
     """
     if value is None:
         return None
@@ -105,16 +118,14 @@ def _to_solr_date(value):
         text = value.strip()
         if not text:
             return None
+        if not ISO_DATE_RE.fullmatch(text):
+            # Not an ISO 8601 date: keep term value as-is.
+            return value
         try:
-            # dateutil handles many formats:
-            # 2024-11-04, 2024-11-04T10:00:00Z, 2024-11-04 10:00:00+01:00, etc.
             dt = parser.isoparse(text)
-        except (ValueError, TypeError, OverflowError):
-            try:
-                dt = parser.parse(text)
-            except (ValueError, TypeError, OverflowError):
-                # Not a date-like string: keep term value as-is.
-                return value
+        except (ValueError, OverflowError):
+            # e.g. 2024-13-45: keep term value as-is.
+            return value
     else:
         return value
 
